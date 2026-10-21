@@ -16,6 +16,8 @@ linters:
     wrapcheck:
       ignore-package-globs:
         - glowpod/*
+        # Typed StatusErrors; kerr classifies them and callers add context.
+        - k8s.io/client-go/*
   exclusions:
     presets:
       - std-error-handling

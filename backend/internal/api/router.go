@@ -6,25 +6,83 @@ package api
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"k8s.io/client-go/kubernetes"
+
+	"glowpod/internal/auth"
+	"glowpod/internal/cluster"
+	"glowpod/internal/metrics"
+	"glowpod/internal/overview"
+	"glowpod/internal/stream"
 )
 
-// Options configures the router.
+// Options configures the router. Without Provider and Auth only the
+// frontend and /healthz are served.
 type Options struct {
 	// Frontend serves the single-page app for every non-API path.
 	Frontend http.Handler
+	Provider cluster.Provider
+	Auth     *auth.Local
+	Overview *overview.Service
+	// Hosts are the Host header values to accept; nil skips the check.
+	Hosts []string
+	// PrometheusURL, when set, is used instead of discovering Prometheus.
+	PrometheusURL string
+	// Metrics builds the usage reader for a client; defaults to metrics.NewReader.
+	Metrics func(kube kubernetes.Interface) overview.MetricsSource
+	Logger  *slog.Logger
+}
+
+// promDiscoveryTTL is how long a Prometheus lookup (or its absence) is reused.
+const promDiscoveryTTL = 5 * time.Minute
+
+type server struct {
+	opts  Options
+	proms *metrics.PromCache
 }
 
 // NewRouter returns the root HTTP handler.
 func NewRouter(opts Options) http.Handler {
+	if opts.Logger == nil {
+		opts.Logger = slog.New(slog.DiscardHandler)
+	}
+	if opts.Overview == nil {
+		opts.Overview = overview.NewService()
+	}
+	if opts.Metrics == nil {
+		opts.Metrics = func(kube kubernetes.Interface) overview.MetricsSource { return metrics.NewReader(kube) }
+	}
+	s := &server{opts: opts, proms: metrics.NewPromCache(promDiscoveryTTL)}
+
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
 	r.Use(securityHeaders)
+	if opts.Hosts != nil {
+		r.Use(auth.RequireHost(opts.Hosts))
+	}
 
 	r.Get("/healthz", healthz)
+	if opts.Provider != nil && opts.Auth != nil {
+		r.Get(auth.LoginPath, opts.Auth.HandleLogin)
+		r.Route("/api/v1", func(r chi.Router) {
+			r.Use(opts.Auth.Require)
+			r.Get("/session", s.session)
+			r.Route("/clusters/{cluster}", func(r chi.Router) {
+				r.Use(s.requireCluster, requireNamespace)
+				r.Get("/overview", s.overview)
+				r.Get("/namespaces", s.namespaces)
+				r.Get("/events", s.events)
+				r.Method(http.MethodGet, "/stream", &stream.Handler{Provider: opts.Provider, Logger: opts.Logger})
+			})
+			r.NotFound(apiNotFound)
+			r.MethodNotAllowed(apiMethodNotAllowed)
+		})
+	}
 	r.Handle("/api/*", http.HandlerFunc(apiNotFound))
 	if opts.Frontend != nil {
 		r.Handle("/*", opts.Frontend)
@@ -38,6 +96,10 @@ func healthz(w http.ResponseWriter, _ *http.Request) {
 
 func apiNotFound(w http.ResponseWriter, _ *http.Request) {
 	writeError(w, http.StatusNotFound, "not_found", "There's nothing at this address.")
+}
+
+func apiMethodNotAllowed(w http.ResponseWriter, _ *http.Request) {
+	writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "That action isn't supported here.")
 }
 
 // errorBody is the JSON shape of every API error.

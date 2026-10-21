@@ -28,6 +28,12 @@ func TestParseFlags(t *testing.T) {
 		{name: "unknown flag", args: []string{"-nope"}, wantErr: true},
 		{name: "stray argument", args: []string{"serve"}, wantErr: true},
 		{name: "help", args: []string{"-h"}, wantErr: true, isHelp: true},
+		{
+			name: "cluster flags",
+			args: []string{"-kubeconfig", "/tmp/k", "-context", "lab", "-prometheus-url", "http://localhost:9090"},
+			want: config{addr: defaultAddr, kubeconfig: "/tmp/k", context: "lab", prometheusURL: "http://localhost:9090"},
+		},
+		{name: "prometheus url needs a scheme", args: []string{"-prometheus-url", "localhost:9090"}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

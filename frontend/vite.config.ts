@@ -17,6 +17,9 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    // Emit every asset as a file. Inlined data: URIs (e.g. small font subsets)
+    // would be blocked by the server's CSP (font-src 'self').
+    assetsInlineLimit: 0,
   },
   test: {
     environment: "jsdom",
