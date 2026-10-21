@@ -112,7 +112,8 @@ describe("Glance / Deep toggle", () => {
       "Events",
       "Settings",
     ]);
-    const apps = await screen.findByRole("region", { name: "Your apps" });
+    const panel = screen.getByRole("complementary", { name: "Overview panel" });
+    const apps = await within(panel).findByRole("region", { name: "Your apps" });
     expect(within(apps).getByRole("link", { name: "payments-api, failing" })).toBeInTheDocument();
     expect(within(apps).getByRole("link", { name: "checkout-web, healthy" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Cluster health" })).toBeInTheDocument();
@@ -206,9 +207,8 @@ describe("Live stream", () => {
         await screen.findByRole("button", { name: "Cluster: prod-eu-1, live" }),
       ).toBeInTheDocument();
 
-      await waitFor(() => {
-        expect(within(panel).getByRole("link", { name: /Events/ })).toBeInTheDocument();
-      });
+      // The fixture already has one warning; a live one makes two.
+      expect(await within(panel).findByLabelText("1 warning in the last hour")).toBeInTheDocument();
       act(() => {
         FakeWebSocket.latest().send({
           type: "event",
@@ -216,13 +216,17 @@ describe("Live stream", () => {
           event: fx.event("w1", "Warning", 0),
         });
       });
-      expect(await within(panel).findByLabelText("1 warning in the last hour")).toBeInTheDocument();
+      expect(
+        await within(panel).findByLabelText("2 warnings in the last hour"),
+      ).toBeInTheDocument();
 
       const first = FakeWebSocket.latest();
       act(() => {
         first.drop();
       });
-      expect(await screen.findByText(/Reconnecting/)).toBeInTheDocument();
+      expect(
+        await within(screen.getByRole("banner")).findByText(/Reconnecting/),
+      ).toBeInTheDocument();
       await act(async () => {
         await vi.advanceTimersByTimeAsync(1_100);
       });

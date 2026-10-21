@@ -24,3 +24,14 @@ export function formatAge(ms: number): string {
   if (h < 48) return `${h} h`;
   return `${Math.floor(h / 24)} d`;
 }
+
+/** Compact ages for lists: "now", "1m", "12m", "2h", "3d". */
+export function formatAgeShort(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  if (s < 60) return "now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}

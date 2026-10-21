@@ -1,5 +1,5 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 // The Go server (`glowpod --dev`) serves the API on this address during `make dev`.
 const backend = "http://127.0.0.1:7171";
@@ -24,6 +24,8 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
+    // e2e/ holds Playwright specs; `make e2e` runs those.
+    exclude: [...configDefaults.exclude, "e2e/**"],
     restoreMocks: true,
     unstubGlobals: true,
   },

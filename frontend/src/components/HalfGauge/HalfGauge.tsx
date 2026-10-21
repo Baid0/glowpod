@@ -49,8 +49,13 @@ export interface HalfGaugeProps {
   valueInside?: boolean;
   onRetry?: () => void;
   /** Link shown in the no-metrics state. */
-  helpHref?: string;
+  /** Where the no-metrics help links to; null shows helpLabel as plain text. */
+  helpHref?: string | null;
   helpLabel?: string;
+  /** Text inside the dotted arc when there's no data, e.g. a capacity. */
+  noDataLabel?: string;
+  /** Hide the number in the dial when the caller shows it elsewhere. */
+  showValue?: boolean;
 }
 
 const FIRST_SWEEP_MS = 600;
@@ -82,6 +87,8 @@ export function HalfGauge({
   onRetry,
   helpHref = METRICS_SERVER_DOCS,
   helpLabel = "Install metrics-server",
+  noDataLabel = "No data",
+  showValue = true,
 }: HalfGaugeProps) {
   const hasData = state === "live" || state === "stale";
   const fraction = fractionOf(value, max);
@@ -223,22 +230,26 @@ export function HalfGauge({
               {size !== "S" && <span className={styles.skeletonLine} />}
             </>
           )}
-          {hasData && (
+          {hasData && showValue && (
             <>
               <span className={styles.value}>{big}</span>
               {small && size === "L" && <span className={styles.detail}>{small}</span>}
             </>
           )}
-          {state === "no-metrics" && <span className={styles.message}>No data</span>}
+          {state === "no-metrics" && <span className={styles.message}>{noDataLabel}</span>}
           {state === "error" && <span className={styles.message}>Couldn't load</span>}
         </div>
       </div>
 
       {size !== "S" && state === "no-metrics" && (
         <div className={styles.action}>
-          <a href={helpHref} target="_blank" rel="noreferrer">
-            {helpLabel}
-          </a>
+          {helpHref ? (
+            <a href={helpHref} target="_blank" rel="noreferrer">
+              {helpLabel}
+            </a>
+          ) : (
+            <span className={styles.helpText}>{helpLabel}</span>
+          )}
         </div>
       )}
       {size !== "S" && state === "error" && onRetry && (
@@ -263,7 +274,7 @@ export function HalfGauge({
           </span>
           {hasTrend && (
             <span className={styles.footerItem}>
-              <TrendIcon trend={trend} />
+              {trend !== undefined && <TrendIcon trend={trend} />}
               {trendLabel ?? `${formatNumber(Math.abs((trend ?? 0) * 100))}% in 1h`}
             </span>
           )}

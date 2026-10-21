@@ -1,0 +1,496 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 1600px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+/* Cluster line and banners */
+
+.clusterLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  min-height: 28px;
+}
+
+.clusterFacts {
+  color: var(--body);
+}
+
+.notice,
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: var(--surface-card);
+  color: var(--body);
+}
+
+.banner {
+  border-color: var(--state-critical);
+}
+
+.bannerDot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--state-critical);
+}
+
+.bannerText {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--space-2);
+}
+
+.bannerText strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Gauges: L gauges need ~260px each; four fit beside the open panel at 1440px. */
+
+.gauges {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(262px, 1fr));
+  gap: var(--space-4);
+}
+
+.gaugeCard {
+  display: flex;
+  justify-content: center;
+}
+
+/* Workload tiles and app cards */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+.tileNumber {
+  margin-bottom: var(--space-3);
+}
+
+.big {
+  font: var(--text-display-sm);
+  letter-spacing: var(--tracking-display-sm);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.tileRest {
+  font: 500 18px / 24px var(--font-sans);
+  color: var(--muted);
+}
+
+.segments {
+  display: flex;
+  gap: 4px;
+  height: 6px;
+}
+
+.segment {
+  min-width: 6px;
+  height: 100%;
+  border-radius: var(--radius-full);
+}
+
+.segment[data-tone="ok"] {
+  background: var(--state-ok);
+  border: 1px solid var(--lime-outline);
+}
+
+.segment[data-tone="high"] {
+  background: var(--state-high);
+}
+
+.segment[data-tone="critical"] {
+  background: var(--state-critical);
+}
+
+.segment[data-tone="empty"] {
+  background: var(--surface-elevated);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.sectionTitle {
+  font: var(--text-title-md);
+}
+
+.appMeta {
+  margin-bottom: var(--space-2);
+  font: var(--text-caption);
+  color: var(--muted);
+}
+
+.cardLink {
+  color: var(--ink);
+  font: 600 15px / 22px var(--font-mono);
+  text-decoration: none;
+}
+
+.cardLink:hover {
+  text-decoration: underline;
+}
+
+/* Needs attention + recent events */
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 1100px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.problem {
+  display: grid;
+  grid-template-columns: 172px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 14px 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.problem:has(.problemDot) {
+  grid-template-columns: 8px minmax(0, 1fr) auto auto;
+}
+
+.problemBadge {
+  display: flex;
+  min-width: 0;
+}
+
+.problemText,
+.eventText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.problemName {
+  color: var(--ink);
+  font: 500 14px / 20px var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.problemTitle {
+  color: var(--ink);
+  font: var(--text-body-sm-strong);
+}
+
+.term {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.problemDetail {
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.problemDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+}
+
+.problemDot[data-tone="critical"] {
+  background: var(--state-critical);
+}
+
+.problemDot[data-tone="high"] {
+  background: var(--state-high);
+}
+
+.age {
+  color: var(--muted);
+  font: var(--text-caption);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.allGood {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  color: var(--body);
+}
+
+.okIcon {
+  color: var(--state-ok);
+}
+
+:root[data-theme="light"] .okIcon {
+  color: var(--ink);
+}
+
+.event {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.eventIcon {
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+.eventIcon[data-tone="critical"] {
+  color: var(--state-critical);
+}
+
+.eventIcon[data-tone="high"] {
+  color: var(--state-high);
+}
+
+.eventIcon[data-tone="ok"] {
+  color: var(--state-ok);
+}
+
+:root[data-theme="light"] .eventIcon[data-tone="ok"] {
+  color: var(--ink);
+}
+
+.eventMessage {
+  color: var(--ink);
+  font: var(--text-body-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eventObject {
+  color: var(--muted);
+  font: 400 13px / 18px var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.liveDot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--muted-soft);
+}
+
+.live[data-live="true"] .liveDot {
+  background: var(--primary);
+  border: 1px solid var(--lime-outline);
+}
+
+/* Node load */
+
+.nodes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Nested tiles sit on the canvas color so the gauge track stays visible. */
+.nodeTile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: var(--canvas);
+}
+
+.nodeName {
+  color: var(--ink);
+  font: 500 13px / 18px var(--font-mono);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nodeName:hover {
+  text-decoration: underline;
+}
+
+.nodeCpu {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nodeValue {
+  display: flex;
+  flex-direction: column;
+}
+
+.nodePercent {
+  color: var(--ink);
+  font: 700 20px / 24px var(--font-sans);
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.nodeUnit {
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.memRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.memBar {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--surface-elevated);
+  overflow: hidden;
+}
+
+.memFill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+}
+
+.memFill[data-zone="ok"] {
+  background: var(--state-ok);
+}
+
+.memFill[data-zone="high"] {
+  background: var(--state-high);
+}
+
+.memFill[data-zone="critical"] {
+  background: var(--state-critical);
+}
+
+.memText {
+  color: var(--muted);
+  font: var(--text-caption);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Top consumers */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--text-body-sm);
+}
+
+.table th {
+  padding: 0 var(--space-3) var(--space-2) 0;
+  color: var(--muted);
+  font: var(--text-caption-upper);
+  letter-spacing: var(--tracking-caption-upper);
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.table td {
+  padding: 10px var(--space-3) 10px 0;
+  border-top: 1px solid var(--hairline);
+  color: var(--body);
+}
+
+.table td a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.table td a:hover {
+  text-decoration: underline;
+}
+
+.table .num {
+  text-align: right;
+  padding-right: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Shared bits */
+
+.sectionNote {
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.moreLink {
+  display: inline-block;
+  margin-top: var(--space-3);
+  font: var(--text-body-sm-strong);
+}
+
+.textButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--link);
+  font: var(--text-body-sm-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.skeletonTile {
+  height: 132px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+}
+
+.skeletonRows {
+  height: 160px;
+  border-radius: var(--radius-control);
+  background: var(--surface-elevated);
+  opacity: 0.5;
+}

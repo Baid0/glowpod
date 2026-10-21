@@ -5,7 +5,7 @@ BIN      := bin/glowpod
 WEB_DIST := backend/internal/web/dist
 NODE_MODULES := frontend/node_modules/.modules.yaml
 
-.PHONY: help deps dev build test test-backend test-frontend lint lint-backend lint-frontend fmt clean
+.PHONY: help deps dev build test test-backend test-frontend e2e lint lint-backend lint-frontend fmt clean
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-15s %s\n", $$1, $$2}'
@@ -36,6 +36,9 @@ test-backend:
 
 test-frontend: $(NODE_MODULES)
 	cd frontend && pnpm test
+
+e2e: $(NODE_MODULES) ## Run Playwright smoke tests (needs: pnpm exec playwright install chromium)
+	cd frontend && pnpm e2e
 
 lint: lint-backend lint-frontend ## Run linters, type checks and format checks
 

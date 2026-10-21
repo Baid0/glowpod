@@ -167,6 +167,12 @@
 
 .action {
   font: var(--text-body-sm-strong);
+  text-align: center;
+}
+
+.helpText {
+  font: var(--text-caption);
+  color: var(--muted);
 }
 
 /* Sizes */

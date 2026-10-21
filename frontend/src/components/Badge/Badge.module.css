@@ -9,6 +9,12 @@
   color: var(--ink);
   font: var(--text-caption);
   white-space: nowrap;
+  max-width: 100%;
+}
+
+.badge > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dot {

@@ -29,6 +29,16 @@ export const routes: RouteObject[] = [
       { index: true, element: <OverviewPage />, handle: handle("Overview") },
       ...pages,
       {
+        path: "workloads/:kind/:namespace/:name",
+        element: <ComingSoon title="Details" phase={2} />,
+        handle: handle("Details"),
+      },
+      {
+        path: "nodes/:name",
+        element: <ComingSoon title="Node details" phase={4} />,
+        handle: handle("Node"),
+      },
+      {
         path: "apps/:namespace/:name",
         element: <ComingSoon title="App details" phase={2} />,
         handle: handle("App"),

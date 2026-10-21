@@ -4,6 +4,8 @@
 node_modules/
 /frontend/dist/
 /frontend/coverage/
+/frontend/playwright-report/
+/frontend/test-results/
 
 # Filled by `make build`; the placeholder keeps go:embed compiling.
 /backend/internal/web/dist/*

@@ -26,6 +26,6 @@ describe("Card", () => {
     const section = container.querySelector("section");
     expect(section).not.toHaveAttribute("aria-labelledby");
     expect(section).toHaveAttribute("data-padding", "gauge");
-    expect(container.querySelector("header")).toBeNull();
+    expect(section?.querySelector("h2, h3")).toBeNull();
   });
 });

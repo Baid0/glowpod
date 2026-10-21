@@ -35,14 +35,14 @@ export function Card({
       {...rest}
     >
       {hasHeader && (
-        <header className={styles.header}>
+        <div className={styles.header}>
           {title !== undefined && (
             <Heading id={titleId} className={styles.title}>
               {title}
             </Heading>
           )}
           {actions !== undefined && <div className={styles.actions}>{actions}</div>}
-        </header>
+        </div>
       )}
       {children}
     </section>

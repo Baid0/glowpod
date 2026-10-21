@@ -19,11 +19,16 @@
 }
 
 .title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font: var(--text-title-md);
   color: var(--ink);
 }
 
 .actions {
+  flex: none;
   display: flex;
   align-items: center;
   gap: var(--space-3);

@@ -30,6 +30,10 @@
   display: inline-flex;
 }
 
+.link {
+  text-decoration: none;
+}
+
 .button[data-variant="primary"] {
   background: var(--primary);
   color: var(--on-primary);

@@ -50,3 +50,17 @@ export function initials(name: string): string {
   if (parts.length === 1) return (parts[0] ?? "").slice(0, 2).toUpperCase();
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
 }
+
+/** CPU for tables: 0.058 → "58m", 1.25 → "1.3 cores". */
+export function cores(n: number): string {
+  if (n < 1) return `${Math.round(n * 1000)}m`;
+  return `${one.format(n)} cores`;
+}
+
+/** Image reference to its tag or short digest: "ghcr.io/acme/api:v3" → "v3". */
+export function imageTag(image: string): string {
+  const at = image.lastIndexOf("@");
+  if (at >= 0) return image.slice(at + 1, at + 1 + 19);
+  const colon = image.lastIndexOf(":");
+  return colon > image.lastIndexOf("/") ? image.slice(colon + 1) : "latest";
+}
