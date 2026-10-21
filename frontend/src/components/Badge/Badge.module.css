@@ -1,0 +1,43 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-full);
+  background: var(--surface-elevated);
+  color: var(--ink);
+  font: var(--text-caption);
+  white-space: nowrap;
+}
+
+.dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--dot);
+  border: 1.5px solid var(--dot-outline, transparent);
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--muted);
+}
+
+.badge[data-tone="ok"] {
+  --dot: var(--state-ok);
+  --dot-outline: var(--lime-outline);
+}
+
+.badge[data-tone="high"] {
+  --dot: var(--state-high);
+}
+
+.badge[data-tone="critical"] {
+  --dot: var(--state-critical);
+}
+
+.badge[data-tone="neutral"] {
+  --dot: var(--muted);
+}

@@ -1,0 +1,120 @@
+.page {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-12) var(--space-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.title {
+  font: var(--text-display-sm);
+  letter-spacing: var(--tracking-display-sm);
+}
+
+.legend {
+  font: var(--text-body-sm);
+  color: var(--muted);
+}
+
+.toolbar {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.topRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+.section {
+  background: var(--surface-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.sectionTitle {
+  font: var(--text-caption-upper);
+  letter-spacing: var(--tracking-caption-upper);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-8);
+}
+
+.labelled {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.states {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+.tile {
+  background: var(--surface-elevated);
+  border-radius: var(--radius-control);
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+/* The gauge track is surface-elevated, like the tile; lift it one step here. */
+.tile > * {
+  --surface-elevated: var(--hairline-strong);
+}
+
+.tileTitle {
+  margin-top: var(--space-2);
+  font: var(--text-title-sm);
+  color: var(--ink);
+}
+
+.caption {
+  font: var(--text-body-sm);
+  color: var(--muted);
+}
+
+.overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--space-4);
+}
+
+@media (max-width: 1100px) {
+  .topRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: var(--space-6) var(--space-4);
+  }
+}

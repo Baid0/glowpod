@@ -1,9 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { App } from "./App";
+import { Home } from "./Home";
 
-describe("App", () => {
+describe("Home", () => {
   it.each([
     {
       name: "server is up",
@@ -23,7 +23,7 @@ describe("App", () => {
   ])("shows the server status when $name", async ({ fetchImpl, text }) => {
     vi.stubGlobal("fetch", vi.fn(fetchImpl));
 
-    render(<App />);
+    render(<Home />);
 
     expect(screen.getByRole("heading", { name: "Glowpod" })).toBeInTheDocument();
     expect(await screen.findByText(text)).toBeInTheDocument();

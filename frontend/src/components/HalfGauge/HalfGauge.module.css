@@ -1,0 +1,247 @@
+.gauge {
+  /* Zone colors; overridden per zone and state below. */
+  --arc: var(--state-ok);
+  --arc-outline: var(--lime-outline);
+  --value-color: var(--ink);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauge[data-zone="high"] {
+  --arc: var(--state-high);
+  --arc-outline: transparent;
+}
+
+.gauge[data-zone="critical"] {
+  --arc: var(--state-critical);
+  --arc-outline: transparent;
+}
+
+.gauge[data-state="stale"] {
+  --arc: var(--muted-soft);
+  --arc-outline: transparent;
+  --value-color: var(--muted);
+}
+
+/* Header and footer (size L) */
+
+.header {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.label {
+  font: var(--text-title-sm);
+  color: var(--ink);
+}
+
+.footer {
+  align-self: stretch;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font: var(--text-body-sm);
+  color: var(--muted);
+}
+
+.footerItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.requestedKey {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+}
+
+/* Dial */
+
+.dial {
+  position: relative;
+  line-height: 0;
+}
+
+.svg {
+  display: block;
+  overflow: visible;
+}
+
+.track,
+.dotted,
+.arc,
+.arcOutline,
+.requested {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.track {
+  stroke: var(--surface-elevated);
+}
+
+.dotted {
+  stroke: var(--muted);
+}
+
+.gauge[data-state="error"] .dotted {
+  stroke: var(--state-critical);
+  opacity: 0.7;
+}
+
+.tick {
+  stroke: var(--hairline-strong);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.arcOutline {
+  stroke: var(--arc-outline);
+}
+
+.arc {
+  stroke: var(--arc);
+}
+
+.requested {
+  stroke: var(--muted);
+}
+
+.knob {
+  fill: var(--arc);
+  stroke: var(--bio-black);
+}
+
+/* Center text, sitting inside the arc just above its ends. */
+
+.center {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--center-bottom);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: normal;
+  text-align: center;
+}
+
+.value {
+  color: var(--value-color);
+  white-space: nowrap;
+}
+
+.detail {
+  font: var(--text-caption);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.message {
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.skeletonValue,
+.skeletonLine {
+  display: block;
+  border-radius: var(--radius-control);
+  background: var(--surface-elevated);
+}
+
+.skeletonLine {
+  border-radius: var(--radius-full);
+}
+
+.action {
+  font: var(--text-body-sm-strong);
+}
+
+/* Sizes */
+
+.gauge[data-size="L"] {
+  --center-bottom: 14px;
+}
+
+.gauge[data-size="L"] .value {
+  font: var(--text-display-sm);
+  letter-spacing: var(--tracking-display-sm);
+}
+
+.gauge[data-size="L"] .message {
+  font: var(--text-title-md);
+  margin-bottom: 16px;
+}
+
+.gauge[data-size="L"] .skeletonValue {
+  width: 76px;
+  height: 30px;
+  margin-bottom: 8px;
+}
+
+.gauge[data-size="L"] .skeletonLine {
+  width: 100px;
+  height: 7px;
+}
+
+.gauge[data-size="M"] {
+  --center-bottom: 6px;
+}
+
+.gauge[data-size="M"] .value {
+  font: 700 22px / 28px var(--font-sans);
+  letter-spacing: -0.5px;
+}
+
+.gauge[data-size="M"] .message {
+  font: 600 14px / 20px var(--font-sans);
+  margin-bottom: 10px;
+}
+
+.gauge[data-size="M"] .skeletonValue {
+  width: 48px;
+  height: 20px;
+  margin-bottom: 6px;
+}
+
+.gauge[data-size="M"] .skeletonLine {
+  width: 64px;
+  height: 5px;
+}
+
+/* S puts the value beside the arc. */
+.gauge[data-size="S"] .dial {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.gauge[data-size="S"] .center {
+  position: static;
+}
+
+.gauge[data-size="S"] .value {
+  font: 600 13px / 18px var(--font-sans);
+}
+
+.gauge[data-size="S"] .message {
+  display: none;
+}
+
+.gauge[data-size="S"] .skeletonValue {
+  width: 28px;
+  height: 12px;
+  border-radius: var(--radius-badge-accent);
+}

@@ -25,6 +25,10 @@ export default defineConfig([
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    rules: {
+      // SVG paths, dash arrays and labels interpolate numbers all the time.
+      "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
+    },
   },
   {
     files: ["**/*.js"],

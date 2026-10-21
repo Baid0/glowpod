@@ -1,0 +1,70 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  font: var(--text-button);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-press) var(--ease-out),
+    border-color var(--duration-press) var(--ease-out);
+}
+
+.button[data-size="sm"] {
+  height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-segment);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.icon {
+  display: inline-flex;
+}
+
+.button[data-variant="primary"] {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--lime-outline);
+}
+
+.button[data-variant="primary"]:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 88%, var(--ink));
+}
+
+.button[data-variant="secondary"] {
+  background: var(--surface-elevated);
+  color: var(--ink);
+}
+
+.button[data-variant="secondary"]:hover:not(:disabled) {
+  border-color: var(--hairline-strong);
+}
+
+.button[data-variant="ghost"] {
+  background: transparent;
+  color: var(--body);
+}
+
+.button[data-variant="ghost"]:hover:not(:disabled) {
+  background: var(--surface-elevated);
+  color: var(--ink);
+}
+
+/* Destructive actions. Bio Black on rose keeps the text above 4.5:1. */
+.button[data-variant="danger"] {
+  background: var(--state-critical);
+  color: var(--bio-black);
+}
+
+.button[data-variant="danger"]:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--state-critical) 88%, var(--ink));
+}

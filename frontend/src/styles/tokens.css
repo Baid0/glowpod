@@ -1,0 +1,102 @@
+/*
+ * Glowpod design tokens. Source of truth: CLAUDE.md → Design tokens.
+ * Dark is the default theme; light applies with <html data-theme="light">.
+ */
+
+:root {
+  /* Brand */
+  --lime: #c8ff00;
+  --bio-black: #06110d;
+  --rose: #ef4444;
+
+  /* Color — dark (default) */
+  --primary: var(--lime);
+  --on-primary: var(--bio-black);
+  --canvas: #06110d;
+  --surface-card: #1a1a1a;
+  --surface-elevated: #242424;
+  --hairline: #2a2a2a;
+  --hairline-strong: #3a3a3a;
+  --ink: #ffffff;
+  --body: #cccccc;
+  --muted: #888888;
+  --muted-soft: #5a5a5a;
+  --state-ok: var(--lime);
+  --state-high: #ffffff;
+  --state-critical: var(--rose);
+
+  /* Outline around lime fills: none on dark, Bio Black on light. */
+  --lime-outline: transparent;
+  /* Links and the active tab underline. */
+  --accent-line: var(--lime);
+  --link: var(--lime);
+  --focus-ring: var(--lime);
+
+  /* Type */
+  --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --text-page-title: 700 20px / 28px var(--font-sans);
+  --tracking-page-title: -0.5px;
+  --text-display-sm: 700 32px / 40px var(--font-sans);
+  --tracking-display-sm: -1px;
+  --text-title-md: 600 18px / 26px var(--font-sans);
+  --text-title-sm: 600 16px / 24px var(--font-sans);
+  --text-body-sm: 400 14px / 20px var(--font-sans);
+  --text-body-sm-strong: 500 14px / 20px var(--font-sans);
+  --text-caption: 500 13px / 18px var(--font-sans);
+  --text-caption-upper: 600 12px / 16px var(--font-sans);
+  --tracking-caption-upper: 1.5px;
+  --text-button: 600 14px / 20px var(--font-sans);
+
+  /* Radius */
+  --radius-badge-accent: 4px;
+  --radius-segment: 6px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-full: 9999px;
+
+  /* Spacing (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* Sizes */
+  --control-height: 40px;
+  --control-height-sm: 32px;
+
+  /* Motion */
+  --duration-press: 150ms;
+  --duration-panel: 250ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --primary: var(--lime);
+  --on-primary: var(--bio-black);
+  --canvas: #ffffff;
+  --surface-card: #f5f5f5;
+  --surface-elevated: #ebebeb;
+  --hairline: #e0e0e0;
+  --hairline-strong: #cccccc;
+  --ink: #06110d;
+  --body: #333333;
+  --muted: #666666;
+  --muted-soft: #999999;
+  --state-ok: var(--lime);
+  --state-high: #06110d;
+  --state-critical: var(--rose);
+
+  --lime-outline: var(--bio-black);
+  --accent-line: var(--bio-black);
+  --link: var(--bio-black);
+  --focus-ring: var(--bio-black);
+
+  color-scheme: light;
+}
