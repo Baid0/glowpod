@@ -1,0 +1,177 @@
+/* Minimal top bar: no boxed controls. */
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  height: 64px;
+  padding: 0 var(--space-8);
+  background: var(--canvas);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.left,
+.right {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.left {
+  gap: var(--space-4);
+  flex: 1;
+  overflow: hidden;
+}
+
+.right {
+  flex: none;
+  gap: var(--space-4);
+  height: 100%;
+}
+
+.title {
+  font: var(--text-page-title);
+  letter-spacing: var(--tracking-page-title);
+  white-space: nowrap;
+}
+
+.updated {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--text-caption);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+.dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--muted-soft);
+}
+
+.dot[data-tone="live"] {
+  background: var(--primary);
+  border: 1px solid var(--lime-outline);
+}
+
+.dot[data-tone="critical"] {
+  background: var(--state-critical);
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--hairline);
+}
+
+/* Namespace picker: a native select dressed as plain text. */
+.namespace {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.select {
+  appearance: none;
+  max-width: 220px;
+  padding: 6px 22px 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: var(--text-body-sm-strong);
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.select option {
+  background: var(--surface-card);
+  color: var(--ink);
+}
+
+.chevron {
+  position: absolute;
+  right: 0;
+  pointer-events: none;
+  color: var(--muted);
+}
+
+/* Glance / Deep: text tabs, active = ink + 2px underline at the bar's edge. */
+.modes {
+  display: flex;
+  gap: var(--space-4);
+  height: 100%;
+}
+
+.mode {
+  position: relative;
+  height: 100%;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: var(--text-body-sm-strong);
+  cursor: pointer;
+}
+
+.mode:hover {
+  color: var(--ink);
+}
+
+.mode[aria-pressed="true"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.mode[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent-line);
+}
+
+.search {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--body);
+  cursor: pointer;
+}
+
+.search:hover {
+  background: var(--surface-card);
+  color: var(--ink);
+}
+
+.kbd {
+  font: var(--text-caption);
+  color: var(--muted);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--surface-elevated);
+  color: var(--ink);
+  font: 600 12px / 1 var(--font-sans);
+}

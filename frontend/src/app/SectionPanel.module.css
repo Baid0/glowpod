@@ -1,0 +1,161 @@
+.panel {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 236px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--canvas);
+  border-right: 1px solid var(--hairline);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  padding-left: var(--space-2);
+}
+
+.title {
+  font: 700 18px / 26px var(--font-sans);
+  letter-spacing: -0.3px;
+}
+
+.collapse {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.collapse:hover {
+  background: var(--surface-card);
+  color: var(--ink);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-control);
+  color: var(--body);
+  font: var(--text-body-sm-strong);
+  text-decoration: none;
+}
+
+.item:hover {
+  background: var(--surface-card);
+  color: var(--ink);
+}
+
+.item.active {
+  background: var(--surface-card);
+  color: var(--ink);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--text-caption);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.count:has(.problemDot) {
+  color: var(--ink);
+}
+
+.problemDot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--state-critical);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.groupTitle {
+  padding: 0 var(--space-2);
+  font: var(--text-caption-upper);
+  letter-spacing: var(--tracking-caption-upper);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.empty {
+  padding: 0 var(--space-2);
+  font: var(--text-caption);
+  color: var(--muted);
+}
+
+.app .label {
+  font: 500 13px / 18px var(--font-mono);
+}
+
+.statusDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+}
+
+.statusDot[data-status="ok"] {
+  background: var(--state-ok);
+  border: 1px solid var(--lime-outline);
+}
+
+.statusDot[data-status="high"] {
+  background: var(--state-high);
+}
+
+.statusDot[data-status="critical"] {
+  background: var(--state-critical);
+}
+
+/* Items and apps scroll; the health card stays at the bottom. */
+.scroll {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0 calc(-1 * var(--space-2));
+  padding: 0 var(--space-2);
+  overflow-y: auto;
+}
+
+.footer {
+  flex: none;
+}

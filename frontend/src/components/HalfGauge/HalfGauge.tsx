@@ -45,6 +45,8 @@ export interface HalfGaugeProps {
   updated?: string;
   /** Header with name and status badge. Defaults to on for size L. */
   showHeader?: boolean;
+  /** Size S only: put the value inside the arc instead of beside it (mini gauges). */
+  valueInside?: boolean;
   onRetry?: () => void;
   /** Link shown in the no-metrics state. */
   helpHref?: string;
@@ -76,6 +78,7 @@ export function HalfGauge({
   note,
   updated,
   showHeader = size === "L",
+  valueInside = false,
   onRetry,
   helpHref = METRICS_SERVER_DOCS,
   helpLabel = "Install metrics-server",
@@ -129,7 +132,13 @@ export function HalfGauge({
       };
 
   return (
-    <div className={styles.gauge} data-size={size} data-state={state} data-zone={zone}>
+    <div
+      className={styles.gauge}
+      data-size={size}
+      data-state={state}
+      data-zone={zone}
+      data-value-inside={(size === "S" && valueInside) || undefined}
+    >
       {showHeader && (
         <div className={styles.header}>
           <p className={styles.label}>{label}</p>

@@ -1,0 +1,62 @@
+.rail {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+  background: var(--canvas);
+  border-right: 1px solid var(--hairline);
+}
+
+.logo {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-control);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bottom {
+  margin-top: auto;
+}
+
+.item {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-press) var(--ease-out),
+    color var(--duration-press) var(--ease-out);
+}
+
+.item:hover {
+  background: var(--surface-card);
+  color: var(--ink);
+}
+
+/* Active section: lime square with a Bio Black icon. */
+.item.active {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--lime-outline);
+}

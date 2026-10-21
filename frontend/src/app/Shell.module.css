@@ -1,0 +1,62 @@
+.shell {
+  display: grid;
+  grid-template-columns: 64px 236px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.shell[data-panel="collapsed"] {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.content {
+  flex: 1;
+  padding: var(--space-6) var(--space-8) var(--space-12);
+}
+
+.content:focus-visible {
+  outline: none;
+}
+
+.skip {
+  position: absolute;
+  z-index: 100;
+  top: var(--space-2);
+  left: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--on-primary);
+  font: var(--text-button);
+  transform: translateY(-200%);
+}
+
+.skip:focus {
+  transform: none;
+}
+
+.signIn {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.signInTitle {
+  margin-top: var(--space-2);
+  font: var(--text-display-sm);
+  letter-spacing: var(--tracking-display-sm);
+}
+
+.signInText {
+  max-width: 440px;
+  color: var(--body);
+}

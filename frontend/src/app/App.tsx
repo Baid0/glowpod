@@ -1,31 +1,16 @@
-import { lazy, Suspense } from "react";
-import { createBrowserRouter, RouterProvider, type RouteObject } from "react-router";
+import { createBrowserRouter, RouterProvider } from "react-router";
 
-import { Home } from "./Home";
-
-// Component sheets are for development only and are left out of release builds.
-const GaugeDemo = import.meta.env.DEV
-  ? lazy(() => import("../features/demo/GaugeDemo").then((m) => ({ default: m.GaugeDemo })))
-  : null;
-
-const routes: RouteObject[] = [
-  { path: "/", element: <Home /> },
-  ...(GaugeDemo
-    ? [
-        {
-          path: "/dev/gauges",
-          element: (
-            <Suspense>
-              <GaugeDemo />
-            </Suspense>
-          ),
-        },
-      ]
-    : []),
-];
+import { createQueryClient } from "../lib/queries";
+import { Providers } from "./Providers";
+import { routes } from "./routes";
 
 const router = createBrowserRouter(routes);
+const queryClient = createQueryClient();
 
 export function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <Providers client={queryClient}>
+      <RouterProvider router={router} />
+    </Providers>
+  );
 }

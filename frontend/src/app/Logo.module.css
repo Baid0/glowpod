@@ -1,0 +1,23 @@
+.logo {
+  display: block;
+}
+
+/* In light mode, lime fills get a Bio Black outline via --lime-outline. */
+.body,
+.leaf {
+  fill: var(--primary);
+  stroke: var(--lime-outline);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.sprout {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+:root[data-theme="light"] .sprout {
+  stroke: var(--bio-black);
+}

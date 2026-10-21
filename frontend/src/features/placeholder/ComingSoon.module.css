@@ -1,0 +1,28 @@
+.box {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  max-width: 520px;
+  margin: var(--space-12) auto;
+  padding: var(--space-8);
+  text-align: center;
+  background: var(--surface-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+}
+
+.icon {
+  color: var(--muted);
+}
+
+.title {
+  font: var(--text-title-md);
+}
+
+.text {
+  color: var(--body);
+}
+
+.link {
+  font: var(--text-body-sm-strong);
+}
