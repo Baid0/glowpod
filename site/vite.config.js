@@ -64,6 +64,7 @@ export default defineConfig({
       input: {
         home: resolve(root, "index.html"),
         docs: resolve(root, "docs/index.html"),
+        brand: resolve(root, "brand/index.html"),
         notFound: resolve(root, "404.html"),
       },
     },
