@@ -1,7 +1,6 @@
 package api
 
 import (
-	"cmp"
 	"context"
 	"net/http"
 	"slices"
@@ -10,18 +9,15 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	authnv1 "k8s.io/api/authentication/v1"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/client-go/kubernetes"
 
 	"glowpod/internal/auth"
 	"glowpod/internal/cluster"
+	"glowpod/internal/events"
 	"glowpod/internal/kerr"
 	"glowpod/internal/metrics"
 	"glowpod/internal/overview"
-	"glowpod/internal/paging"
 	"glowpod/internal/scope"
 	"glowpod/internal/summary"
 )
@@ -29,9 +25,7 @@ import (
 const (
 	defaultEventLimit = 20
 	maxEventLimit     = 200
-	// maxEventPages caps how many events are read to find the newest ones.
-	maxEventPages = 10
-	listPage      = 500
+	listPage          = 500
 )
 
 type clientsKey struct{}
@@ -218,8 +212,7 @@ type eventsResponse struct {
 	Events []summary.Event `json:"events"`
 }
 
-// events returns the newest events, newest first. The API can't sort, so it
-// reads up to maxEventPages pages and sorts them here.
+// events returns the newest events, newest first.
 func (s *server) events(w http.ResponseWriter, r *http.Request) {
 	limit := defaultEventLimit
 	if v := r.URL.Query().Get("limit"); v != "" {
@@ -231,50 +224,19 @@ func (s *server) events(w http.ResponseWriter, r *http.Request) {
 		limit = n
 	}
 
-	kube := clientsFrom(r).Kube
-	opts := metav1.ListOptions{Limit: listPage}
 	// ?kind=&name= narrows to one object's events.
+	var selector string
 	if kind, name := r.URL.Query().Get("kind"), r.URL.Query().Get("name"); kind != "" || name != "" {
 		if kind == "" || name == "" || len(kind) > 63 || len(name) > 253 {
 			writeError(w, http.StatusBadRequest, "bad_object", "Give both kind and name to see one object's events.")
 			return
 		}
-		opts.FieldSelector = fields.Set{"involvedObject.kind": kind, "involvedObject.name": name}.AsSelector().String()
+		selector = events.About(kind, name)
 	}
-	all, _, err := paging.Across(r.Context(), namespacesFrom(r).Targets(),
-		func(ctx context.Context, namespace string, _ metav1.ListOptions) ([]corev1.Event, string, error) {
-			return newestEvents(ctx, kube, namespace, opts)
-		})
+	out, err := events.Newest(r.Context(), clientsFrom(r).Kube, namespacesFrom(r).Targets(), selector, limit)
 	if err != nil {
 		s.clusterError(w, err)
 		return
 	}
-
-	slices.SortFunc(all, func(a, b corev1.Event) int {
-		return cmp.Compare(summary.EventTime(&b).UnixNano(), summary.EventTime(&a).UnixNano())
-	})
-	out := make([]summary.Event, 0, min(limit, len(all)))
-	for i := range all[:min(limit, len(all))] {
-		out = append(out, summary.EventOf(&all[i]))
-	}
 	writeJSON(w, http.StatusOK, eventsResponse{Events: out})
-}
-
-// newestEvents reads up to maxEventPages pages of a namespace's events.
-// (paging.Across calls it once per namespace; it pages on its own so the
-// cap applies per namespace.)
-func newestEvents(ctx context.Context, kube kubernetes.Interface, namespace string, opts metav1.ListOptions) ([]corev1.Event, string, error) {
-	var all []corev1.Event
-	for range maxEventPages {
-		list, err := kube.CoreV1().Events(namespace).List(ctx, opts)
-		if err != nil {
-			return nil, "", err
-		}
-		all = append(all, list.Items...)
-		if list.Continue == "" {
-			break
-		}
-		opts.Continue = list.Continue
-	}
-	return all, "", nil
 }
