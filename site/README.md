@@ -21,6 +21,8 @@ make site       # format check, build into site/dist, check the CSP
   `<html data-theme="light">`. The visitor's choice is saved under `glowpod.theme`.
 - **Script:** `src/main.js` (theme toggle, menus, copy buttons, install tabs, "On this page").
   `public/theme.js` applies the saved theme before the page paints.
+- **Checks:** `scripts/check-links.mjs` fails the build when a link to a page or `#anchor` on
+  the site leads nowhere, for example after a heading in a guide is renamed.
 - **CSP:** every built page carries
   `default-src 'self'; script-src 'self'; style-src 'self'; …` in a meta tag, and
   `scripts/check-csp.mjs` fails the build on inline scripts, styles, event handlers or `data:`
