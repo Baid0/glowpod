@@ -10,3 +10,4 @@ node_modules/
 # Filled by `make build`; the placeholder keeps go:embed compiling.
 /backend/internal/web/dist/*
 !/backend/internal/web/dist/.gitkeep
+/dist/

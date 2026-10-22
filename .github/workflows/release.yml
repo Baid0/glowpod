@@ -1,52 +1,172 @@
 # Push a tag like v0.2.0 to publish:
-#   ghcr.io/<owner>/glowpod:0.2.0 (amd64 + arm64) and
-#   oci://ghcr.io/<owner>/charts/glowpod version 0.2.0.
+#   - ghcr.io/<owner>/glowpod:0.2.0 (amd64 + arm64) with an SBOM and build
+#     provenance, signed with cosign;
+#   - oci://ghcr.io/<owner>/charts/glowpod version 0.2.0, signed with cosign;
+#   - a GitHub Release with glowpod downloads for Linux, macOS and Windows,
+#     checksums, an SBOM and build attestations, and notes from CHANGELOG.md.
+# Signing is keyless: signatures are tied to this workflow on this repository
+# (see docs/install.md, "Verify what you download").
+# A tag with a dash (v0.2.0-rc.1) is a pre-release and doesn't move :latest.
 name: Release
 
 on:
   push:
     tags: ["v*"]
 
-permissions:
-  contents: read
-  packages: write
+permissions: {}
 
 jobs:
-  release:
+  meta:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      owner: ${{ steps.v.outputs.owner }}
+      image: ${{ steps.v.outputs.image }}
+      tags: ${{ steps.v.outputs.tags }}
+      prerelease: ${{ steps.v.outputs.prerelease }}
+    steps:
+      - id: v
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          # Image names must be lowercase; GitHub owners needn't be.
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image="ghcr.io/${owner}/glowpod"
+          tags="${image}:${version}"
+          prerelease=false
+          if [[ "$version" == *-* ]]; then prerelease=true; else tags="${tags},${image}:latest"; fi
+          {
+            echo "version=${version}"
+            echo "owner=${owner}"
+            echo "image=${image}"
+            echo "tags=${tags}"
+            echo "prerelease=${prerelease}"
+          } >> "$GITHUB_OUTPUT"
+
+  image:
+    needs: meta
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # keyless signing and attestations
+      attestations: write
     steps:
       - uses: actions/checkout@v5
-      - name: Version and owner
-        id: v
-        run: |
-          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-          # Image names must be lowercase; GitHub owners needn't be.
-          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - id: build
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          build-args: VERSION=${{ steps.v.outputs.version }}
-          tags: |
-            ghcr.io/${{ steps.v.outputs.owner }}/glowpod:${{ steps.v.outputs.version }}
-            ghcr.io/${{ steps.v.outputs.owner }}/glowpod:latest
+          build-args: VERSION=${{ needs.meta.outputs.version }}
+          tags: ${{ needs.meta.outputs.tags }}
+          # An SPDX SBOM and SLSA provenance, stored next to the image.
+          sbom: true
+          provenance: mode=max
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - uses: sigstore/cosign-installer@v4.1.2
+      - name: Sign the image
+        run: cosign sign --yes "${{ needs.meta.outputs.image }}@${{ steps.build.outputs.digest }}"
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ${{ needs.meta.outputs.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  chart:
+    # After the image: the chart points at it.
+    needs: [meta, image]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
       - uses: azure/setup-helm@v4
-      - name: Package and push the chart
+      - uses: sigstore/cosign-installer@v4.1.2
+      - name: Package, push and sign the chart
+        env:
+          VERSION: ${{ needs.meta.outputs.version }}
+          OWNER: ${{ needs.meta.outputs.owner }}
+          IMAGE: ${{ needs.meta.outputs.image }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          owner="${{ steps.v.outputs.owner }}"
           # The published chart points at the image published with it.
-          sed -i "s#repository: ghcr.io/glowpod/glowpod#repository: ghcr.io/${owner}/glowpod#" deploy/helm/glowpod/values.yaml
-          helm package deploy/helm/glowpod \
-            --version "${{ steps.v.outputs.version }}" \
-            --app-version "${{ steps.v.outputs.version }}"
-          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
-          helm push "glowpod-${{ steps.v.outputs.version }}.tgz" "oci://ghcr.io/${owner}/charts"
+          sed -i -E "s#repository: ghcr.io/[^/]+/glowpod#repository: ${IMAGE}#" deploy/helm/glowpod/values.yaml
+          grep -q "repository: ${IMAGE}$" deploy/helm/glowpod/values.yaml
+          helm package deploy/helm/glowpod --version "$VERSION" --app-version "$VERSION"
+          echo "$TOKEN" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+          digest=$(helm push "glowpod-${VERSION}.tgz" "oci://ghcr.io/${OWNER}/charts" 2>&1 | tee /dev/stderr | awk '/^Digest:/ {print $2}')
+          test -n "$digest"
+          echo "$TOKEN" | cosign login ghcr.io -u "${{ github.actor }}" --password-stdin
+          cosign sign --yes "ghcr.io/${OWNER}/charts/glowpod@${digest}"
+
+  downloads:
+    # Last, so a Release only appears once its image and chart exist.
+    needs: [meta, chart]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the Release
+      id-token: write
+      attestations: write
+    env:
+      VERSION: ${{ needs.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+      # Before dependencies are installed, so dev tooling isn't listed.
+      - uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: make dist VERSION="$VERSION"
+      - run: mv sbom.spdx.json "dist/glowpod_${VERSION}_sbom.spdx.json"
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist/glowpod_*
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ needs.meta.outputs.image }}
+          OWNER: ${{ needs.meta.outputs.owner }}
+          PRERELEASE: ${{ needs.meta.outputs.prerelease }}
+        run: |
+          # This version's CHANGELOG section, then how to install and verify.
+          awk -v v="$VERSION" 'index($0, "## [" v "]") == 1 {on=1; next} on && (/^## \[/ || /^\[[^]]*\]: /) {exit} on' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "See [CHANGELOG.md](CHANGELOG.md)." > notes.md
+          cat >> notes.md <<EOF
+
+          ## Install
+
+          - In a cluster: \`helm install glowpod oci://ghcr.io/${OWNER}/charts/glowpod --version ${VERSION} -n glowpod --create-namespace\` ([guide](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/docs/install.md))
+          - Image: \`${IMAGE}:${VERSION}\`
+          - On your machine: download \`glowpod\` for your platform below.
+
+          Verify the downloads with \`gh attestation verify <file> -R ${GITHUB_REPOSITORY}\`, and the image with cosign ([how](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/docs/install.md#verify-what-you-download)).
+          EOF
+          flags=()
+          [ "$PRERELEASE" = true ] && flags+=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" dist/* --verify-tag \
+            --title "Glowpod ${VERSION}" --notes-file notes.md "${flags[@]}"

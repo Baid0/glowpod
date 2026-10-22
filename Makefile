@@ -7,8 +7,11 @@ NODE_MODULES := frontend/node_modules/.modules.yaml
 # The version stamped into the binary and image: the git tag, else the chart's appVersion.
 VERSION  ?= $(shell git describe --tags --always --dirty 2>/dev/null | sed 's/^v//' || echo dev)
 IMAGE    ?= glowpod
+LDFLAGS  := -s -w -X main.version=$(VERSION)
+# Platforms `make dist` builds the glowpod download for.
+PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64
 
-.PHONY: help deps dev build test test-backend test-frontend e2e lint lint-backend lint-frontend fmt clean image image-push chart
+.PHONY: help deps dev web build dist test test-backend test-frontend e2e lint lint-backend lint-frontend fmt clean image image-push chart
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-15s %s\n", $$1, $$2}'
@@ -26,11 +29,27 @@ dev: $(NODE_MODULES) ## Run the Go API and the Vite dev server (open http://loca
 	(cd frontend && pnpm dev) & \
 	wait
 
-build: $(NODE_MODULES) ## Build the frontend and one Go binary that embeds it, at bin/glowpod
+web: $(NODE_MODULES)
 	cd frontend && pnpm build
 	find $(WEB_DIST) -mindepth 1 ! -name .gitkeep -delete
 	cp -R frontend/dist/. $(WEB_DIST)/
-	cd backend && CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o ../$(BIN) ./cmd/glowpod
+
+build: web ## Build the frontend and one Go binary that embeds it, at bin/glowpod
+	cd backend && CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o ../$(BIN) ./cmd/glowpod
+
+dist: web ## Build the glowpod downloads for every platform, with checksums, in dist/
+	rm -rf dist && mkdir dist
+	@set -e; for p in $(PLATFORMS); do \
+		os=$${p%/*}; arch=$${p#*/}; name=glowpod_$(VERSION)_$${os}_$${arch}; exe=glowpod; \
+		[ "$$os" = windows ] && exe=glowpod.exe; \
+		echo "  $$name"; mkdir dist/$$name; \
+		(cd backend && CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch go build -trimpath -ldflags "$(LDFLAGS)" -o ../dist/$$name/$$exe ./cmd/glowpod); \
+		cp LICENSE README.md CHANGELOG.md dist/$$name/; \
+		if [ "$$os" = windows ]; then (cd dist && zip -qr $$name.zip $$name); \
+		else tar -C dist -czf dist/$$name.tar.gz $$name; fi; \
+		rm -r dist/$$name; \
+	done
+	cd dist && shasum -a 256 glowpod_* > checksums.txt
 
 test: test-backend test-frontend ## Run all tests
 
@@ -46,7 +65,7 @@ e2e: $(NODE_MODULES) ## Run Playwright smoke tests (needs: pnpm exec playwright 
 image: ## Build the container image for this machine (needs Docker): make image IMAGE=registry/glowpod
 	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE):$(VERSION) .
 
-image-push: ## Build for amd64 and arm64 and push: make image-push IMAGE=ghcr.io/you/glowpod
+image-push: ## Build for amd64 and arm64 and push: make image-push IMAGE=registry.example.com/you/glowpod
 	docker buildx build --platform linux/amd64,linux/arm64 --build-arg VERSION=$(VERSION) \
 		-t $(IMAGE):$(VERSION) --push .
 
@@ -71,5 +90,5 @@ fmt: $(NODE_MODULES) ## Format Go and frontend code
 	cd frontend && pnpm format
 
 clean: ## Remove build output
-	rm -rf bin frontend/dist
+	rm -rf bin dist frontend/dist
 	find $(WEB_DIST) -mindepth 1 ! -name .gitkeep -delete
