@@ -14,6 +14,11 @@ updates:
   - package-ecosystem: npm
     directory: /frontend
     schedule: {interval: weekly}
+    ignore:
+      # typescript-eslint doesn't support TypeScript 7 yet (lint fails).
+      # Drop this once it does.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       frontend: {patterns: ["*"]}
   - package-ecosystem: docker
