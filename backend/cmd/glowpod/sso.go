@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
+	"os"
 	"strings"
 
 	"glowpod/internal/auth"
@@ -29,7 +33,35 @@ func newOIDC(_ context.Context, s serverConfig) (*auth.OIDC, error) {
 	})
 }
 
-// newLDAP prepares LDAP sign-in.
-func newLDAP(_ serverConfig) (*auth.LDAP, error) {
-	return &auth.LDAP{}, nil
+// newLDAP prepares LDAP sign-in; it connects on each sign-in.
+func newLDAP(s serverConfig) (*auth.LDAP, error) {
+	tlsCfg := &tls.Config{
+		MinVersion:         tls.VersionTLS12,
+		InsecureSkipVerify: s.ldapInsecureSkipVerify, //nolint:gosec // an explicit, documented test-only switch
+	}
+	if s.ldapCAFile != "" {
+		pem, err := os.ReadFile(s.ldapCAFile)
+		if err != nil {
+			return nil, fmt.Errorf("read -ldap-ca-file: %w", err)
+		}
+		pool := x509.NewCertPool()
+		if !pool.AppendCertsFromPEM(pem) {
+			return nil, fmt.Errorf("-ldap-ca-file %s has no PEM certificates", s.ldapCAFile)
+		}
+		tlsCfg.RootCAs = pool
+	}
+	return auth.NewLDAP(auth.LDAPConfig{
+		URL:               s.ldapURL,
+		BindDN:            s.ldapBindDN,
+		BindPassword:      s.ldapBindPassword,
+		UserBase:          s.ldapUserBase,
+		UserFilter:        s.ldapUserFilter,
+		UsernameAttribute: s.ldapUsernameAttribute,
+		GroupBase:         s.ldapGroupBase,
+		GroupFilter:       s.ldapGroupFilter,
+		GroupAttribute:    s.ldapGroupAttribute,
+		GroupsPrefix:      s.ldapGroupsPrefix,
+		StartTLS:          s.ldapStartTLS,
+		TLS:               tlsCfg,
+	})
 }
