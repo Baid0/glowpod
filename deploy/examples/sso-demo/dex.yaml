@@ -1,0 +1,71 @@
+# Dex, an OpenID Connect provider, signing people in against the lldap
+# directory and passing their groups on. Glowpod uses it for SSO.
+# Its config lives in the secret `dex` (key config.yaml): see README.md.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dex
+  labels: {app: dex}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: dex}
+  template:
+    metadata:
+      labels: {app: dex}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: dex
+          image: dexidp/dex:v2.46.1
+          args: [dex, serve, /etc/dex/config.yaml]
+          ports:
+            - {name: http, containerPort: 5556}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: config, mountPath: /etc/dex, readOnly: true}
+            # Dex's entrypoint writes a processed copy of the config here.
+            - {name: tmp, mountPath: /tmp}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {memory: 128Mi}
+      volumes:
+        - name: config
+          secret:
+            secretName: dex
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dex
+spec:
+  selector: {app: dex}
+  ports:
+    - {name: http, port: 5556, targetPort: http}
+---
+# People's browsers and Glowpod both reach Dex at the same URL: its issuer.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dex
+spec:
+  rules:
+    - host: dex.${BASE_DOMAIN}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: dex
+                port: {name: http}

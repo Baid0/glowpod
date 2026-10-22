@@ -1,0 +1,39 @@
+# Dex's config. setup.sh fills in the two secrets and stores it as the
+# secret `dex`; never commit a filled-in copy.
+issuer: http://dex.${BASE_DOMAIN}
+storage:
+  type: memory
+web:
+  http: 0.0.0.0:5556
+oauth2:
+  skipApprovalScreen: true
+staticClients:
+  - id: glowpod
+    name: Glowpod
+    secret: ${GLOWPOD_CLIENT_SECRET}
+    redirectURIs:
+      - http://glowpod.${BASE_DOMAIN}/auth/oidc/callback
+connectors:
+  - type: ldap
+    id: ldap
+    name: LDAP
+    config:
+      host: lldap:3890
+      insecureNoSSL: true
+      bindDN: uid=admin,ou=people,dc=example,dc=com
+      bindPW: ${LLDAP_ADMIN_PASSWORD}
+      usernamePrompt: Username
+      userSearch:
+        baseDN: ou=people,dc=example,dc=com
+        filter: "(objectClass=person)"
+        username: uid
+        idAttr: uid
+        emailAttr: mail
+        nameAttr: displayName
+      groupSearch:
+        baseDN: ou=groups,dc=example,dc=com
+        filter: "(objectClass=groupOfUniqueNames)"
+        userMatchers:
+          - userAttr: DN
+            groupAttr: member
+        nameAttr: cn

@@ -1,0 +1,21 @@
+# What the demo people may do, by group. Glowpod adds the prefixes, so the
+# same person gets the same rights whichever way they sign in.
+#   devs → read only, in this namespace
+#   ops  → change things (edit), in this namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: demo-devs-view
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: view}
+subjects:
+  - {apiGroup: rbac.authorization.k8s.io, kind: Group, name: "oidc:devs"}
+  - {apiGroup: rbac.authorization.k8s.io, kind: Group, name: "ldap:devs"}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: demo-ops-edit
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: edit}
+subjects:
+  - {apiGroup: rbac.authorization.k8s.io, kind: Group, name: "oidc:ops"}
+  - {apiGroup: rbac.authorization.k8s.io, kind: Group, name: "ldap:ops"}

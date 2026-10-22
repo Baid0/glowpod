@@ -1,0 +1,49 @@
+# A small LDAP server (lldap) with a web UI, for trying LDAP and SSO.
+# Not for production: one replica, its database on an emptyDir (lost on restart).
+# Its admin password comes from the secret `lldap` (key admin-password).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lldap
+  labels: {app: lldap}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: lldap}
+  template:
+    metadata:
+      labels: {app: lldap}
+    spec:
+      containers:
+        - name: lldap
+          image: lldap/lldap:2026-09-22-alpine-rootless
+          env:
+            - name: LLDAP_LDAP_BASE_DN
+              value: dc=example,dc=com
+            - name: LLDAP_LDAP_USER_PASS
+              valueFrom: {secretKeyRef: {name: lldap, key: admin-password}}
+            - name: LLDAP_JWT_SECRET
+              valueFrom: {secretKeyRef: {name: lldap, key: jwt-secret}}
+            - name: LLDAP_KEY_SEED
+              valueFrom: {secretKeyRef: {name: lldap, key: key-seed}}
+          ports:
+            - {name: ldap, containerPort: 3890}
+            - {name: http, containerPort: 17170}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {memory: 128Mi}
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lldap
+spec:
+  selector: {app: lldap}
+  ports:
+    - {name: ldap, port: 3890, targetPort: ldap}
+    - {name: http, port: 17170, targetPort: http}

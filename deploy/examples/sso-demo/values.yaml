@@ -1,0 +1,36 @@
+# Glowpod for the SSO demo: SSO through Dex, LDAP straight to lldap, and
+# tokens. setup.sh fills in ${BASE_DOMAIN}. Plain HTTP because the demo has
+# no TLS certificate; real installs use HTTPS and drop -insecure-cookies.
+publicURL: http://glowpod.${BASE_DOMAIN}
+clusterName: demo
+extraArgs: [-insecure-cookies]
+
+ingress:
+  enabled: true
+  host: glowpod.${BASE_DOMAIN}
+
+auth:
+  token:
+    enabled: true
+  oidc:
+    enabled: true
+    name: Dex
+    issuer: http://dex.${BASE_DOMAIN}
+    clientID: glowpod
+    existingSecret: glowpod-oidc
+    scopes: [openid, email, profile, groups]
+    # Users arrive as alice@example.com in groups oidc:devs, oidc:ops.
+    groupsPrefix: "oidc:"
+  ldap:
+    enabled: true
+    url: ldap://lldap:3890
+    bindDN: uid=admin,ou=people,dc=example,dc=com
+    existingSecret: glowpod-ldap
+    userBase: ou=people,dc=example,dc=com
+    userFilter: (uid={username})
+    usernameAttribute: uid
+    groupBase: ou=groups,dc=example,dc=com
+    groupFilter: (member={dn})
+    groupAttribute: cn
+    # Users arrive as alice in groups ldap:devs, ldap:ops.
+    groupsPrefix: "ldap:"
