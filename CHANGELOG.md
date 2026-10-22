@@ -6,6 +6,11 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- The chart has an icon (the Glowpod mark on lime), so Artifact Hub and other chart browsers show
+  the logo instead of the generic Helm one.
+
 ## [0.1.3] - 2026-10-22
 
 ### Changed
