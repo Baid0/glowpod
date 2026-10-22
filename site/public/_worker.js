@@ -5,16 +5,21 @@
 
 const PLACEHOLDER = "__GLOWPOD_NONCE__";
 
-// The Glowpod server's policy (backend/internal/web/csp.go), except connect-src 'none': the demo
-// answers its API inside the page and never opens a connection.
+// The Glowpod server's policy (backend/internal/web/csp.go), plus Cloudflare Web Analytics, which
+// Cloudflare adds to every page: its beacon script and the one address it reports to (the same
+// two paths as in vite.config.js). connect-src allows nothing else: the demo answers its API
+// inside the page.
+const ANALYTICS_SCRIPT = "https://static.cloudflareinsights.com/beacon.min.js/";
+const ANALYTICS_REPORT = "https://cloudflareinsights.com/cdn-cgi/rum";
+
 function policy(nonce) {
   return [
     "default-src 'self'",
-    "script-src 'self'",
+    `script-src 'self' ${ANALYTICS_SCRIPT}`,
     `style-src 'self' 'nonce-${nonce}'`,
     "img-src 'self' data:",
     "font-src 'self'",
-    "connect-src 'none'",
+    `connect-src ${ANALYTICS_REPORT}`,
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'self'",
