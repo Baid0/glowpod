@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 
+	"glowpod/internal/access"
 	"glowpod/internal/auth"
 	"glowpod/internal/cluster"
 )
@@ -151,7 +152,7 @@ func TestWriteAPI(t *testing.T) {
 	}{
 		{
 			name: "access checks", method: http.MethodPost, path: base + "/access", wantStatus: 200,
-			body: jsonBody(accessRequest{Checks: []accessCheck{
+			body: jsonBody(accessRequest{Checks: []access.Check{
 				{Verb: "delete", Group: "apps", Resource: "deployments", Namespace: "shop", Name: "web"},
 				{Verb: "update", Group: "apps", Resource: "deployments", Namespace: "shop", Name: "web"},
 				{Verb: "delete", Group: "apps", Resource: "deployments", Namespace: "prod"},

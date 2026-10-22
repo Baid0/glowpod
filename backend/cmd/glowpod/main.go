@@ -47,6 +47,9 @@ func main() {
 }
 
 func run(ctx context.Context, args []string, stderr io.Writer) error {
+	if len(args) > 0 && args[0] == "term" {
+		return runTerm(ctx, args[1:], stderr)
+	}
 	cfg, err := parseFlags(args, stderr)
 	if errors.Is(err, flag.ErrHelp) {
 		return nil

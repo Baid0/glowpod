@@ -41,6 +41,18 @@ system blocks a downloaded program, allow it once with
 `xattr -d com.apple.quarantine ./glowpod`. Or build it yourself with
 `make build` (the binary lands in `bin/glowpod`).
 
+### In the terminal
+
+```bash
+./glowpod term                # Glance: gauges, what needs attention, recent events
+./glowpod term -n team deploy # start on a table, in a namespace
+```
+
+`Tab` switches Glance and Deep, `:` opens the command palette (`:pods`,
+`:deploy`, any CRD, `:ns kube-system`), `/` filters, `l` shows logs, `y`
+YAML and `?` every key. Scale, restart, delete and shell appear only when
+your RBAC allows them. See [docs/design/terminal-app.md](docs/design/terminal-app.md).
+
 ## Install it in a cluster
 
 ```bash

@@ -92,3 +92,29 @@ A line's own level decides its color: a JSON or logfmt `level` /
 `severity` field, or Kubernetes' klog prefix (`E1022 …`, `W1022 …`). Only
 lines without one are judged by words such as ERROR, and a key named `err`
 doesn't count.
+
+## The terminal app (`glowpod term`)
+
+- **Libraries:** Bubble Tea v2, Lip Gloss v2 and Bubbles v2 (`charm.land/…`),
+  the usual Go terminal UI stack; drawing a full-screen UI by hand isn't
+  "a few lines". `muesli/cancelreader` (already pulled in by Bubble Tea)
+  stops the shell's stdin copy when the shell exits, so it doesn't eat the
+  next key.
+- **One code path with the web:** the app reads through a `Source`
+  interface whose methods return the HTTP API's shapes. Local mode uses
+  the same internal packages as the server (`overview`, `resources`,
+  `logs`, `access`, `events`, `terminal`), so signing in to an in-cluster
+  Glowpod later is a second `Source`, not a second app.
+- **Gauge track:** the arc is drawn with Braille dots, which are thin, so
+  the track uses `--hairline-strong` (`#3A3A3A`) instead of
+  `--surface-elevated`, which disappears on Bio Black. Card borders use the
+  same grey for the same reason.
+- **Colour:** the terminal's background is set to Bio Black while the app
+  runs (and restored on exit). Status is always a dot and a word. Orange
+  is used for warning log lines only, as on the web.
+- **Learning from k9s:** keys people know from k9s (`:`, `/`, `l`, `y`,
+  `s`, `r`, `ctrl+d`) work the same way. No k9s code is in Glowpod; we
+  studied its source (Apache-2.0) and the running binary.
+- **Not yet:** revealing Secret values, editing YAML, port-forward and the
+  light theme; signing in to an in-cluster Glowpod.
+
