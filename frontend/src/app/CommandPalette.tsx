@@ -17,18 +17,12 @@ import { useNamespaces } from "../lib/queries";
 import { filterCommands, type Command } from "./commands";
 import styles from "./CommandPalette.module.css";
 import { allPages, deepSections, glanceSections, settingsSection } from "./navigation";
+import { usePanel } from "./panel";
 
 function useCommands(): Command[] {
   const navigate = useNavigate();
-  const {
-    mode,
-    setMode,
-    panelCollapsed,
-    setPanelCollapsed,
-    setNamespace,
-    resolvedTheme,
-    setTheme,
-  } = usePreferences();
+  const { mode, setMode, setNamespace, resolvedTheme, setTheme } = usePreferences();
+  const panel = usePanel();
   const { data: namespaceList } = useNamespaces();
   const namespaces = namespaceList?.namespaces;
 
@@ -63,12 +57,12 @@ function useCommands(): Command[] {
       },
       {
         id: "panel",
-        label: panelCollapsed ? "Expand the side panel" : "Collapse the side panel",
+        label: panel.open ? "Collapse the side panel" : "Expand the side panel",
         group: "View",
-        icon: panelCollapsed ? IconLayoutSidebarLeftExpand : IconLayoutSidebarLeftCollapse,
+        icon: panel.open ? IconLayoutSidebarLeftCollapse : IconLayoutSidebarLeftExpand,
         keywords: "sidebar",
         run: () => {
-          setPanelCollapsed(!panelCollapsed);
+          panel.setOpen(!panel.open);
         },
       },
       {
@@ -101,17 +95,7 @@ function useCommands(): Command[] {
       },
     }));
     return [...pages, ...actions, ...ns];
-  }, [
-    navigate,
-    mode,
-    setMode,
-    panelCollapsed,
-    setPanelCollapsed,
-    setNamespace,
-    namespaces,
-    resolvedTheme,
-    setTheme,
-  ]);
+  }, [navigate, mode, setMode, panel, setNamespace, namespaces, resolvedTheme, setTheme]);
 }
 
 /** ⌘K palette: go to any page, switch mode, panel or namespace. */

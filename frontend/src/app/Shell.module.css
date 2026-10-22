@@ -39,3 +39,48 @@
 .skip:focus {
   transform: none;
 }
+
+/* Narrow screens: the panel is a drawer over the content. */
+.shell[data-panel="drawer"] {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.drawer {
+  position: fixed;
+  inset: 0 0 0 64px;
+  z-index: 30;
+  display: flex;
+}
+
+.drawer > aside {
+  flex: none;
+}
+
+.scrim {
+  flex: 1;
+  border: 0;
+  background: color-mix(in srgb, var(--bio-black) 50%, transparent);
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  /* Phones: the rail becomes a bar at the bottom. */
+  .shell,
+  .shell[data-panel="drawer"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .drawer {
+    inset: 0 0 56px 0;
+  }
+
+  .content {
+    padding: var(--space-4) var(--space-4) calc(56px + var(--space-8));
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1100px) {
+  .content {
+    padding: var(--space-6);
+  }
+}

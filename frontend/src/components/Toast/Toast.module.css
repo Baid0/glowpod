@@ -72,3 +72,11 @@
   background: var(--surface-elevated);
   color: var(--ink);
 }
+
+@media (max-width: 720px) {
+  /* Above the bottom navigation bar. */
+  .region {
+    right: var(--space-4);
+    bottom: calc(56px + var(--space-4));
+  }
+}

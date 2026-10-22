@@ -9,11 +9,13 @@ import type { Overview } from "../lib/types";
 import { ClusterHealthCard } from "./ClusterHealthCard";
 import { ClusterPicker } from "./ClusterPicker";
 import { countFor } from "./counts";
+import { usePanel } from "./panel";
 import { sectionFor, sectionsFor } from "./navigation";
 import styles from "./SectionPanel.module.css";
 
 export function SectionPanel() {
-  const { mode, setPanelCollapsed } = usePreferences();
+  const { mode } = usePreferences();
+  const panel = usePanel();
   const { pathname } = useLocation();
   const section = sectionFor(pathname, mode) ?? sectionsFor(mode)[0];
   const overview = useOverview().data;
@@ -31,7 +33,7 @@ export function SectionPanel() {
           aria-label="Collapse panel"
           title="Collapse panel"
           onClick={() => {
-            setPanelCollapsed(true);
+            panel.setOpen(false);
           }}
         >
           <IconChevronLeft size={16} stroke={1.75} aria-hidden="true" />
@@ -52,6 +54,9 @@ export function SectionPanel() {
                       to={item.path}
                       end={item.path === "/"}
                       className={({ isActive }) => cx(styles.item, isActive && styles.active)}
+                      onClick={() => {
+                        if (panel.overlay) panel.setOpen(false);
+                      }}
                     >
                       <span className={styles.label}>{item.label}</span>
                       {count && (

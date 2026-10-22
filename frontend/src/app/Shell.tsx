@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Navigate, Outlet, useLocation, useMatches, type Params } from "react-router";
 
 import { ApiError } from "../lib/api";
+import { useMediaQuery } from "../lib/media";
 import { usePreferences } from "../lib/preferences";
 import { useOverview, useSession } from "../lib/queries";
 import { CommandPalette } from "./CommandPalette";
+import { DRAWER_QUERY, PanelContext, type PanelState } from "./panel";
 import { Rail } from "./Rail";
 import { SectionPanel } from "./SectionPanel";
 import styles from "./Shell.module.css";
@@ -29,7 +31,22 @@ function usePageTitle(): string {
 /** Rail + collapsible section panel + top bar around the current page. */
 export function Shell() {
   const location = useLocation();
-  const { panelCollapsed } = usePreferences();
+  const { panelCollapsed, setPanelCollapsed } = usePreferences();
+  const narrow = useMediaQuery(DRAWER_QUERY);
+  const [drawer, setDrawer] = useState(false);
+  const panel = useMemo<PanelState>(
+    () =>
+      narrow
+        ? { open: drawer, setOpen: setDrawer, overlay: true }
+        : {
+            open: !panelCollapsed,
+            setOpen: (o) => {
+              setPanelCollapsed(!o);
+            },
+            overlay: false,
+          },
+    [narrow, drawer, panelCollapsed, setPanelCollapsed],
+  );
   const session = useSession();
   const overview = useOverview();
   const title = usePageTitle();
@@ -69,30 +86,53 @@ export function Shell() {
     );
   }
 
+  const layout = panel.overlay ? "drawer" : panel.open ? "open" : "collapsed";
   return (
-    <div className={styles.shell} data-panel={panelCollapsed ? "collapsed" : "open"}>
-      <a href="#main" className={styles.skip}>
-        Skip to content
-      </a>
-      <Rail />
-      {!panelCollapsed && <SectionPanel />}
-      <div className={styles.main}>
-        <TopBar
-          title={title}
-          onSearch={() => {
-            setPaletteOpen(true);
+    <PanelContext value={panel}>
+      <div className={styles.shell} data-panel={layout}>
+        <a href="#main" className={styles.skip}>
+          Skip to content
+        </a>
+        <Rail />
+        {panel.open &&
+          (panel.overlay ? (
+            <div
+              className={styles.drawer}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setDrawer(false);
+              }}
+            >
+              <SectionPanel />
+              <button
+                type="button"
+                className={styles.scrim}
+                aria-label="Close panel"
+                onClick={() => {
+                  setDrawer(false);
+                }}
+              />
+            </div>
+          ) : (
+            <SectionPanel />
+          ))}
+        <div className={styles.main}>
+          <TopBar
+            title={title}
+            onSearch={() => {
+              setPaletteOpen(true);
+            }}
+          />
+          <main id="main" className={styles.content} tabIndex={-1}>
+            <Outlet />
+          </main>
+        </div>
+        <CommandPalette
+          open={paletteOpen}
+          onClose={() => {
+            setPaletteOpen(false);
           }}
         />
-        <main id="main" className={styles.content} tabIndex={-1}>
-          <Outlet />
-        </main>
       </div>
-      <CommandPalette
-        open={paletteOpen}
-        onClose={() => {
-          setPaletteOpen(false);
-        }}
-      />
-    </div>
+    </PanelContext>
   );
 }
