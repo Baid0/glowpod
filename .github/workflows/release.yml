@@ -3,7 +3,10 @@
 #     provenance, signed with cosign;
 #   - oci://ghcr.io/<owner>/charts/glowpod version 0.2.0, signed with cosign;
 #   - a GitHub Release with glowpod downloads for Linux, macOS and Windows,
-#     checksums, an SBOM and build attestations, and notes from CHANGELOG.md.
+#     the chart, checksums, an SBOM and build attestations, and notes from
+#     CHANGELOG.md;
+#   - the version in the classic chart repo, https://glowpod.dev/charts
+#     (site/public/charts/index.yaml, pointing at the Release's chart).
 # Signing is keyless: signatures are tied to this workflow on this repository
 # (see docs/install.md, "Verify what you download").
 # A tag with a dash (v0.2.0-rc.1) is a pre-release and doesn't move :latest.
@@ -108,6 +111,12 @@ jobs:
           test -n "$digest"
           echo "$TOKEN" | cosign login ghcr.io -u "${{ github.actor }}" --password-stdin
           cosign sign --yes "ghcr.io/${OWNER}/charts/glowpod@${digest}"
+      # The same file goes on the GitHub Release for the classic chart repo.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: chart
+          path: glowpod-${{ needs.meta.outputs.version }}.tgz
+          if-no-files-found: error
 
   downloads:
     # Last, so a Release only appears once its image and chart exist.
@@ -143,9 +152,16 @@ jobs:
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: make dist VERSION="$VERSION"
       - run: mv sbom.spdx.json "dist/glowpod_${VERSION}_sbom.spdx.json"
+      - uses: actions/download-artifact@v8
+        with:
+          name: chart
+          path: dist
+      - run: cd dist && shasum -a 256 "glowpod-${VERSION}.tgz" >> checksums.txt
       - uses: actions/attest-build-provenance@v4
         with:
-          subject-path: dist/glowpod_*
+          subject-path: |
+            dist/glowpod_*
+            dist/glowpod-*.tgz
       - name: Create the GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -170,3 +186,42 @@ jobs:
           [ "$PRERELEASE" = true ] && flags+=(--prerelease)
           gh release create "$GITHUB_REF_NAME" dist/* --verify-tag \
             --title "Glowpod ${VERSION}" --notes-file notes.md "${flags[@]}"
+
+  chart-repo:
+    # Adds this version to https://glowpod.dev/charts: a commit to main that
+    # updates site/public/charts/index.yaml, then a site deploy. Pushes made
+    # with GITHUB_TOKEN don't start other workflows, so it starts Site itself.
+    needs: [meta, downloads]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit the index
+      actions: write # start the Site workflow
+    env:
+      VERSION: ${{ needs.meta.outputs.version }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - uses: azure/setup-helm@v5
+      - name: Add the version to the index
+        run: |
+          mkdir new
+          gh release download "$GITHUB_REF_NAME" -p "glowpod-${VERSION}.tgz" -D new
+          helm repo index new --merge site/public/charts/index.yaml \
+            --url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}"
+          mv new/index.yaml site/public/charts/index.yaml
+          grep -q "releases/download/${GITHUB_REF_NAME}/glowpod-${VERSION}.tgz" site/public/charts/index.yaml
+      - name: Commit to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/public/charts/index.yaml
+          git commit -m "Chart repo: add glowpod ${VERSION}"
+          # main may have moved since the checkout; rebase and retry.
+          for attempt in 1 2 3; do
+            git push origin HEAD:main && exit 0
+            git pull --rebase origin main
+          done
+          exit 1
+      - run: gh workflow run site.yml --ref main
