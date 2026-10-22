@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { cpSync, existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import { docInputs, docSources, writeDocPages } from "./scripts/docs.mjs";
@@ -20,7 +20,8 @@ const CSP = [
 
 // Headers Cloudflare Pages sends with every response, written to dist/_headers. The CSP is the
 // meta tag's policy plus frame-ancestors, which only works as a header. Hashed files in
-// /assets/ never change, so browsers may keep them for a year.
+// /assets/ never change, so browsers may keep them for a year. The demo's pages get their own
+// policy from public/_worker.js.
 const HEADERS = `/*
   Content-Security-Policy: ${CSP}; frame-ancestors 'none'
   Strict-Transport-Security: max-age=63072000; includeSubDomains
@@ -31,6 +32,9 @@ const HEADERS = `/*
   Cross-Origin-Opener-Policy: same-origin
 
 /assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/demo/assets/*
   Cache-Control: public, max-age=31536000, immutable
 `;
 
@@ -96,10 +100,27 @@ function headers() {
   };
 }
 
+// The app demo at /demo/: the frontend's demo build (`pnpm build:demo` in frontend/, which
+// `make site` runs first), copied in after the site is built.
+function demo() {
+  const from = resolve(root, "../frontend/dist-demo");
+  return {
+    name: "glowpod-demo",
+    apply: "build",
+    closeBundle() {
+      if (!existsSync(resolve(from, "index.html"))) {
+        throw new Error(
+          "The demo isn't built: run `make site`, or `pnpm build:demo` in frontend/.",
+        );
+      }
+      cpSync(from, resolve(root, "dist/demo"), { recursive: true });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [docs(), partials(), csp(), headers()],
+  plugins: [docs(), partials(), csp(), headers(), demo()],
   server: { port: 5180, strictPort: true },
-  preview: { port: 5181, strictPort: true },
   build: {
     // Fonts and images stay files: the CSP allows no data: URLs.
     assetsInlineLimit: 0,

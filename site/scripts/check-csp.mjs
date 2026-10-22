@@ -23,7 +23,8 @@ function* files(dir) {
 
 let failed = false;
 for (const file of files(dist)) {
-  const text = readFileSync(file, "utf8");
+  // Comments never run, and the demo's page mentions <style> in one.
+  const text = readFileSync(file, "utf8").replace(/<!--[\s\S]*?-->/g, "");
   const checks = file.endsWith(".css") ? [[/url\(\s*["']?data:/i, "data: URL"]] : rules;
   for (const [pattern, what] of checks) {
     if (pattern.test(text)) {
