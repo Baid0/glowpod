@@ -6,6 +6,7 @@ package overview
 import (
 	"time"
 
+	"glowpod/internal/apps"
 	"glowpod/internal/cluster"
 	"glowpod/internal/metrics"
 	"glowpod/internal/summary"
@@ -99,36 +100,21 @@ type Consumer struct {
 	Memory    float64 `json:"memory"`
 }
 
-// AppStatus uses the gauge zone words: ok, high (rolling out, pending), critical.
-type AppStatus string
+// AppStatus and its values come from the apps package.
+type AppStatus = apps.Status
 
 // App statuses.
 const (
-	AppOK       AppStatus = "ok"
-	AppHigh     AppStatus = "high"
-	AppCritical AppStatus = "critical"
+	AppOK       = apps.OK
+	AppHigh     = apps.High
+	AppCritical = apps.Critical
 )
 
-// App is a Glance-mode card: workloads grouped by app.kubernetes.io/name or
-// Helm release.
-type App struct {
-	Name       string     `json:"name"`
-	Namespace  string     `json:"namespace"`
-	Workloads  int        `json:"workloads"`
-	Ready      int32      `json:"ready"`
-	Total      int32      `json:"total"`
-	Status     AppStatus  `json:"status"`
-	LastDeploy *time.Time `json:"lastDeploy,omitempty"`
-}
+// App is a Glance-mode card: workloads grouped into an app (see apps.Key).
+type App = apps.App
 
 // Deploy is a row in Glance's "Recent deploys": a new Deployment revision.
-type Deploy struct {
-	Namespace string    `json:"namespace"`
-	Name      string    `json:"name"`
-	Revision  string    `json:"revision"`
-	Image     string    `json:"image"`
-	At        time.Time `json:"at"`
-}
+type Deploy = apps.Deploy
 
 // Unavailable names a section that failed to load, and why.
 type Unavailable struct {

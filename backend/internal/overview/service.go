@@ -15,14 +15,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"glowpod/internal/apps"
 	"glowpod/internal/cluster"
 	"glowpod/internal/kerr"
 	"glowpod/internal/metrics"
+	"glowpod/internal/paging"
 	"glowpod/internal/summary"
 )
 
 const (
-	pageSize        = 500
 	maxProblems     = 50
 	maxApps         = 50
 	topN            = 5
@@ -142,13 +143,21 @@ func (s *Service) Build(ctx context.Context, id cluster.Identity, info cluster.I
 		}
 	}
 
-	failing := failingOwners(pods, snap.replicaSets, now)
+	ix := apps.NewIndex(snap.replicaSets)
+	failing := apps.Failing(pods, ix, now)
 	resp.Workloads = workloads(snap, failing, now)
 	resp.Problems, resp.ProblemCount = problems(snap, pods, namespace, now)
 	resp.Nodes = nodeLoad(snap, s.thresholds[1])
 	resp.TopConsumers = topConsumers(snap.podUsage)
-	resp.Apps = apps(snap, failing)
-	resp.RecentDeploys = recentDeploys(snap.replicaSets)
+	resp.Apps = apps.Group(apps.Workloads{
+		Deployments:  snap.deployments,
+		StatefulSets: snap.statefulSets,
+		DaemonSets:   snap.daemonSets,
+	}, ix, failing)
+	if len(resp.Apps) > maxApps {
+		resp.Apps = resp.Apps[:maxApps]
+	}
+	resp.RecentDeploys = apps.RecentDeploys(snap.replicaSets, topN, nil)
 
 	for _, section := range []string{"namespaces", "workloads", "jobs", "replicaSets", "storage", "version"} {
 		if err := snap.errs[section]; err != nil {
@@ -209,7 +218,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 	}
 
 	wg.Go(func() {
-		snap.nodes, nodeErr = listAll(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.Node, string, error) {
+		snap.nodes, nodeErr = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.Node, string, error) {
 			l, err := kube.CoreV1().Nodes().List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -219,7 +228,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 	})
 	wg.Go(func() {
 		// All namespaces: the gauges are cluster-wide.
-		snap.pods, podErr = listAll(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.Pod, string, error) {
+		snap.pods, podErr = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.Pod, string, error) {
 			l, err := kube.CoreV1().Pods("").List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -236,7 +245,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 		return nil
 	})
 	optional("namespaces", func() error {
-		l, err := listAll(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.Namespace, string, error) {
+		l, err := paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.Namespace, string, error) {
 			l, err := kube.CoreV1().Namespaces().List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -248,7 +257,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 	})
 	optional("workloads", func() error {
 		var err error
-		snap.deployments, err = listAll(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.Deployment, string, error) {
+		snap.deployments, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.Deployment, string, error) {
 			l, err := kube.AppsV1().Deployments(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -258,7 +267,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 		if err != nil {
 			return err
 		}
-		snap.statefulSets, err = listAll(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.StatefulSet, string, error) {
+		snap.statefulSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.StatefulSet, string, error) {
 			l, err := kube.AppsV1().StatefulSets(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -268,7 +277,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 		if err != nil {
 			return err
 		}
-		snap.daemonSets, err = listAll(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.DaemonSet, string, error) {
+		snap.daemonSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.DaemonSet, string, error) {
 			l, err := kube.AppsV1().DaemonSets(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -279,7 +288,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 	})
 	optional("replicaSets", func() error {
 		var err error
-		snap.replicaSets, err = listAll(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.ReplicaSet, string, error) {
+		snap.replicaSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.ReplicaSet, string, error) {
 			l, err := kube.AppsV1().ReplicaSets(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -290,7 +299,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 	})
 	optional("jobs", func() error {
 		var err error
-		snap.jobs, err = listAll(ctx, func(ctx context.Context, o metav1.ListOptions) ([]batchv1.Job, string, error) {
+		snap.jobs, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]batchv1.Job, string, error) {
 			l, err := kube.BatchV1().Jobs(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -301,7 +310,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 	})
 	optional("storage", func() error {
 		var err error
-		snap.pvcs, err = listAll(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.PersistentVolumeClaim, string, error) {
+		snap.pvcs, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.PersistentVolumeClaim, string, error) {
 			l, err := kube.CoreV1().PersistentVolumeClaims("").List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -333,23 +342,6 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 		snap.volumeUsage, snap.volumeErr = deps.Metrics.VolumeUsage(ctx, names)
 	}
 	return snap, nil
-}
-
-// listAll pages through a list with limit/continue.
-func listAll[T any](ctx context.Context, list func(context.Context, metav1.ListOptions) ([]T, string, error)) ([]T, error) {
-	var out []T
-	opts := metav1.ListOptions{Limit: pageSize}
-	for {
-		items, next, err := list(ctx, opts)
-		if err != nil {
-			return nil, err //nolint:wrapcheck // callers wrap with what they listed
-		}
-		out = append(out, items...)
-		if next == "" {
-			return out, nil
-		}
-		opts.Continue = next
-	}
 }
 
 func hasBound(pvcs []corev1.PersistentVolumeClaim) bool {

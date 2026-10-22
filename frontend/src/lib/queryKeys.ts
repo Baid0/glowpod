@@ -6,6 +6,11 @@ export const queryKeys = {
   overviewAll: (cluster: string) => ["overview", cluster] as const,
   events: (cluster: string, namespace: string) => ["events", cluster, namespace] as const,
   resourceTypes: (cluster: string) => ["resourceTypes", cluster] as const,
+  apps: (cluster: string, namespace: string) => ["apps", cluster, namespace] as const,
+  appsAll: (cluster: string) => ["apps", cluster] as const,
+  app: (cluster: string, namespace: string, name: string) =>
+    ["app", cluster, namespace, name] as const,
+  appAll: (cluster: string) => ["app", cluster] as const,
   pod: (cluster: string, namespace: string, name: string) =>
     ["pod", cluster, namespace, name] as const,
   object: (

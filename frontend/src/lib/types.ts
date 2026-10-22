@@ -107,6 +107,7 @@ export interface PodSummary {
   ready: string;
   restarts: number;
   node?: string;
+  createdAt: string;
   problem?: Problem;
 }
 
@@ -234,4 +235,35 @@ export interface ResourceObject {
   yaml: string;
   /** Secret values were hidden. */
   redacted: boolean;
+}
+
+export type AppSummary = Overview["apps"][number];
+
+export interface AppWorkload {
+  kind: string;
+  group: string;
+  version: string;
+  resource: string;
+  name: string;
+  ready: number;
+  total: number;
+  status: AppStatus;
+  images: string[];
+}
+
+export interface Deploy {
+  namespace: string;
+  name: string;
+  revision: string;
+  image: string;
+  at: string;
+}
+
+/** GET /apps/{namespace}/{name} */
+export interface AppDetail {
+  app: AppSummary;
+  workloads: AppWorkload[];
+  pods: PodSummary[];
+  problems: Problem[];
+  deploys: Deploy[];
 }

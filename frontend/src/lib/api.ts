@@ -1,4 +1,6 @@
 import type {
+  AppDetail,
+  AppSummary,
   KubeEvent,
   Overview,
   PodDetail,
@@ -118,6 +120,15 @@ export const api = {
         format: "yaml",
         reveal: opts.reveal ? "true" : undefined,
       }),
+      signal,
+    ),
+  apps: (cluster: string, namespace: string, signal?: AbortSignal) =>
+    apiGet<{ apps: AppSummary[] }>(clusterPath(cluster, "apps", { namespace }), signal).then(
+      (r) => r.apps,
+    ),
+  app: (cluster: string, namespace: string, name: string, signal?: AbortSignal) =>
+    apiGet<AppDetail>(
+      clusterPath(cluster, `apps/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`, {}),
       signal,
     ),
   pod: (cluster: string, namespace: string, name: string, signal?: AbortSignal) =>

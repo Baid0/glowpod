@@ -29,6 +29,9 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       podTimer ??= setTimeout(() => {
         podTimer = undefined;
         void client.invalidateQueries({ queryKey: queryKeys.overview(cluster, namespace) });
+        // App pages show pods too.
+        void client.invalidateQueries({ queryKey: queryKeys.appsAll(cluster) });
+        void client.invalidateQueries({ queryKey: queryKeys.appAll(cluster) });
       }, POD_REFRESH_DEBOUNCE_MS);
     };
 

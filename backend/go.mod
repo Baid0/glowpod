@@ -5,6 +5,7 @@ go 1.27.3
 require (
 	github.com/coder/websocket v1.8.15
 	github.com/go-chi/chi/v5 v5.5.0
+	golang.org/x/sync v0.22.0
 	k8s.io/api v0.37.1
 	k8s.io/apimachinery v0.37.1
 	k8s.io/client-go v0.37.1

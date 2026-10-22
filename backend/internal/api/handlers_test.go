@@ -193,6 +193,18 @@ func TestAPI(t *testing.T) {
 		},
 		{name: "missing pod", path: "/api/v1/clusters/default/pods/alpha/nope", wantStatus: 404, wantCode: "not_found"},
 		{
+			name: "apps", path: "/api/v1/clusters/default/apps?namespace=alpha", wantStatus: 200,
+			check: func(t *testing.T, body []byte) {
+				var r appsResponse
+				mustDecode(t, body, &r)
+				if r.Apps == nil {
+					t.Fatal("apps must be [] not null")
+				}
+			},
+		},
+		{name: "missing app", path: "/api/v1/clusters/default/apps/alpha/nope", wantStatus: 404, wantCode: "not_found"},
+		{name: "app in a bad namespace", path: "/api/v1/clusters/default/apps/Bad_NS/x", wantStatus: 400, wantCode: "bad_namespace"},
+		{
 			name: "log download", path: "/api/v1/clusters/default/logs/alpha/api-1/download?container=app", wantStatus: 200,
 			check: func(t *testing.T, body []byte) {
 				if string(body) != "fake logs" {

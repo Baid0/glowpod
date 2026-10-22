@@ -169,6 +169,7 @@ describe("applyMessage", () => {
           health: "running",
           ready: "1/1",
           restarts: 0,
+          createdAt: "2026-10-22T00:00:00Z",
         },
       },
       schedule,

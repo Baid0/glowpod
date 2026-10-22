@@ -1,4 +1,13 @@
-import type { KubeEvent, Overview, PodDetail, Problem, ResourceTable, Session } from "../lib/types";
+import type {
+  AppDetail,
+  KubeEvent,
+  Overview,
+  PodDetail,
+  PodSummary,
+  Problem,
+  ResourceTable,
+  Session,
+} from "../lib/types";
 
 export const session: Session = {
   mode: "local",
@@ -237,6 +246,7 @@ export function podDetail(): PodDetail {
       ready: "0/1",
       restarts: 14,
       node: "ip-10-0-1-21",
+      createdAt: ago(60),
       problem: problems()[0],
     },
     createdAt: ago(60),
@@ -324,5 +334,77 @@ export function podDetail(): PodDetail {
       },
     ],
     metricsAvailable: true,
+  };
+}
+
+/** The payments app: one crash-looping pod of three. */
+export function appDetail(): AppDetail {
+  const ago = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
+  const pod = (name: string, extra: Partial<PodSummary> = {}): PodSummary => ({
+    namespace: "payments",
+    name,
+    phase: "Running",
+    health: "running",
+    ready: "1/1",
+    restarts: 0,
+    node: "w1",
+    createdAt: ago(60),
+    ...extra,
+  });
+  const crash = problems()[0];
+  return {
+    app: {
+      name: "payments",
+      namespace: "payments",
+      workloads: 2,
+      ready: 2,
+      total: 3,
+      status: "critical",
+      lastDeploy: ago(20),
+    },
+    workloads: [
+      {
+        kind: "Deployment",
+        group: "apps",
+        version: "v1",
+        resource: "deployments",
+        name: "payments-api",
+        ready: 1,
+        total: 2,
+        status: "critical",
+        images: ["ghcr.io/acme/payments:v3"],
+      },
+      {
+        kind: "StatefulSet",
+        group: "apps",
+        version: "v1",
+        resource: "statefulsets",
+        name: "payments-db",
+        ready: 1,
+        total: 1,
+        status: "ok",
+        images: ["postgres:17"],
+      },
+    ],
+    pods: [
+      pod("payments-api-7d9f6b-ok"),
+      pod("payments-api-7d9f6b-x2kq9", {
+        health: "failing",
+        ready: "0/1",
+        restarts: 14,
+        ...(crash ? { problem: crash } : {}),
+      }),
+      pod("payments-db-0", { createdAt: ago(3000) }),
+    ],
+    problems: crash ? [crash] : [],
+    deploys: [
+      {
+        namespace: "payments",
+        name: "payments-api",
+        revision: "3",
+        image: "ghcr.io/acme/payments:v3",
+        at: ago(20),
+      },
+    ],
   };
 }

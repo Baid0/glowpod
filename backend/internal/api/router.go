@@ -97,6 +97,8 @@ func NewRouter(opts Options) http.Handler {
 				r.Get("/namespaces", s.namespaces)
 				r.Get("/events", s.events)
 				r.Method(http.MethodGet, "/stream", &stream.Handler{Provider: opts.Provider, Logger: opts.Logger})
+				r.Get("/apps", s.listApps)
+				r.Get("/apps/{namespace}/{name}", s.getApp)
 				r.Get("/pods/{namespace}/{name}", s.pod)
 				r.Get("/logs/{namespace}/{pod}", s.streamLogs)
 				r.Get("/logs/{namespace}/{pod}/download", s.downloadLogs)

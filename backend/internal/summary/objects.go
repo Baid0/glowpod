@@ -45,6 +45,7 @@ type Pod struct {
 	Ready     string    `json:"ready"`
 	Restarts  int32     `json:"restarts"`
 	Node      string    `json:"node,omitempty"`
+	CreatedAt time.Time `json:"createdAt"`
 	Problem   *Problem  `json:"problem,omitempty"`
 }
 
@@ -66,6 +67,7 @@ func PodOf(pod *corev1.Pod, now time.Time) Pod {
 		Ready:     fmt.Sprintf("%d/%d", ready, len(pod.Spec.Containers)),
 		Restarts:  restarts,
 		Node:      pod.Spec.NodeName,
+		CreatedAt: pod.CreationTimestamp.UTC(),
 	}
 	if p, ok := PodProblem(pod, now); ok {
 		out.Problem = &p

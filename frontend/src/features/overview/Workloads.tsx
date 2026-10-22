@@ -3,8 +3,8 @@ import { Link } from "react-router";
 import { Badge, type StatusTone } from "../../components/Badge";
 import { Card } from "../../components/Card";
 import { usePreferences } from "../../lib/preferences";
-import { formatAge, useNow } from "../../lib/time";
-import type { AppStatus, Overview, WorkloadCount } from "../../lib/types";
+import type { Overview, WorkloadCount } from "../../lib/types";
+import { AppCard } from "../apps/AppCard";
 import styles from "./OverviewPage.module.css";
 
 interface Segment {
@@ -114,16 +114,9 @@ export function WorkloadTiles({ data }: { data: Overview | undefined }) {
 
 const APP_LIMIT = 8;
 
-const appBadge: Record<AppStatus, [StatusTone, string]> = {
-  ok: ["ok", "Healthy"],
-  high: ["high", "Rolling out"],
-  critical: ["critical", "Failing"],
-};
-
 /** Glance mode: one card per app, problems first. */
 export function AppCards({ data }: { data: Overview | undefined }) {
   const { setMode } = usePreferences();
-  const now = useNow(60_000);
   const apps = data?.apps ?? [];
 
   return (
@@ -147,37 +140,9 @@ export function AppCards({ data }: { data: Overview | undefined }) {
       )}
       <div className={styles.tiles}>
         {!data && [0, 1, 2, 3].map((i) => <div key={i} className={styles.skeletonTile} />)}
-        {apps.slice(0, APP_LIMIT).map((a) => {
-          const [tone, word] = appBadge[a.status];
-          return (
-            <Card
-              key={a.namespace + "/" + a.name}
-              title={
-                <Link
-                  className={styles.cardLink}
-                  title={a.name}
-                  to={`/apps/${encodeURIComponent(a.namespace)}/${encodeURIComponent(a.name)}`}
-                >
-                  {a.name}
-                </Link>
-              }
-              headingLevel={3}
-              actions={<Badge tone={tone}>{word}</Badge>}
-              className={styles.appCard}
-            >
-              <p className={styles.appMeta}>{a.namespace}</p>
-              <p className={styles.tileNumber}>
-                <span className={styles.big}>{a.ready}</span>{" "}
-                <span className={styles.tileRest}>/ {a.total} ready</span>
-              </p>
-              {a.lastDeploy && (
-                <p className={styles.appMeta}>
-                  Deployed {formatAge(now - Date.parse(a.lastDeploy))} ago
-                </p>
-              )}
-            </Card>
-          );
-        })}
+        {apps.slice(0, APP_LIMIT).map((a) => (
+          <AppCard key={a.namespace + "/" + a.name} app={a} />
+        ))}
       </div>
       {apps.length > APP_LIMIT && (
         <Link to="/apps" className={styles.moreLink}>

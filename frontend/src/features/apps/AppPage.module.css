@@ -1,0 +1,255 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 1600px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.name {
+  color: var(--ink);
+  font: 600 20px / 28px var(--font-mono);
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: 0;
+}
+
+.fact {
+  display: flex;
+  gap: 6px;
+}
+
+.fact dt {
+  color: var(--muted);
+}
+
+.fact dd {
+  margin: 0;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-6);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.tab {
+  position: relative;
+  height: 40px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: var(--text-body-sm-strong);
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab[aria-selected="true"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent-line);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.main,
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.mono {
+  color: var(--ink);
+  font: 500 13px / 18px var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--muted);
+  font: var(--text-caption);
+  overflow-wrap: anywhere;
+}
+
+.good {
+  color: var(--body);
+}
+
+.problems,
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.problem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--hairline-strong);
+  border-left: 3px solid var(--state-high);
+  border-radius: var(--radius-control);
+  background: var(--surface-elevated);
+}
+
+.problem[data-tone="critical"] {
+  border-left-color: var(--state-critical);
+}
+
+.problemTitle {
+  color: var(--ink);
+  font: var(--text-title-sm);
+}
+
+.term {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.hint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--body);
+}
+
+.workload,
+.deploy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--hairline);
+}
+
+.workload:first-child,
+.deploy:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.kind {
+  flex: 1;
+  color: var(--muted);
+  font: var(--text-caption-upper);
+  letter-spacing: var(--tracking-caption-upper);
+  text-transform: uppercase;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--text-body-sm);
+}
+
+.table th {
+  padding: 0 var(--space-3) var(--space-2) 0;
+  color: var(--muted);
+  font: var(--text-caption-upper);
+  letter-spacing: var(--tracking-caption-upper);
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.table td {
+  padding: 10px var(--space-3) 10px 0;
+  border-top: 1px solid var(--hairline);
+  color: var(--body);
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.logs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.podPicker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.select {
+  height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-segment);
+  background: var(--canvas);
+  color: var(--ink);
+  font: 400 13px / 18px var(--font-mono);
+}
+
+.skeleton {
+  height: 320px;
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+}
+
+.gone {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  max-width: 520px;
+  margin: var(--space-12) auto;
+  padding: var(--space-8);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+  text-align: center;
+}
+
+.goneTitle {
+  font: var(--text-title-md);
+}

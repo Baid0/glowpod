@@ -1,6 +1,8 @@
 import { lazy, Suspense } from "react";
 import type { RouteObject } from "react-router";
 
+import { AppPage } from "../features/apps/AppPage";
+import { AppsPage, LogsPage } from "../features/apps/AppsPage";
 import { OverviewPage } from "../features/overview/OverviewPage";
 import { PodPage } from "../features/pod/PodPage";
 import { ComingSoon, NotFound } from "../features/placeholder/ComingSoon";
@@ -19,6 +21,8 @@ const GaugeDemo = import.meta.env.DEV
 const handle = (title: string): RouteHandle => ({ title });
 
 function pageElement(p: NavItem) {
+  if (p.path === "/apps") return <AppsPage />;
+  if (p.path === "/logs") return <LogsPage />;
   // key: a fresh page (search, sort) per resource.
   if (p.resource) return <ResourceListPage key={p.path} resource={p.resource} />;
   if (p.types)
@@ -64,7 +68,7 @@ export const routes: RouteObject[] = [
       },
       {
         path: "apps/:namespace/:name",
-        element: <ComingSoon title="App details" phase={2} />,
+        element: <AppPage />,
         handle: handle("App"),
       },
       { path: "*", element: <NotFound />, handle: handle("Not found") },

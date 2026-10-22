@@ -54,6 +54,8 @@ export function defaultResponder(url: URL): Response | undefined {
       return Response.json({ namespaces: fx.namespaces });
     case "/api/v1/clusters/default/overview":
       return Response.json(fx.overview(ns));
+    case "/api/v1/clusters/default/apps":
+      return Response.json({ apps: fx.overview(ns).apps });
     case "/api/v1/clusters/default/events":
       return Response.json({ events: fx.events() });
     default:
