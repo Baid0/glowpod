@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { Card } from "../../components/Card";
+import { Segmented } from "../../components/Segmented";
 import { api } from "../../lib/api";
 import { usePreferences } from "../../lib/preferences";
 import { useClusterId } from "../../lib/queries";
@@ -27,7 +28,10 @@ const DOT: Record<MapStatus, string | null> = {
 /** One namespace as a picture: how traffic gets in, what runs, what it uses. */
 export function MapPage() {
   const cluster = useClusterId();
-  const { namespace } = usePreferences();
+  const { namespaces } = usePreferences();
+  // One namespace at a time: with several picked, a switch picks which.
+  const [chosen, setChosen] = useState<string | null>(null);
+  const namespace = chosen !== null && namespaces.includes(chosen) ? chosen : (namespaces[0] ?? "");
   const { data, error, isPending, refetch } = useQuery({
     queryKey: queryKeys.resourceMap(cluster, namespace),
     queryFn: ({ signal }) => api.resourceMap(cluster, namespace, signal),
@@ -45,7 +49,19 @@ export function MapPage() {
     );
   }
   return (
-    <Card title={`Map of ${namespace}`}>
+    <Card
+      title={`Map of ${namespace}`}
+      actions={
+        namespaces.length > 1 ? (
+          <Segmented
+            label="Namespace to map"
+            options={namespaces.map((n) => ({ value: n, label: n }))}
+            value={namespace}
+            onChange={setChosen}
+          />
+        ) : undefined
+      }
+    >
       {isPending ? (
         <div className={styles.skeleton} aria-label="Loading the map" />
       ) : error ? (

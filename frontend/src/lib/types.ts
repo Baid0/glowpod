@@ -165,6 +165,8 @@ export interface ResourceTable {
   continue?: string;
   resourceVersion?: string;
   remainingItemCount?: number;
+  /** Picked namespaces the user may not list; the others are shown. */
+  skipped?: string[];
 }
 
 /** Group/version/resource as they appear in URLs ("core" for the core group). */

@@ -108,7 +108,7 @@ function ClusterLine({ data }: { data: Overview | undefined }) {
         {data.namespace && (
           <>
             {" "}
-            · showing <span className={styles.mono}>{data.namespace}</span>
+            · showing <span className={styles.mono}>{data.namespace.split(",").join(", ")}</span>
           </>
         )}
       </p>

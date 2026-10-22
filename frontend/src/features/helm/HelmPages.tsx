@@ -5,7 +5,7 @@ import { Link, useParams } from "react-router";
 import { Badge } from "../../components/Badge";
 import { Card } from "../../components/Card";
 import { api } from "../../lib/api";
-import { usePreferences } from "../../lib/preferences";
+import { describeNamespaces, usePreferences } from "../../lib/preferences";
 import { useClusterId } from "../../lib/queries";
 import { queryKeys } from "../../lib/queryKeys";
 import { formatAge, useNow } from "../../lib/time";
@@ -19,7 +19,8 @@ const releasePath = (ns: string, name: string) =>
 /** Every Helm release the user can see, newest revision of each. */
 export function HelmReleasesPage() {
   const cluster = useClusterId();
-  const { namespace } = usePreferences();
+  const { namespace, namespaces } = usePreferences();
+  const showNamespace = namespaces.length !== 1;
   const now = useNow(30_000);
   const { data, error, isPending, refetch } = useQuery({
     queryKey: queryKeys.helmReleases(cluster, namespace),
@@ -28,7 +29,7 @@ export function HelmReleasesPage() {
   });
 
   return (
-    <Card title={namespace ? `Helm releases in ${namespace}` : "Helm releases in all namespaces"}>
+    <Card title={`Helm releases in ${describeNamespaces(namespaces)}`}>
       {isPending ? (
         <div className={styles.skeleton} aria-label="Loading releases" />
       ) : error ? (
@@ -44,7 +45,7 @@ export function HelmReleasesPage() {
           <thead>
             <tr>
               <th scope="col">Release</th>
-              {!namespace && <th scope="col">Namespace</th>}
+              {showNamespace && <th scope="col">Namespace</th>}
               <th scope="col">Status</th>
               <th scope="col">Chart</th>
               <th scope="col">App version</th>
@@ -62,7 +63,7 @@ export function HelmReleasesPage() {
                     {r.name}
                   </Link>
                 </td>
-                {!namespace && <td className={styles.muted}>{r.namespace}</td>}
+                {showNamespace && <td className={styles.muted}>{r.namespace}</td>}
                 <td>
                   <Badge tone={helmTone(r.status)}>{helmWord(r.status)}</Badge>
                 </td>

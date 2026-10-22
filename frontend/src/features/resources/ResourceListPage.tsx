@@ -15,7 +15,7 @@ import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import { ApiError } from "../../lib/api";
 import { cx } from "../../lib/cx";
-import { usePreferences } from "../../lib/preferences";
+import { describeNamespaces, usePreferences } from "../../lib/preferences";
 import type { ResourceRef, TableColumn, TableRow } from "../../lib/types";
 import {
   columnsFor,
@@ -46,7 +46,7 @@ const NAMESPACE_COLUMN: TableColumn = { name: "Namespace", type: "string", prior
  * search over loaded rows, label selectors, paging and live refresh.
  */
 export function ResourceListPage({ resource }: { resource: ResourceRef }) {
-  const { mode, namespace, density } = usePreferences();
+  const { mode, namespace, namespaces, density } = usePreferences();
   const [search, setSearch] = useState("");
   const [selectorDraft, setSelectorDraft] = useState("");
   const [selector, setSelector] = useState("");
@@ -62,7 +62,9 @@ export function ResourceListPage({ resource }: { resource: ResourceRef }) {
     () => (search ? allRows.filter((r) => matchesSearch(r, search)) : allRows),
     [allRows, search],
   );
-  const showNamespace = Boolean(type?.namespaced && namespace === "");
+  // One namespace picked: every row is in it. Otherwise say which.
+  const showNamespace = Boolean(type?.namespaced && namespaces.length !== 1);
+  const skipped = first?.skipped ?? [];
   const apiColumns = first?.columns;
 
   const columns = useMemo(() => {
@@ -132,7 +134,10 @@ export function ResourceListPage({ resource }: { resource: ResourceRef }) {
   const padTop = items[0]?.start ?? 0;
   const padBottom = last ? virtualizer.getTotalSize() - last.end : 0;
 
-  const where = namespace && type?.namespaced !== false ? ` in ${namespace}` : "";
+  const where =
+    namespaces.length > 0 && type?.namespaced !== false
+      ? ` in ${describeNamespaces(namespaces)}`
+      : "";
   const word = resource.resource;
   const remaining = data?.pages.at(-1)?.remainingItemCount;
 
@@ -221,6 +226,12 @@ export function ResourceListPage({ resource }: { resource: ResourceRef }) {
       {type && !type.namespaced && namespace && (
         <p className={styles.note}>
           {type.kind} objects aren't in a namespace, so this shows all of them.
+        </p>
+      )}
+      {skipped.length > 0 && (
+        <p className={styles.note} role="status">
+          You can't list {word} in {skipped.join(", ")}, so{" "}
+          {skipped.length === 1 ? "it's" : "they're"} left out.
         </p>
       )}
 

@@ -14,7 +14,7 @@ import { Card } from "../../components/Card";
 import { api } from "../../lib/api";
 import { cx } from "../../lib/cx";
 import { PAGE_EVENTS, useLive } from "../../lib/live";
-import { usePreferences } from "../../lib/preferences";
+import { describeNamespaces, usePreferences } from "../../lib/preferences";
 import { useClusterId } from "../../lib/queries";
 import { queryKeys } from "../../lib/queryKeys";
 import { formatAgeShort, useNow } from "../../lib/time";
@@ -58,7 +58,7 @@ function matches(e: KubeEvent, filter: Filter, q: string): boolean {
 /** Everything the cluster reported lately, newest first, live. */
 export function EventsPage() {
   const cluster = useClusterId();
-  const { namespace, mode } = usePreferences();
+  const { namespace, namespaces, mode } = usePreferences();
   const { status } = useLive();
   const now = useNow(15_000);
   const [params, setParams] = useSearchParams();
@@ -86,7 +86,7 @@ export function EventsPage() {
 
   return (
     <Card
-      title={namespace ? `Events in ${namespace}` : "Events in all namespaces"}
+      title={`Events in ${describeNamespaces(namespaces)}`}
       actions={
         <span className={styles.live} data-live={status === "live"}>
           <span className={styles.liveDot} aria-hidden="true" />
@@ -160,7 +160,9 @@ export function EventsPage() {
                     ) : (
                       <span className={styles.object}>{object}</span>
                     )}
-                    {!namespace && e.object.namespace && <span>{e.object.namespace}</span>}
+                    {namespaces.length !== 1 && e.object.namespace && (
+                      <span>{e.object.namespace}</span>
+                    )}
                     {e.count > 1 && <span>{e.count} times</span>}
                   </p>
                 </div>

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import {
   DEFAULT_REFRESH_MS,
   KEYS,
+  normalizeNamespaces,
   PreferencesContext,
   REFRESH_CHOICES,
   validThresholds,
@@ -56,7 +57,23 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     false,
     (raw) => raw === "true",
   );
-  const [namespace, setNamespace] = usePersisted<string>(KEYS.namespace, "", (raw) => raw);
+  // Stored as the ?namespace= value, so a single saved namespace still reads back.
+  const [namespace, setNamespaceRaw] = usePersisted<string>(KEYS.namespace, "", (raw) =>
+    normalizeNamespaces(raw.split(",")).join(","),
+  );
+  const namespaces = useMemo(() => (namespace ? namespace.split(",") : []), [namespace]);
+  const setNamespaces = useCallback(
+    (list: string[]) => {
+      setNamespaceRaw(normalizeNamespaces(list).join(","));
+    },
+    [setNamespaceRaw],
+  );
+  const setNamespace = useCallback(
+    (ns: string) => {
+      setNamespaceRaw(ns);
+    },
+    [setNamespaceRaw],
+  );
   const [theme, setTheme] = usePersisted<ThemeChoice>(KEYS.theme, "dark", (raw) =>
     raw === "dark" || raw === "light" || raw === "system" ? raw : undefined,
   );
@@ -105,6 +122,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setPanelCollapsed,
       namespace,
       setNamespace,
+      namespaces,
+      setNamespaces,
       theme,
       setTheme,
       resolvedTheme,
@@ -116,6 +135,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setThresholds,
     }),
     [
+      namespaces,
+      setNamespaces,
       mode,
       setMode,
       panelCollapsed,

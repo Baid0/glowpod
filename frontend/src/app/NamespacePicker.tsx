@@ -17,13 +17,24 @@ interface Option {
   kind: "all" | "namespace" | "use";
 }
 
+/** The trigger's text: "All namespaces", "shop", "shop, payments", "shop +2". */
+function triggerLabel(picked: string[], restricted: boolean): string {
+  const [first, second] = picked;
+  if (first === undefined) return restricted ? "Pick a namespace" : "All namespaces";
+  if (second === undefined) return first;
+  if (picked.length === 2) return `${first}, ${second}`;
+  return `${first} +${String(picked.length - 1)}`;
+}
+
 /**
  * The top bar's namespace picker: plain text that opens a searchable list.
- * People who may not list namespaces get no "All namespaces" and can use
- * any name they type.
+ * Clicking a name (or Enter) shows only that namespace; its checkbox (or
+ * Space) adds it to or takes it out of the set. People who may not list
+ * namespaces get no "All namespaces", keep at least one, and can use any
+ * name they type.
  */
 export function NamespacePicker() {
-  const { namespace, setNamespace } = usePreferences();
+  const { namespaces: picked, setNamespaces } = usePreferences();
   const { data } = useNamespaces();
   const names = useMemo(() => data?.namespaces ?? [], [data]);
   const restricted = data?.restricted ?? false;
@@ -41,14 +52,15 @@ export function NamespacePicker() {
   // Someone who may not list namespaces can't see "all" either: start them
   // in one they can.
   const first = names[0];
+  const none = picked.length === 0;
   useEffect(() => {
-    if (restricted && namespace === "" && first) setNamespace(first);
-  }, [restricted, namespace, first, setNamespace]);
+    if (restricted && none && first) setNamespaces([first]);
+  }, [restricted, none, first, setNamespaces]);
 
   const options = useMemo<Option[]>(() => {
     const q = query.trim().toLowerCase();
-    // Keep a saved namespace pickable even if it's gone or not loaded yet.
-    const all = namespace && !names.includes(namespace) ? [namespace, ...names] : names;
+    // Keep saved namespaces pickable even if they're gone or not loaded yet.
+    const all = [...picked.filter((p) => !names.includes(p)), ...names];
     const out: Option[] = [];
     if (!restricted && (!q || "all namespaces".includes(q))) out.push({ value: "", kind: "all" });
     for (const n of filterNamespaces(all, q)) out.push({ value: n, kind: "namespace" });
@@ -59,24 +71,47 @@ export function NamespacePicker() {
       out.push({ value: q, kind: "use" });
     }
     return out;
-  }, [names, namespace, query, restricted]);
+  }, [names, picked, query, restricted]);
 
   const close = (refocus: boolean) => {
     setOpen(false);
     setQuery("");
     if (refocus) trigger.current?.focus();
   };
+  const isPicked = (o: Option) =>
+    o.kind === "all" ? none : o.kind === "namespace" && picked.includes(o.value);
   const show = () => {
-    const current = options.findIndex((o) => o.kind !== "use" && o.value === namespace);
+    const current = options.findIndex(isPicked);
     setActive(Math.max(0, current));
     const rect = trigger.current?.getBoundingClientRect();
     setAlign(rect && rect.left + POPOVER_WIDTH > window.innerWidth - 16 ? "right" : "left");
     setOpen(true);
   };
+  /** Only this namespace (or all), and close. */
   const pick = (o: Option | undefined) => {
     if (!o) return;
-    setNamespace(o.value);
+    setNamespaces(o.kind === "all" ? [] : [o.value]);
     close(true);
+  };
+  /** Add it to the set or take it out; the list stays open. */
+  const toggle = (o: Option | undefined) => {
+    if (!o) return;
+    if (o.kind === "all") {
+      setNamespaces([]);
+      return;
+    }
+    if (picked.includes(o.value)) {
+      // People who can't see all namespaces keep at least one.
+      if (restricted && picked.length === 1) return;
+      setNamespaces(picked.filter((p) => p !== o.value));
+    } else {
+      setNamespaces([...picked, o.value]);
+    }
+    // Ready for the next name: a search left in the box would run into it.
+    if (query) {
+      setQuery("");
+      setActive(0);
+    }
   };
 
   // Click outside closes.
@@ -121,6 +156,12 @@ export function NamespacePicker() {
         e.preventDefault();
         pick(options[Math.min(active, last)]);
         break;
+      case " ":
+        // Space adds to the set. Namespace names never contain spaces, so
+        // the search box doesn't need it.
+        e.preventDefault();
+        toggle(options[Math.min(active, last)]);
+        break;
       case "Escape":
         e.preventDefault();
         close(true);
@@ -131,7 +172,7 @@ export function NamespacePicker() {
     }
   };
 
-  const label = namespace || (restricted ? "Pick a namespace" : "All namespaces");
+  const label = triggerLabel(picked, restricted);
   const current = options[Math.min(active, options.length - 1)];
   const count = names.length;
 
@@ -143,7 +184,7 @@ export function NamespacePicker() {
         className={styles.trigger}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={`Namespace: ${label}`}
+        aria-label={`Namespace: ${none ? label : picked.join(", ")}`}
         onClick={() => {
           if (open) close(false);
           else show();
@@ -183,9 +224,16 @@ export function NamespacePicker() {
               onKeyDown={onKey}
             />
           </div>
-          <ul ref={list} id={listId} className={styles.list} role="listbox" aria-label="Namespaces">
+          <ul
+            ref={list}
+            id={listId}
+            className={styles.list}
+            role="listbox"
+            aria-label="Namespaces"
+            aria-multiselectable="true"
+          >
             {options.map((o, i) => {
-              const selected = o.kind !== "use" && o.value === namespace;
+              const selected = isPicked(o);
               return (
                 <li
                   key={o.kind + o.value}
@@ -204,10 +252,24 @@ export function NamespacePicker() {
                     pick(o);
                   }}
                 >
-                  <span className={styles.check} aria-hidden="true">
-                    {selected && <IconCheck size={16} stroke={2} />}
-                    {o.kind === "all" && !selected && <IconStack2 size={16} stroke={1.75} />}
-                  </span>
+                  {o.kind === "all" ? (
+                    <span className={styles.allIcon} aria-hidden="true">
+                      <IconStack2 size={16} stroke={1.75} />
+                    </span>
+                  ) : (
+                    <span
+                      className={styles.box}
+                      data-checked={selected}
+                      aria-hidden="true"
+                      title={selected ? "Take out of the set" : "Add to the set"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggle(o);
+                      }}
+                    >
+                      {selected && <IconCheck size={12} stroke={3} />}
+                    </span>
+                  )}
                   {o.kind === "all" ? (
                     <span className={styles.label}>All namespaces</span>
                   ) : o.kind === "use" ? (
@@ -218,6 +280,9 @@ export function NamespacePicker() {
                     <span className={cx(styles.label, styles.mono)}>
                       <Highlight text={o.value} query={query} />
                     </span>
+                  )}
+                  {o.kind === "all" && selected && (
+                    <IconCheck size={16} stroke={2} className={styles.tick} aria-hidden="true" />
                   )}
                 </li>
               );
@@ -230,16 +295,36 @@ export function NamespacePicker() {
                 : `No namespace matches “${query}”.`}
             </p>
           )}
-          <p className={styles.footer}>
-            <span>
-              {restricted
-                ? "You can't list namespaces here; type one you can use."
-                : `${String(count)} ${count === 1 ? "namespace" : "namespaces"}`}
-            </span>
+          <div className={styles.footer}>
+            {picked.length > 1 ? (
+              <span className={styles.picked}>
+                {picked.length} picked
+                {!restricted && (
+                  <button
+                    type="button"
+                    className={styles.clear}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                    }}
+                    onClick={() => {
+                      setNamespaces([]);
+                    }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </span>
+            ) : (
+              <span>
+                {restricted
+                  ? "You can't list namespaces here; type one you can use."
+                  : `${String(count)} ${count === 1 ? "namespace" : "namespaces"}`}
+              </span>
+            )}
             <span className={styles.keys} aria-hidden="true">
-              ↑↓ · Enter · Esc
+              Enter only · Space add
             </span>
-          </p>
+          </div>
         </div>
       )}
     </div>

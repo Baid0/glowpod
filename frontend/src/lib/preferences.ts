@@ -15,8 +15,12 @@ export interface Preferences {
   setMode: (m: Mode) => void;
   panelCollapsed: boolean;
   setPanelCollapsed: (c: boolean) => void;
-  /** "" means all namespaces. */
+  /** The picked namespaces; empty means all of them. */
+  namespaces: string[];
+  setNamespaces: (ns: string[]) => void;
+  /** The same as a ?namespace= value: "" for all, else names joined by commas. */
   namespace: string;
+  /** Picks one namespace ("" = all). */
   setNamespace: (ns: string) => void;
   theme: ThemeChoice;
   setTheme: (t: ThemeChoice) => void;
@@ -64,4 +68,18 @@ export function usePreferences(): Preferences {
   const p = useContext(PreferencesContext);
   if (!p) throw new Error("usePreferences must be used inside <PreferencesProvider>");
   return p;
+}
+
+/** "all namespaces", "shop", "shop and payments", "3 namespaces". */
+export function describeNamespaces(namespaces: string[]): string {
+  const [first, second] = namespaces;
+  if (first === undefined) return "all namespaces";
+  if (second === undefined) return first;
+  if (namespaces.length === 2) return `${first} and ${second}`;
+  return `${String(namespaces.length)} namespaces`;
+}
+
+/** Sorted, without duplicates or empty names. */
+export function normalizeNamespaces(namespaces: string[]): string[] {
+  return [...new Set(namespaces.filter(Boolean))].sort();
 }

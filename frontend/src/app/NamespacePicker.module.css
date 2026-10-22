@@ -119,11 +119,40 @@
   color: var(--ink);
 }
 
-.check {
+/* Checkbox: add to or take out of the set. A lime fill with a Bio Black
+   tick when picked; light mode adds the Bio Black outline. */
+.box {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin: 0 2px;
+  border: 1.5px solid var(--hairline-strong);
+  border-radius: var(--radius-badge-accent);
+  color: var(--on-primary);
+  cursor: pointer;
+}
+
+.box:hover {
+  border-color: var(--muted);
+}
+
+.box[data-checked="true"] {
+  border-color: var(--lime-outline);
+  background: var(--primary);
+}
+
+.allIcon {
   display: inline-flex;
   flex: none;
   justify-content: center;
   width: 20px;
+  color: var(--muted);
+}
+
+.tick {
+  flex: none;
   color: var(--ink);
 }
 
@@ -171,6 +200,28 @@
 
 .footer > span:first-child {
   min-width: 0;
+}
+
+.picked {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  color: var(--ink);
+}
+
+.clear {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--body);
+  font: var(--text-caption);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.clear:hover {
+  color: var(--ink);
 }
 
 .keys {
