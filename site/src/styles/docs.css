@@ -345,6 +345,17 @@
   font-size: 18px;
 }
 
+/* Screenshots: full width, sized by their own aspect ratio (width and height are set). */
+.prose .docs-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-block: 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--bio-black);
+}
+
 .prose h2 {
   margin-top: 24px;
   font-size: 28px;
