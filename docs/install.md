@@ -128,7 +128,7 @@ Notes:
 ## 4. Install
 
 ```bash
-helm upgrade --install glowpod oci://ghcr.io/glowpod-dev/charts/glowpod --version 0.1.3 \
+helm upgrade --install glowpod oci://ghcr.io/glowpod-dev/charts/glowpod --version 0.1.4 \
   -n glowpod -f glowpod-values.yaml
 kubectl -n glowpod rollout status deploy/glowpod
 helm test glowpod -n glowpod
@@ -163,7 +163,7 @@ For a quick look, skip the ingress and HTTPS and port-forward. Browsers send
 `Secure` cookies to `localhost`, so this works:
 
 ```bash
-helm upgrade --install glowpod oci://ghcr.io/glowpod-dev/charts/glowpod --version 0.1.3 -n glowpod
+helm upgrade --install glowpod oci://ghcr.io/glowpod-dev/charts/glowpod --version 0.1.4 -n glowpod
 kubectl -n glowpod port-forward svc/glowpod 8080:80
 ```
 
@@ -178,11 +178,11 @@ repository's release workflow from a version tag. Check before you install:
 those names to verify them.)
 
 ```bash
-cosign verify ghcr.io/glowpod-dev/glowpod:0.1.3 \
+cosign verify ghcr.io/glowpod-dev/glowpod:0.1.4 \
   --certificate-identity-regexp '^https://github.com/glowpod-dev/glowpod/\.github/workflows/release\.yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 
-cosign verify ghcr.io/glowpod-dev/charts/glowpod:0.1.3 \
+cosign verify ghcr.io/glowpod-dev/charts/glowpod:0.1.4 \
   --certificate-identity-regexp '^https://github.com/glowpod-dev/glowpod/\.github/workflows/release\.yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
@@ -191,15 +191,15 @@ The image also carries build provenance and an SBOM (the list of everything
 inside it):
 
 ```bash
-gh attestation verify oci://ghcr.io/glowpod-dev/glowpod:0.1.3 -R glowpod-dev/glowpod
-docker buildx imagetools inspect ghcr.io/glowpod-dev/glowpod:0.1.3 --format '{{ json .SBOM }}'
+gh attestation verify oci://ghcr.io/glowpod-dev/glowpod:0.1.4 -R glowpod-dev/glowpod
+docker buildx imagetools inspect ghcr.io/glowpod-dev/glowpod:0.1.4 --format '{{ json .SBOM }}'
 ```
 
 Each `glowpod` download on the GitHub Release has a build attestation and a
 line in `checksums.txt`; the release also has an SPDX SBOM:
 
 ```bash
-gh attestation verify glowpod_0.1.3_linux_amd64.tar.gz -R glowpod-dev/glowpod
+gh attestation verify glowpod_0.1.4_linux_amd64.tar.gz -R glowpod-dev/glowpod
 sha256sum -c checksums.txt --ignore-missing
 ```
 
