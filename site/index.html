@@ -43,15 +43,19 @@
           <div class="command-card">
             <code class="command-lines">
               <span
+                ><span class="prompt" aria-hidden="true">$ </span>helm repo add glowpod
+                https://glowpod.dev/charts</span
+              >
+              <span
                 ><span class="prompt" aria-hidden="true">$ </span>helm install glowpod
-                oci://ghcr.io/baid0/charts/glowpod</span
+                glowpod/glowpod</span
               >
             </code>
             <button
               class="icon-button copy-button"
               type="button"
-              data-copy="helm install glowpod oci://ghcr.io/baid0/charts/glowpod"
-              aria-label="Copy install command"
+              data-copy="helm repo add glowpod https://glowpod.dev/charts&#10;helm install glowpod glowpod/glowpod"
+              aria-label="Copy install commands"
             >
               <!-- @include copy-icons.html -->
             </button>
@@ -511,16 +515,20 @@
             <div class="command-block">
               <code class="command-lines">
                 <span
+                  ><span class="prompt" aria-hidden="true">$ </span>helm repo add glowpod
+                  https://glowpod.dev/charts</span
+                >
+                <span
                   ><span class="prompt" aria-hidden="true">$ </span>helm install glowpod
-                  oci://ghcr.io/baid0/charts/glowpod \</span
+                  glowpod/glowpod \</span
                 >
                 <span class="indent">-n glowpod --create-namespace</span>
               </code>
               <button
                 class="icon-button copy-button"
                 type="button"
-                aria-label="Copy command"
-                data-copy="helm install glowpod oci://ghcr.io/baid0/charts/glowpod -n glowpod --create-namespace"
+                aria-label="Copy commands"
+                data-copy="helm repo add glowpod https://glowpod.dev/charts&#10;helm install glowpod glowpod/glowpod -n glowpod --create-namespace"
               >
                 <!-- @include copy-icons.html -->
               </button>
@@ -528,7 +536,8 @@
             <p class="note">
               Your team signs in with SSO (OpenID Connect), LDAP or a service-account token. Set up
               the address and ingress with the
-              <a href="/docs/install/">install guide</a>.
+              <a href="/docs/install/">install guide</a>. Prefer OCI? Use
+              <code class="inline-code">oci://ghcr.io/baid0/charts/glowpod</code>
             </p>
           </div>
           <div

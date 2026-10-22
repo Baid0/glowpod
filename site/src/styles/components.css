@@ -503,6 +503,13 @@ tbody tr {
   padding-left: 24px;
 }
 
+/* A long command wraps under its own text, not under the $, so it can't be
+   mistaken for a second command. */
+.command-lines > span:has(> .prompt) {
+  padding-left: 2ch;
+  text-indent: -2ch;
+}
+
 .prompt,
 .comment {
   color: var(--muted);
