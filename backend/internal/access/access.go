@@ -55,14 +55,14 @@ func Review(ctx context.Context, kube kubernetes.Interface, checks []Check) ([]b
 				}},
 			}, metav1.CreateOptions{})
 			if err != nil {
-				return fmt.Errorf("access review: %w", err)
+				return err //nolint:wrapcheck // wrapped below, once
 			}
 			allowed[i] = review.Status.Allowed && !review.Status.Denied
 			return nil
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("access review: %w", err)
 	}
 	return allowed, nil
 }
