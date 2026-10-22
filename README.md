@@ -30,6 +30,15 @@ helm install glowpod oci://ghcr.io/baid0/charts/glowpod -n glowpod --create-name
   --set ingress.enabled=true --set ingress.host=glowpod.example.com
 ```
 
+Or from the classic chart repository:
+
+```bash
+helm repo add glowpod https://glowpod.dev/charts
+helm install glowpod glowpod/glowpod -n glowpod --create-namespace \
+  --set publicURL=https://glowpod.example.com \
+  --set ingress.enabled=true --set ingress.host=glowpod.example.com
+```
+
 People sign in with **SSO (OpenID Connect)**, **LDAP / Active Directory** or a
 **service-account token**, and act as themselves: every Kubernetes call runs
 with their own RBAC.

@@ -6,6 +6,12 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Classic chart repository: `helm repo add glowpod https://glowpod.dev/charts`. Every release
+  adds its version, and the chart file is attached to the GitHub Release (with a checksum and a
+  build attestation). 0.1.1 and 0.1.2 are in it already.
+
 ## [0.1.2] - 2026-10-22
 
 ### Security

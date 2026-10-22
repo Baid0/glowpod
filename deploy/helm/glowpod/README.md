@@ -11,6 +11,12 @@ helm install glowpod oci://ghcr.io/baid0/charts/glowpod -n glowpod --create-name
   --set ingress.enabled=true --set ingress.host=glowpod.example.com
 ```
 
+Or add the classic chart repository and install `glowpod/glowpod`:
+
+```bash
+helm repo add glowpod https://glowpod.dev/charts
+```
+
 Serve it over HTTPS: the session cookie is `Secure`, so browsers only send it
 over HTTPS (and to `localhost`, which is enough for a port-forward test).
 

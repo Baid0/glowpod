@@ -32,7 +32,17 @@ distroless, runs as non-root user 65532) and the Helm chart, both signed:
 
 - Image: `ghcr.io/baid0/glowpod:<version>`
 - Chart: `oci://ghcr.io/baid0/charts/glowpod`, which already points at the
-  image of the same version
+  image of the same version. The same chart is also in a classic chart
+  repository, if your tools expect `helm repo add`:
+
+  ```bash
+  helm repo add glowpod https://glowpod.dev/charts
+  helm repo update
+  helm search repo glowpod     # the versions available
+  ```
+
+  Then use `glowpod/glowpod` wherever the steps below say
+  `oci://ghcr.io/baid0/charts/glowpod`.
 
 The steps below install the published chart. To install from a checkout
 instead, use `deploy/helm/glowpod` in place of the `oci://` address.
