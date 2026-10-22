@@ -12,7 +12,7 @@ LDFLAGS  := -s -w -X main.version=$(VERSION)
 # Platforms `make dist` builds the glowpod download for.
 PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64
 
-.PHONY: help deps dev web build dist test test-backend test-frontend e2e lint lint-backend lint-frontend fmt clean image image-push chart site site-dev
+.PHONY: help deps dev web build dist test test-backend test-frontend e2e lint lint-backend lint-frontend fmt clean image image-push chart site site-dev site-preview
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-15s %s\n", $$1, $$2}'
@@ -67,8 +67,12 @@ $(SITE_MODULES): site/package.json site/pnpm-lock.yaml
 	cd site && pnpm install --frozen-lockfile
 	@touch $@
 
-site: $(SITE_MODULES) ## Build the glowpod.dev website into site/dist and check it against its CSP
+site: $(SITE_MODULES) $(NODE_MODULES) ## Build the glowpod.dev website and its demo into site/dist, and check them
+	cd frontend && pnpm build:demo
 	cd site && pnpm format:check && pnpm build
+
+site-preview: ## Serve the built website like Cloudflare Pages, demo included (open http://localhost:5181)
+	cd site && pnpm preview
 
 site-dev: $(SITE_MODULES) ## Run the website's dev server (open http://localhost:5180)
 	cd site && pnpm dev
@@ -101,5 +105,5 @@ fmt: $(NODE_MODULES) ## Format Go and frontend code
 	cd frontend && pnpm format
 
 clean: ## Remove build output
-	rm -rf bin dist frontend/dist site/dist
+	rm -rf bin dist frontend/dist frontend/dist-demo site/dist
 	find $(WEB_DIST) -mindepth 1 ! -name .gitkeep -delete

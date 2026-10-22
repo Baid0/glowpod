@@ -7,6 +7,21 @@
       "port": 5173
     },
     {
+      "name": "demo",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--dir",
+        "frontend",
+        "exec",
+        "vite",
+        "--mode",
+        "demo",
+        "--port",
+        "5174"
+      ],
+      "port": 5174
+    },
+    {
       "name": "site",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
