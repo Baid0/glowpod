@@ -1,4 +1,4 @@
-import { act, screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
@@ -183,10 +183,10 @@ describe("namespace picker for people who can't list namespaces", () => {
     await userEvent.click(screen.getByRole("button", { name: "Sign in with token" }));
 
     const picker = await screen.findByRole("combobox", { name: "Namespace" });
-    await act(async () => {
-      await Promise.resolve();
+    // The list arrives, then the picker moves to the namespace they can use.
+    await waitFor(() => {
+      expect(picker).toHaveValue("team-a");
     });
-    expect(picker).toHaveValue("team-a");
     expect(
       within(picker).queryByRole("option", { name: "All namespaces" }),
     ).not.toBeInTheDocument();
