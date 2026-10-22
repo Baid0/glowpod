@@ -20,7 +20,7 @@
 
 .search {
   height: var(--control-height);
-  width: 240px;
+  width: 200px;
   padding: 0 var(--space-3);
   border: 1px solid var(--hairline-strong);
   border-radius: var(--radius-control);
@@ -40,7 +40,7 @@
 }
 
 .selector {
-  width: 260px;
+  width: 220px;
   padding-right: 32px;
   font-family: var(--font-mono);
   font-size: 13px;

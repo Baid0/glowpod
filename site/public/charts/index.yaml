@@ -5,6 +5,55 @@ entries:
       artifacthub.io/category: monitoring-logging
       artifacthub.io/changes: |
         - kind: added
+          description: "Create resources. New <Kind> on every resource list opens a template for that kind (a useful one for common kinds, a skeleton for any other kind, CRDs included) in the picked namespace; Check runs a server-side dry run and Create unlocks only for text that passed. It appears only when RBAC allows creating that kind there."
+        - kind: added
+          description: "Apply YAML (Deep mode): any number of objects of any kind, like kubectl apply --server-side. Check shows what would happen to each object; Apply unlocks when all pass and links each result. Fields set another way are overwritten only when you choose to, like --force-conflicts."
+        - kind: added
+          description: "API: POST .../resources/{group}/{version}/{resource} and POST .../apply, both with ?dryRun=true, running as the signed-in person and logged as changes."
+        - kind: added
+          description: "A live demo at https://glowpod.dev/demo/: the real app on a sample cluster that runs in the browser, with a crash-looping pod, a pod that doesn't fit and a node short of memory to look into. Scaling, restarting, deleting, editing YAML, the terminal and Secret reveal all work on the sample data, which resets on reload. The home page links to it."
+      artifacthub.io/images: |
+        - name: glowpod
+          image: ghcr.io/glowpod-dev/glowpod:0.2.0
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Website
+          url: https://glowpod.dev
+        - name: Documentation
+          url: https://glowpod.dev/docs/
+        - name: Install guide
+          url: https://glowpod.dev/docs/install/
+        - name: Sign-in and access
+          url: https://glowpod.dev/docs/authentication/
+        - name: Security policy
+          url: https://github.com/glowpod-dev/glowpod/security/policy
+        - name: Source
+          url: https://github.com/glowpod-dev/glowpod
+    apiVersion: v2
+    appVersion: 0.2.0
+    created: "2026-10-22T16:43:34.929406148Z"
+    description: A Kubernetes dashboard for app developers and platform teams. People
+      sign in and act as themselves.
+    digest: b3c6a0084f4924d66608dc5139c8c2fb7742e3f8d36125830b41b9caa163da89
+    home: https://glowpod.dev
+    icon: https://glowpod.dev/brand/glowpod-icon.png
+    keywords:
+    - kubernetes
+    - dashboard
+    - rbac
+    - sso
+    kubeVersion: '>=1.28.0-0'
+    name: glowpod
+    sources:
+    - https://github.com/glowpod-dev/glowpod
+    type: application
+    urls:
+    - https://github.com/glowpod-dev/glowpod/releases/download/v0.2.0/glowpod-0.2.0.tgz
+    version: 0.2.0
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
           description: "The chart has an icon (the Glowpod mark on lime), so Artifact Hub and other chart browsers show the logo instead of the generic Helm one."
       artifacthub.io/images: |
         - name: glowpod
@@ -146,4 +195,4 @@ entries:
     urls:
     - https://github.com/glowpod-dev/glowpod/releases/download/v0.1.1/glowpod-0.1.1.tgz
     version: 0.1.1
-generated: "2026-10-22T13:38:52.93901387Z"
+generated: "2026-10-22T16:43:34.927714775Z"

@@ -2,8 +2,8 @@ apiVersion: v2
 name: glowpod
 description: A Kubernetes dashboard for app developers and platform teams. People sign in and act as themselves.
 type: application
-version: 0.1.4
-appVersion: "0.1.4"
+version: 0.2.0
+appVersion: "0.2.0"
 # SelfSubjectReview (who am I) is GA since 1.28.
 kubeVersion: ">=1.28.0-0"
 home: https://glowpod.dev
@@ -19,7 +19,7 @@ annotations:
   artifacthub.io/category: monitoring-logging
   artifacthub.io/images: |
     - name: glowpod
-      image: ghcr.io/glowpod-dev/glowpod:0.1.4
+      image: ghcr.io/glowpod-dev/glowpod:0.2.0
   artifacthub.io/links: |
     - name: Website
       url: https://glowpod.dev

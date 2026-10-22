@@ -88,12 +88,17 @@ export function matchesSearch(row: TableRow, query: string): boolean {
 
 /** Where a row's name links to. Pods get their own page; the rest the generic one. */
 export function detailPath(ref: ResourceRef, row: TableRow): string {
-  const ns = encodeURIComponent(row.object.namespace ?? "_");
-  const name = encodeURIComponent(row.object.name);
+  return objectPagePath(ref, row.object.namespace ?? "", row.object.name);
+}
+
+/** The page of one object; namespace "" for cluster-scoped kinds. */
+export function objectPagePath(ref: ResourceRef, namespace: string, name: string): string {
+  const ns = encodeURIComponent(namespace || "_");
+  const n = encodeURIComponent(name);
   if ((ref.group === "" || ref.group === "core") && ref.resource === "pods") {
-    return `/workloads/pods/${ns}/${name}`;
+    return `/workloads/pods/${ns}/${n}`;
   }
-  return `/resources/${encodeURIComponent(ref.group || "core")}/${encodeURIComponent(ref.version)}/${encodeURIComponent(ref.resource)}/${ns}/${name}`;
+  return `/resources/${encodeURIComponent(ref.group || "core")}/${encodeURIComponent(ref.version)}/${encodeURIComponent(ref.resource)}/${ns}/${n}`;
 }
 
 /** Groups that ship with Kubernetes, as opposed to CRDs people install. */

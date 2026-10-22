@@ -89,9 +89,9 @@ with their own RBAC.
 - Every resource, CRDs included, as live kubectl-style lists, with a plain
   summary, conditions, events and YAML for each object.
 - Pods: a plain-language story of what happened, live logs, a terminal.
-- Changes: edit YAML with a server-side dry-run diff, scale, restart,
-  delete (type the name), cordon and drain nodes. Buttons appear only for
-  what you're allowed to do.
+- Changes: create from a template or apply any YAML, edit YAML with a
+  server-side dry-run diff, scale, restart, delete (type the name), cordon
+  and drain nodes. Buttons appear only for what you're allowed to do.
 - Helm releases (never their values), a resource map per namespace.
 
 ## Develop

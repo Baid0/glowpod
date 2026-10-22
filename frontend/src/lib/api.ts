@@ -1,8 +1,10 @@
 import type {
   AccessCheck,
+  ApplyResult,
   AuthMethod,
   AppDetail,
   AppSummary,
+  CreateResult,
   DrainPlan,
   DrainResult,
   HelmRelease,
@@ -277,6 +279,31 @@ export const api = {
     apiSend<UpdateResult>(
       "PUT",
       objectPath(cluster, ref, namespace, name, "", { dryRun: dryRun ? "true" : undefined }),
+      { yaml },
+    ),
+  createResource: (
+    cluster: string,
+    ref: ResourceRef,
+    namespace: string,
+    yaml: string,
+    dryRun: boolean,
+  ) =>
+    apiSend<CreateResult>(
+      "POST",
+      clusterPath(cluster, `resources/${refPath(ref)}`, {
+        namespace: namespace || undefined,
+        dryRun: dryRun ? "true" : undefined,
+      }),
+      { yaml },
+    ),
+  apply: (cluster: string, namespace: string, yaml: string, dryRun: boolean, force = false) =>
+    apiSend<ApplyResult>(
+      "POST",
+      clusterPath(cluster, "apply", {
+        namespace: namespace || undefined,
+        dryRun: dryRun ? "true" : undefined,
+        force: force ? "true" : undefined,
+      }),
       { yaml },
     ),
   deleteResource: (
