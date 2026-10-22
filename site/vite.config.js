@@ -18,6 +18,22 @@ const CSP = [
   "form-action 'none'",
 ].join("; ");
 
+// Headers Cloudflare Pages sends with every response, written to dist/_headers. The CSP is the
+// meta tag's policy plus frame-ancestors, which only works as a header. Hashed files in
+// /assets/ never change, so browsers may keep them for a year.
+const HEADERS = `/*
+  Content-Security-Policy: ${CSP}; frame-ancestors 'none'
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+`;
+
 // Replaces <!-- @include header.html current=docs --> with partials/header.html, marking the
 // nav link whose data-nav matches `current` as the current page.
 // Partials can include other partials.
@@ -70,8 +86,18 @@ function csp() {
   };
 }
 
+function headers() {
+  return {
+    name: "glowpod-headers",
+    apply: "build",
+    generateBundle() {
+      this.emitFile({ type: "asset", fileName: "_headers", source: HEADERS });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [docs(), partials(), csp()],
+  plugins: [docs(), partials(), csp(), headers()],
   server: { port: 5180, strictPort: true },
   preview: { port: 5181, strictPort: true },
   build: {
