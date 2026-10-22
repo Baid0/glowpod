@@ -170,7 +170,9 @@ kubeconfig can reach. Your kubeconfig user must be allowed to impersonate
    read -rs GLOWPOD_OIDC_CLIENT_SECRET && export GLOWPOD_OIDC_CLIENT_SECRET
    ```
 
-3. Start Glowpod in the same shell (the provider's own values are below):
+3. Start Glowpod in the same shell. For Google (other providers' values are
+   below; for Microsoft use its issuer and add
+   `-oidc-username-claim preferred_username`):
 
    ```bash
    glowpod -mode server -addr 127.0.0.1:8080 \
@@ -230,17 +232,40 @@ auth:
     usernameClaim: preferred_username   # many tenants don't send email
 ```
 
-Use your **tenant ID** in the issuer: the *Directory (tenant) ID* on your app
-registration's overview page. Microsoft's shared addresses (`…/common/v2.0`,
-`…/organizations/v2.0`, `…/consumers/v2.0`) don't work: they publish
-`{tenantid}` as their issuer, which no token ever matches, so Glowpod refuses
-to start with them and says why. Register the app as *single tenant*.
+Tested with Glowpod 0.3.0, including access by group. Set it up in the
+[Microsoft Entra admin center](https://entra.microsoft.com) (or the Azure
+portal's *Microsoft Entra ID*):
 
-Register an app (*Web*, redirect URI as above), create a client secret, and
-in *Token configuration* add a **groups claim** (security groups). Entra
-sends group **object IDs**, so bind RBAC to them:
-`--group=oidc:3f2a…`. People in more than about 200 groups get no `groups`
-claim; assign groups to the application to stay under the limit.
+1. You need an Entra tenant: your organization's, or a free one from an
+   [Azure account](https://azure.microsoft.com/free). A personal Microsoft
+   account on its own has none, and signing in says it "does not exist in
+   tenant 'Microsoft Services'". Check the tenant name in the top-right
+   corner before you start.
+2. **App registrations → New registration**: a name, **Accounts in this
+   organizational directory only (Single tenant)**, and the redirect URI:
+   platform **Web**, `<publicURL>/auth/oidc/callback`.
+3. From the app's **Overview**, copy the **Application (client) ID** (the
+   `clientID`) and the **Directory (tenant) ID** (for the `issuer`).
+4. **Certificates & secrets → New client secret**, and copy its **Value**
+   (shown once; not the "Secret ID") into the Secret Glowpod reads.
+5. **Token configuration**: **Add groups claim** → *Security groups* → for
+   *ID*, **Group ID**; and **Add optional claim** → *ID* → **email**,
+   accepting the Microsoft Graph prompt.
+
+Use your **tenant ID** in the issuer. Microsoft's shared addresses
+(`…/common/v2.0`, `…/organizations/v2.0`, `…/consumers/v2.0`) don't work:
+they publish `{tenantid}` as their issuer, which no token ever matches, so
+Glowpod refuses to start with them and says why.
+
+Entra sends groups as their **Object ID** (on the group's overview page), so
+bind RBAC to that, with the prefix:
+
+```bash
+kubectl create rolebinding payments-edit -n payments --clusterrole=edit --group=oidc:ee2dd93b-f7a7-415d-b6d4-6cefd4228e34
+```
+
+People in more than about 200 groups get no `groups` claim at all; assign
+the groups that matter to the application to stay under the limit.
 
 **Google**
 
