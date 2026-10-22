@@ -2,9 +2,17 @@ apiVersion: v2
 name: glowpod
 description: A Kubernetes dashboard for app developers and platform teams. People sign in and act as themselves.
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.1.1
+appVersion: "0.1.1"
 # SelfSubjectReview (who am I) is GA since 1.28.
 kubeVersion: ">=1.28.0-0"
-home: https://github.com/glowpod/glowpod
+home: https://github.com/Baid0/glowpod
+sources: [https://github.com/Baid0/glowpod]
 keywords: [kubernetes, dashboard, rbac, sso]
+annotations:
+  artifacthub.io/license: MIT
+  artifacthub.io/links: |
+    - name: Install guide
+      url: https://github.com/Baid0/glowpod/blob/main/docs/install.md
+    - name: Sign-in and access
+      url: https://github.com/Baid0/glowpod/blob/main/docs/authentication.md
