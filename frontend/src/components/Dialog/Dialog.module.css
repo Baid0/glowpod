@@ -47,7 +47,9 @@
   flex-direction: column;
   gap: var(--space-4);
   min-height: 0;
-  padding: var(--space-4) var(--space-6) 0;
+  /* The bottom padding leaves room for a field's focus ring, which sits
+     outside the field and would otherwise be clipped by the scroll box. */
+  padding: var(--space-4) var(--space-6) var(--space-1);
   overflow-y: auto;
 }
 
