@@ -227,3 +227,52 @@ jobs:
           done
           exit 1
       - run: gh workflow run site.yml --ref main
+
+  packages:
+    # Homebrew (macOS, Linux) and Scoop (Windows): rewrites the formula in
+    # <owner>/homebrew-tap and the manifest in <owner>/scoop-bucket for this
+    # version. Needs the secret PACKAGES_TOKEN, a fine-grained token with
+    # Contents: read and write on those two repositories only. Without it, or
+    # for a pre-release, this does nothing.
+    needs: [meta, downloads]
+    if: needs.meta.outputs.prerelease == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.meta.outputs.version }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Token present?
+        id: token
+        run: echo "ready=${{ secrets.PACKAGES_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+      - if: steps.token.outputs.ready == 'true'
+        uses: actions/checkout@v7
+      - if: steps.token.outputs.ready == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository_owner }}/homebrew-tap
+          token: ${{ secrets.PACKAGES_TOKEN }}
+          path: tap
+      - if: steps.token.outputs.ready == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository_owner }}/scoop-bucket
+          token: ${{ secrets.PACKAGES_TOKEN }}
+          path: bucket
+      - name: Write and push the formula and manifest
+        if: steps.token.outputs.ready == 'true'
+        run: |
+          gh release download "$GITHUB_REF_NAME" -p checksums.txt -D release
+          python3 -I .github/scripts/packages.py "$VERSION" "$GITHUB_REPOSITORY" release/checksums.txt tap bucket
+          for repo in tap bucket; do
+            git -C "$repo" config user.name "github-actions[bot]"
+            git -C "$repo" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git -C "$repo" add -A
+            git -C "$repo" diff --cached --quiet && continue
+            git -C "$repo" commit -m "glowpod ${VERSION}"
+            git -C "$repo" push origin HEAD
+          done
+      - name: Summary
+        if: steps.token.outputs.ready != 'true'
+        run: echo "Homebrew and Scoop not updated, because the PACKAGES_TOKEN secret isn't set." >> "$GITHUB_STEP_SUMMARY"
