@@ -17,7 +17,8 @@ make site       # format check, build into site/dist, check the CSP
   every save in `make site-dev`. Those pages are generated and not committed: edit the Markdown.
   Links between guides become site links, links to other repository files go to GitHub. To add a
   guide, add it to `DOC_PAGES` and to `partials/docs-nav.html`.
-- **Styles:** `src/styles/` — the same tokens as the app, dark by default, light with
+- **Styles:** `src/styles/`, all pulled together by `site.css`, which every page links from
+  `<head>` so nothing paints unstyled. The same tokens as the app, dark by default, light with
   `<html data-theme="light">`. The visitor's choice is saved under `glowpod.theme`.
 - **Script:** `src/main.js` (theme toggle, menus, copy buttons, install tabs, "On this page").
   `public/theme.js` applies the saved theme before the page paints.
