@@ -214,6 +214,8 @@ func TestAPI(t *testing.T) {
 		},
 		{name: "bad container name", path: "/api/v1/clusters/default/logs/alpha/api-1?container=Bad_Name", wantStatus: 400, wantCode: "bad_container"},
 		{name: "bad tail", path: "/api/v1/clusters/default/logs/alpha/api-1?tailLines=0", wantStatus: 400, wantCode: "bad_tail"},
+		{name: "exec needs a container", path: "/api/v1/clusters/default/exec/alpha/api-1", wantStatus: 400, wantCode: "bad_container"},
+		{name: "exec bad pod name", path: "/api/v1/clusters/default/exec/alpha/Bad_Pod?container=app", wantStatus: 400, wantCode: "bad_pod"},
 		{name: "pod in a bad namespace", path: "/api/v1/clusters/default/pods/Not_Valid/x", wantStatus: 400, wantCode: "bad_namespace"},
 		{name: "unknown api path", path: "/api/v1/nope", wantStatus: 404, wantCode: "not_found"},
 		{name: "write without csrf token", method: http.MethodPost, path: "/api/v1/clusters/default/overview", wantStatus: 403, wantCode: "csrf"},

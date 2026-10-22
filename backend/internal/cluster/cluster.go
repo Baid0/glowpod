@@ -44,6 +44,8 @@ type Clients struct {
 	Dynamic dynamic.Interface
 	// Discovery caches the API's resource list for this identity.
 	Discovery discovery.CachedDiscoveryInterface
+	// Config is the identity's REST config, for streaming calls such as exec.
+	Config *rest.Config
 }
 
 // Provider returns clients for an identity on a cluster.
@@ -120,6 +122,7 @@ func NewLocal(cfg *rest.Config, info Info) (*Local, error) {
 		Kube:      kube,
 		Dynamic:   dyn,
 		Discovery: memory.NewMemCacheClient(kube.Discovery()),
+		Config:    cfg,
 	}}, nil
 }
 

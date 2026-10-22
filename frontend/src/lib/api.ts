@@ -158,6 +158,12 @@ export const api = {
     ),
   logsURL: (cluster: string, namespace: string, pod: string, opts: LogOptions) =>
     wsURL(logsPath(cluster, namespace, pod, "", opts)),
+  execURL: (cluster: string, namespace: string, pod: string, container: string) =>
+    wsURL(
+      clusterPath(cluster, `exec/${encodeURIComponent(namespace)}/${encodeURIComponent(pod)}`, {
+        container,
+      }),
+    ),
   logsDownloadURL: (cluster: string, namespace: string, pod: string, opts: LogOptions) =>
     logsPath(cluster, namespace, pod, "/download", opts),
   getResource: (

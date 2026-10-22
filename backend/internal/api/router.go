@@ -21,6 +21,7 @@ import (
 	"glowpod/internal/overview"
 	"glowpod/internal/pods"
 	"glowpod/internal/stream"
+	"glowpod/internal/terminal"
 )
 
 // Options configures the router. Without Provider and Auth only the
@@ -43,6 +44,8 @@ type Options struct {
 	PodUsage func(kube kubernetes.Interface) pods.UsageSource
 	// Now is the clock; defaults to time.Now.
 	Now func() time.Time
+	// Terminal starts shells; defaults to terminal.Remote (pods/exec).
+	Terminal func(c *cluster.Clients) terminal.Starter
 	// StreamBackoff paces watch retries; nil uses the default.
 	StreamBackoff func() stream.Backoff
 	Logger        *slog.Logger
@@ -69,6 +72,9 @@ func NewRouter(opts Options) http.Handler {
 	}
 	if opts.PodUsage == nil {
 		opts.PodUsage = func(kube kubernetes.Interface) pods.UsageSource { return metrics.NewReader(kube) }
+	}
+	if opts.Terminal == nil {
+		opts.Terminal = func(c *cluster.Clients) terminal.Starter { return terminal.Remote(c.Config, c.Kube) }
 	}
 	if opts.Now == nil {
 		opts.Now = time.Now
@@ -102,6 +108,7 @@ func NewRouter(opts Options) http.Handler {
 				r.Get("/pods/{namespace}/{name}", s.pod)
 				r.Get("/logs/{namespace}/{pod}", s.streamLogs)
 				r.Get("/logs/{namespace}/{pod}/download", s.downloadLogs)
+				r.Get("/exec/{namespace}/{pod}", s.openTerminal)
 				r.Get("/resources", s.resourceTypes)
 				r.Get("/resources/{group}/{version}/{resource}", s.listResource)
 				r.Get("/resources/{group}/{version}/{resource}/{name}", s.getResource)

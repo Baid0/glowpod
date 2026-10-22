@@ -8,6 +8,8 @@ import { usePreferences } from "../../lib/preferences";
 import { formatAge, useNow } from "../../lib/time";
 import type { PodDetail } from "../../lib/types";
 import { ResourceActions } from "../actions/ResourceActions";
+import { useAllowedActions } from "../actions/useActions";
+import { TerminalPanel } from "../terminal/TerminalPanel";
 import { statusTone } from "../resources/cells";
 import { LogViewer } from "../logs/LogViewer";
 import { ObjectYaml } from "../yaml/ObjectYaml";
@@ -19,20 +21,24 @@ import { usePod } from "./usePod";
 
 const PODS = { group: "", version: "v1", resource: "pods" };
 
-const TABS = [
+const ALL_TABS = [
   { id: "overview", label: "Overview" },
   { id: "logs", label: "Logs" },
+  { id: "terminal", label: "Terminal" },
   { id: "yaml", label: "YAML" },
   { id: "events", label: "Events" },
 ] as const;
-type TabId = (typeof TABS)[number]["id"];
+type TabId = (typeof ALL_TABS)[number]["id"];
 
 /** Why is this pod unhappy? The story first, then the detail. */
 export function PodPage() {
   const { namespace = "", name = "" } = useParams();
   const { data, error, isPending, refetch } = usePod(namespace, name);
   const [params, setParams] = useSearchParams();
-  const tab: TabId = TABS.some((t) => t.id === params.get("tab"))
+  // The terminal tab shows only to people allowed to exec into this pod.
+  const canExec = useAllowedActions(PODS, namespace, name).exec;
+  const tabs = ALL_TABS.filter((t) => t.id !== "terminal" || canExec);
+  const tab: TabId = tabs.some((t) => t.id === params.get("tab"))
     ? (params.get("tab") as TabId)
     : "overview";
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -44,8 +50,8 @@ export function PodPage() {
   const onTabKey = (e: KeyboardEvent, i: number) => {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
     e.preventDefault();
-    const next = (i + (e.key === "ArrowRight" ? 1 : -1) + TABS.length) % TABS.length;
-    const t = TABS[next];
+    const next = (i + (e.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    const t = tabs[next];
     if (!t) return;
     select(t.id);
     tabRefs.current[next]?.focus();
@@ -70,7 +76,7 @@ export function PodPage() {
       />
 
       <div className={styles.tabs} role="tablist" aria-label="Pod views">
-        {TABS.map((t, i) => (
+        {tabs.map((t, i) => (
           <button
             key={t.id}
             ref={(el) => {
@@ -112,6 +118,8 @@ export function PodPage() {
           <PodEvents events={data.events} />
         ) : tab === "logs" ? (
           <LogViewer namespace={namespace} pod={name} containers={data.containers} />
+        ) : tab === "terminal" ? (
+          <TerminalPanel namespace={namespace} pod={name} containers={data.containers} />
         ) : (
           <ObjectYaml
             resource={PODS}
