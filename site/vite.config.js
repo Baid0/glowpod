@@ -108,7 +108,6 @@ export default defineConfig({
       input: {
         home: resolve(root, "index.html"),
         docs: resolve(root, "docs/index.html"),
-        brand: resolve(root, "brand/index.html"),
         ...docInputs(),
         notFound: resolve(root, "404.html"),
       },

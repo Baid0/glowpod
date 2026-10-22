@@ -8,7 +8,7 @@ make site-dev   # dev server on http://localhost:5180
 make site       # format check, build into site/dist, check the CSP
 ```
 
-- **Pages:** `index.html`, `docs/index.html` (the quick start), `brand/index.html`, `404.html`.
+- **Pages:** `index.html`, `docs/index.html` (the quick start), `404.html`.
   Shared pieces (head, header, footer, docs sidebar, the logo mark, icons) live in `partials/`
   and are pulled in with `<!-- @include header.html -->`; `current=docs` marks the current nav
   link.
@@ -34,5 +34,5 @@ make site       # format check, build into site/dist, check the CSP
   project `glowpod`: pushes to `main` go live, pull requests get a preview URL. It needs the
   repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; without them it only
   builds.
-- **Brand files:** the logo mark and Pip are SVGs in `public/brand/`, offered for download on the
-  brand page.
+- **Brand files:** the logo mark, the chart icon and Pip, in `public/brand/` (used by the pages and the
+  Helm chart; there is no brand page). `/brand/` redirects to the home page (`public/_redirects`).
