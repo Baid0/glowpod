@@ -5,6 +5,7 @@ import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/components.css";
 import "./styles/home.css";
+import "./styles/docs.css";
 
 // Keep the key in sync with public/theme.js, which applies it before the page paints.
 const THEME_KEY = "glowpod.theme";

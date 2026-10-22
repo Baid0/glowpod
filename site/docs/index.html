@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- @include head.html -->
+    <title>Quick start · Glowpod docs</title>
+    <meta
+      name="description"
+      content="Run Glowpod on your own computer and see your Kubernetes cluster in about a minute."
+    />
+  </head>
+  <body class="page-docs">
+    <!-- @include header.html current=docs -->
+    <div class="container docs-layout">
+      <nav class="docs-nav" aria-label="Docs">
+        <button
+          class="docs-nav-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="docs-nav-list"
+        >
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          Docs menu
+        </button>
+        <div class="docs-nav-list" id="docs-nav-list">
+          <div class="docs-nav-group">
+            <h2 class="eyebrow">Getting started</h2>
+            <a href="/docs/" aria-current="page">Quick start</a>
+            <a href="/#install">Install options</a>
+          </div>
+          <div class="docs-nav-group">
+            <h2 class="eyebrow">Guides on GitHub</h2>
+            <a href="https://github.com/Baid0/glowpod/blob/main/docs/install.md"
+              >Install in a cluster</a
+            >
+            <a href="https://github.com/Baid0/glowpod/blob/main/docs/authentication.md"
+              >Sign-in and access</a
+            >
+            <a href="https://github.com/Baid0/glowpod/blob/main/docs/configuration.md"
+              >Configuration</a
+            >
+            <a href="https://github.com/Baid0/glowpod/blob/main/docs/operations.md"
+              >Running Glowpod</a
+            >
+            <a href="https://github.com/Baid0/glowpod/blob/main/deploy/examples/sso-demo/README.md"
+              >Try SSO in ten minutes</a
+            >
+          </div>
+          <div class="docs-nav-group">
+            <h2 class="eyebrow">Project</h2>
+            <a href="https://github.com/Baid0/glowpod/blob/main/CHANGELOG.md">Changelog</a>
+            <a href="https://github.com/Baid0/glowpod/blob/main/SECURITY.md">Security policy</a>
+            <a href="https://github.com/Baid0/glowpod/blob/main/LICENSE">License (MIT)</a>
+          </div>
+        </div>
+      </nav>
+
+      <main id="main" class="docs-main">
+        <article class="docs-article">
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="/docs/">Docs</a><span aria-hidden="true">/</span
+            ><span aria-current="page">Quick start</span>
+          </nav>
+          <h1 class="docs-title">Quick start</h1>
+          <p class="docs-lead">
+            Run Glowpod on your own computer and see your cluster in about a minute. It uses the
+            kubeconfig you already have, so there is nothing to install in the cluster.
+          </p>
+
+          <dl class="facts">
+            <div class="card fact">
+              <dt class="eyebrow">Time</dt>
+              <dd>About 1 minute</dd>
+            </div>
+            <div class="card fact">
+              <dt class="eyebrow">You need</dt>
+              <dd>A working kubeconfig</dd>
+            </div>
+            <div class="card fact">
+              <dt class="eyebrow">Works on</dt>
+              <dd>macOS, Linux, Windows</dd>
+            </div>
+          </dl>
+
+          <h2 class="step" id="download">
+            <span class="step-number" aria-hidden="true">1</span>Download Glowpod
+          </h2>
+          <p>
+            Get the file for your system and chip from the
+            <a href="https://github.com/Baid0/glowpod/releases/latest">latest release</a> and unpack
+            it. Each one holds a single <code class="inline-code">glowpod</code> program.
+          </p>
+          <div class="card terminal">
+            <div class="terminal-bar">
+              <span>Terminal</span>
+              <button
+                class="button button-small copy-button"
+                type="button"
+                data-copy="tar -xzf glowpod_*_linux_amd64.tar.gz &amp;&amp; cd glowpod_*_linux_amd64"
+                aria-label="Copy the macOS and Linux command"
+              >
+                <!-- @include copy-icons.html -->
+                Copy
+              </button>
+            </div>
+            <code class="command-lines terminal-body">
+              <span class="comment"># macOS and Linux (here: Linux on Intel or AMD)</span>
+              <span
+                ><span class="prompt" aria-hidden="true">$ </span>tar -xzf
+                glowpod_*_linux_amd64.tar.gz &amp;&amp; cd glowpod_*_linux_amd64</span
+              >
+              <span class="comment gap"
+                ># Windows: unzip glowpod_*_windows_amd64.zip, then in that folder</span
+              >
+              <span><span class="prompt" aria-hidden="true">&gt; </span>.\glowpod.exe</span>
+            </code>
+          </div>
+          <p>
+            If macOS blocks a downloaded program, allow it once with
+            <code class="inline-code">xattr -d com.apple.quarantine ./glowpod</code>.
+          </p>
+
+          <h2 class="step" id="open">
+            <span class="step-number" aria-hidden="true">2</span>Open your cluster
+          </h2>
+          <p>
+            Run Glowpod. It reads your current kubeconfig context, listens on 127.0.0.1 only and
+            opens the dashboard in your browser with a one-time sign-in link.
+          </p>
+          <div class="card terminal">
+            <code class="command-lines terminal-body">
+              <span><span class="prompt" aria-hidden="true">$ </span>./glowpod</span>
+              <span class="comment">Glowpod is running. Open:</span>
+              <span class="comment"><span class="term-accent">http://127.0.0.1:7171/…</span></span>
+            </code>
+          </div>
+          <p>
+            Want a different cluster? Add
+            <code class="inline-code">-context staging</code>. Every request runs as your
+            kubeconfig's user, so you see exactly what you can see with kubectl.
+          </p>
+
+          <div class="card callout" role="note">
+            <span class="icon-tile icon-tile-sm"
+              ><svg class="icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8h.01M11 12h1v4h1" /></svg
+            ></span>
+            <div class="callout-body">
+              <h3>Gauges need metrics-server</h3>
+              <p>
+                The CPU and memory gauges read live usage from metrics-server. Without it they say
+                "Install metrics-server" and everything else still works. Network appears only when
+                Glowpod finds Prometheus.
+              </p>
+              <code class="callout-command"
+                ><span class="prompt" aria-hidden="true">$ </span>kubectl apply -f
+                https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml</code
+              >
+            </div>
+          </div>
+
+          <h2 class="step" id="mode">
+            <span class="step-number" aria-hidden="true">3</span>Pick your mode
+          </h2>
+          <p>
+            Use the <strong>Glance</strong> and <strong>Deep</strong> tabs in the top bar. Glowpod
+            remembers your choice.
+          </p>
+          <div class="table-wrap">
+            <table class="docs-table">
+              <thead>
+                <tr>
+                  <th scope="col">Mode</th>
+                  <th scope="col">Best for</th>
+                  <th scope="col">You see</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Glance</th>
+                  <td>Developers shipping apps</td>
+                  <td>Your apps, their health, plain-language problems</td>
+                </tr>
+                <tr>
+                  <th scope="row">Deep</th>
+                  <td>Platform and DevOps teams</td>
+                  <td>Every resource, node load, events, YAML</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 class="docs-h2" id="next">Next steps</h2>
+          <div class="next-grid">
+            <a
+              class="card next-card"
+              href="https://github.com/Baid0/glowpod/blob/main/docs/install.md"
+            >
+              <span class="next-title">Install in the cluster</span>
+              <span class="next-text">Give your whole team Glowpod with one Helm chart.</span>
+              <span class="next-link">Install guide →</span>
+            </a>
+            <a
+              class="card next-card"
+              href="https://github.com/Baid0/glowpod/blob/main/docs/authentication.md"
+            >
+              <span class="next-title">Set up sign-in</span>
+              <span class="next-text"
+                >Connect Okta, Entra ID, Google, Keycloak, LDAP or Active Directory.</span
+              >
+              <span class="next-link">Sign-in and access →</span>
+            </a>
+            <a
+              class="card next-card"
+              href="https://github.com/Baid0/glowpod/blob/main/docs/configuration.md"
+            >
+              <span class="next-title">Tune it</span>
+              <span class="next-text">Every flag, environment variable and Helm value.</span>
+              <span class="next-link">Configuration →</span>
+            </a>
+            <a
+              class="card next-card"
+              href="https://github.com/Baid0/glowpod/blob/main/docs/operations.md"
+            >
+              <span class="next-title">Run it well</span>
+              <span class="next-text"
+                >Security model, logs, health checks and troubleshooting.</span
+              >
+              <span class="next-link">Running Glowpod →</span>
+            </a>
+          </div>
+
+          <div class="docs-edit">
+            <a href="https://github.com/Baid0/glowpod/blob/main/site/docs/index.html"
+              >Edit this page on GitHub</a
+            >
+          </div>
+          <nav class="pager" aria-label="Previous and next">
+            <a class="pager-link" href="/">
+              <span class="pager-label">Previous</span>
+              <span class="pager-title">What is Glowpod</span>
+            </a>
+            <a
+              class="pager-link pager-next"
+              href="https://github.com/Baid0/glowpod/blob/main/docs/install.md"
+            >
+              <span class="pager-label">Next</span>
+              <span class="pager-title">Install in a cluster</span>
+            </a>
+          </nav>
+        </article>
+
+        <aside class="toc" aria-labelledby="toc-h">
+          <h2 id="toc-h" class="eyebrow">On this page</h2>
+          <a href="#download">Download Glowpod</a>
+          <a href="#open">Open your cluster</a>
+          <a href="#mode">Pick your mode</a>
+          <a href="#next">Next steps</a>
+        </aside>
+      </main>
+    </div>
+    <!-- @include footer.html -->
+  </body>
+</html>
