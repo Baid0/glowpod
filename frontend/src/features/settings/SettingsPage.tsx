@@ -241,6 +241,10 @@ function AboutCard() {
           <dd className={styles.mono}>{session?.user.username ?? "—"}</dd>
         </div>
         <div>
+          <dt>Glowpod</dt>
+          <dd>{session?.version ?? "—"}</dd>
+        </div>
+        <div>
           <dt>Mode</dt>
           <dd>
             {session?.mode === "in-cluster"

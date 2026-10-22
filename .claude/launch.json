@@ -3,8 +3,7 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "make",
-      "runtimeArgs": ["dev"],
+      "url": "http://localhost:5173",
       "port": 5173
     }
   ]

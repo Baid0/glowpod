@@ -147,7 +147,7 @@ func localPath(p string) string {
 
 func (s *Server) oidcLogin(w http.ResponseWriter, r *http.Request) {
 	o := s.cfg.OIDC
-	if !s.ipLimit.allow(clientIP(r)) {
+	if !s.ipLimit.allow(clientIP(r, s.cfg.TrustedProxies)) {
 		redirectSignIn(w, r, "too_many_attempts")
 		return
 	}
@@ -231,7 +231,7 @@ func (s *Server) oidcCallback(w http.ResponseWriter, r *http.Request) {
 	} else {
 		sess.Identity = cluster.UserIdentity(user, groups)
 	}
-	if err := s.begin(w, sess); err != nil {
+	if err := s.begin(w, r, sess); err != nil {
 		redirectSignIn(w, r, "sso_failed")
 		return
 	}

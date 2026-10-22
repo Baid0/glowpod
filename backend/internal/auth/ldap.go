@@ -244,7 +244,7 @@ func (s *Server) loginLDAP(w http.ResponseWriter, r *http.Request) {
 		Identity: cluster.UserIdentity(user, groups),
 		Info:     SessionInfo{Mode: "in-cluster", Method: "ldap", User: user, Groups: groups},
 	}
-	if err := s.begin(w, sess); err != nil {
+	if err := s.begin(w, r, sess); err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "session_failed", "Couldn't start a session.")
 		return
 	}

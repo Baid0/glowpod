@@ -106,8 +106,9 @@ func (s *server) clusterError(w http.ResponseWriter, err error) {
 
 // sessionResponse is GET /api/v1/session.
 type sessionResponse struct {
-	Mode   string `json:"mode"`
-	Method string `json:"method"`
+	Version string `json:"version,omitempty"`
+	Mode    string `json:"mode"`
+	Method  string `json:"method"`
 	// CSRFToken goes in the X-CSRF-Token header of every write.
 	CSRFToken string         `json:"csrfToken"`
 	User      sessionUser    `json:"user"`
@@ -122,6 +123,7 @@ type sessionUser struct {
 func (s *server) session(w http.ResponseWriter, r *http.Request) {
 	info := auth.SessionInfoFrom(r.Context())
 	resp := sessionResponse{
+		Version:   s.opts.Version,
 		Mode:      info.Mode,
 		Method:    info.Method,
 		CSRFToken: auth.CSRFTokenFrom(r.Context()),

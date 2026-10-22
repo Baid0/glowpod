@@ -9,6 +9,8 @@ export interface ClusterInfo {
 export type SignInMethod = "kubeconfig" | "token" | "oidc" | "ldap";
 
 export interface Session {
+  /** Glowpod's version, e.g. 0.1.0. */
+  version?: string;
   mode: "local" | "in-cluster";
   method: SignInMethod;
   /** Sent back in X-CSRF-Token on every write. */

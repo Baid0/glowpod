@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
+	"net/netip"
 	"net/url"
 	"os"
 	"strings"
@@ -19,6 +21,9 @@ const (
 )
 
 type config struct {
+	version       bool
+	logFormat     string
+	logLevel      string
 	mode          string
 	addr          string
 	noBrowser     bool
@@ -32,6 +37,7 @@ type config struct {
 // serverConfig is for -mode=server: Glowpod installed in the cluster for
 // many people, each signing in as themselves.
 type serverConfig struct {
+	trustedProxies  string
 	publicURL       string
 	clusterName     string
 	token           bool
@@ -71,6 +77,9 @@ func parseFlags(args []string, stderr io.Writer) (config, error) {
 
 	var cfg config
 	s := &cfg.server
+	fs.BoolVar(&cfg.version, "version", false, "print the version and exit")
+	fs.StringVar(&cfg.logFormat, "log-format", "text", "log format: text or json")
+	fs.StringVar(&cfg.logLevel, "log-level", "info", "log level: debug, info, warn or error")
 	fs.StringVar(&cfg.mode, "mode", "local", "local: your kubeconfig, on this machine; server: in the cluster, people sign in")
 	fs.StringVar(&cfg.addr, "addr", "", "address to listen on (local default "+defaultAddr+", server default "+defaultServerAddr+")")
 	fs.BoolVar(&cfg.noBrowser, "no-browser", false, "don't open the browser on start (local mode)")
@@ -79,6 +88,7 @@ func parseFlags(args []string, stderr io.Writer) (config, error) {
 	fs.StringVar(&cfg.context, "context", "", "kubeconfig context (default: the current context)")
 	fs.StringVar(&cfg.prometheusURL, "prometheus-url", "", "Prometheus base URL; skips discovery in the cluster")
 
+	fs.StringVar(&s.trustedProxies, "trusted-proxies", "", "server: comma-separated CIDRs of proxies (e.g. the ingress controller) whose X-Forwarded-For to believe for the client's address")
 	fs.StringVar(&s.publicURL, "public-url", "", "server: the URL people open, e.g. https://glowpod.example.com (needed for SSO)")
 	fs.StringVar(&s.clusterName, "cluster-name", "", "server: the cluster's name in the UI")
 	fs.BoolVar(&s.token, "auth-token", true, "server: allow signing in with a service-account token")
@@ -145,6 +155,12 @@ func fromEnv(fs *flag.FlagSet) error {
 }
 
 func (c *config) check() error {
+	if c.logFormat != "text" && c.logFormat != "json" {
+		return fmt.Errorf("-log-format %q must be text or json", c.logFormat)
+	}
+	if _, err := parseLevel(c.logLevel); err != nil {
+		return err
+	}
 	switch c.mode {
 	case "local":
 		if c.addr == "" {
@@ -176,6 +192,9 @@ func (c *config) check() error {
 }
 
 func (s *serverConfig) check() error {
+	if _, err := parsePrefixes(s.trustedProxies); err != nil {
+		return err
+	}
 	if s.publicURL != "" {
 		u, err := url.Parse(s.publicURL)
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || (u.Path != "" && u.Path != "/") {
@@ -217,4 +236,33 @@ func checkLoopback(addr string) error {
 		return fmt.Errorf("-addr %q must be a loopback address such as 127.0.0.1 in local mode", addr)
 	}
 	return nil
+}
+
+func parseLevel(s string) (slog.Level, error) {
+	var l slog.Level
+	if err := l.UnmarshalText([]byte(s)); err != nil {
+		return 0, fmt.Errorf("-log-level %q must be debug, info, warn or error", s)
+	}
+	return l, nil
+}
+
+// parsePrefixes reads a comma-separated list of CIDRs or single addresses.
+func parsePrefixes(s string) ([]netip.Prefix, error) {
+	var out []netip.Prefix
+	for _, part := range strings.Split(s, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if p, err := netip.ParsePrefix(part); err == nil {
+			out = append(out, p.Masked())
+			continue
+		}
+		a, err := netip.ParseAddr(part)
+		if err != nil {
+			return nil, fmt.Errorf("-trusted-proxies: %q isn't a CIDR or an address", part)
+		}
+		out = append(out, netip.PrefixFrom(a, a.BitLen()))
+	}
+	return out, nil
 }

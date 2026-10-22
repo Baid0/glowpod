@@ -4,8 +4,11 @@ SHELL := /bin/bash
 BIN      := bin/glowpod
 WEB_DIST := backend/internal/web/dist
 NODE_MODULES := frontend/node_modules/.modules.yaml
+# The version stamped into the binary and image: the git tag, else the chart's appVersion.
+VERSION  ?= $(shell git describe --tags --always --dirty 2>/dev/null | sed 's/^v//' || echo dev)
+IMAGE    ?= glowpod
 
-.PHONY: help deps dev build test test-backend test-frontend e2e lint lint-backend lint-frontend fmt clean
+.PHONY: help deps dev build test test-backend test-frontend e2e lint lint-backend lint-frontend fmt clean image image-push chart
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-15s %s\n", $$1, $$2}'
@@ -27,7 +30,7 @@ build: $(NODE_MODULES) ## Build the frontend and one Go binary that embeds it, a
 	cd frontend && pnpm build
 	find $(WEB_DIST) -mindepth 1 ! -name .gitkeep -delete
 	cp -R frontend/dist/. $(WEB_DIST)/
-	cd backend && CGO_ENABLED=0 go build -trimpath -o ../$(BIN) ./cmd/glowpod
+	cd backend && CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o ../$(BIN) ./cmd/glowpod
 
 test: test-backend test-frontend ## Run all tests
 
@@ -40,8 +43,12 @@ test-frontend: $(NODE_MODULES)
 e2e: $(NODE_MODULES) ## Run Playwright smoke tests (needs: pnpm exec playwright install chromium)
 	cd frontend && pnpm e2e
 
-image: ## Build the container image (needs Docker): make image TAG=0.1.0
-	docker build -t glowpod:$(or $(TAG),dev) .
+image: ## Build the container image for this machine (needs Docker): make image IMAGE=registry/glowpod
+	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE):$(VERSION) .
+
+image-push: ## Build for amd64 and arm64 and push: make image-push IMAGE=ghcr.io/you/glowpod
+	docker buildx build --platform linux/amd64,linux/arm64 --build-arg VERSION=$(VERSION) \
+		-t $(IMAGE):$(VERSION) --push .
 
 chart: ## Lint the Helm chart and render it in its main setups
 	helm lint deploy/helm/glowpod

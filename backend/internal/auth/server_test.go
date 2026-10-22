@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"strings"
 	"testing"
 	"time"
@@ -211,5 +212,34 @@ func TestLimiter(t *testing.T) {
 	now = now.Add(61 * time.Second)
 	if !l.allow("a") {
 		t.Fatal("the window slides")
+	}
+}
+
+func TestClientIP(t *testing.T) {
+	ingress := []netip.Prefix{netip.MustParsePrefix("10.0.0.0/8")}
+	tests := []struct {
+		name, remote, xff string
+		trusted           []netip.Prefix
+		want              string
+	}{
+		{"no proxy trusted: the header is ignored", "203.0.113.9:5000", "198.51.100.1", nil, "203.0.113.9"},
+		{"from the ingress", "10.1.2.3:5000", "198.51.100.1", ingress, "198.51.100.1"},
+		{"a spoofed hop before the real one", "10.1.2.3:5000", "6.6.6.6, 198.51.100.1", ingress, "198.51.100.1"},
+		{"through two trusted hops", "10.1.2.3:5000", "198.51.100.1, 10.9.9.9", ingress, "198.51.100.1"},
+		{"untrusted sender can't spoof", "203.0.113.9:5000", "10.1.1.1", ingress, "203.0.113.9"},
+		{"ingress without the header", "10.1.2.3:5000", "", ingress, "10.1.2.3"},
+		{"ipv6", "[2001:db8::1]:5000", "", ingress, "2001:db8::1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
+			r.RemoteAddr = tt.remote
+			if tt.xff != "" {
+				r.Header.Set("X-Forwarded-For", tt.xff)
+			}
+			if got := clientIP(r, tt.trusted); got != tt.want {
+				t.Fatalf("clientIP = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }

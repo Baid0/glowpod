@@ -27,6 +27,8 @@ import (
 // Options configures the router. Without Provider and Auth only the
 // frontend and /healthz are served.
 type Options struct {
+	// Version is Glowpod's version, shown in Settings.
+	Version string
 	// Frontend serves the single-page app for every non-API path.
 	Frontend http.Handler
 	Provider cluster.Provider

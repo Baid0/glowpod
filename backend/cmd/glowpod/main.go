@@ -27,6 +27,9 @@ import (
 	"glowpod/internal/web"
 )
 
+// version is set at build time: -ldflags "-X main.version=1.2.3".
+var version = "dev"
+
 const (
 	shutdownTimeout = 5 * time.Second
 	// vitePort is where `make dev` serves the UI; its proxy keeps that Host header.
@@ -52,7 +55,12 @@ func run(ctx context.Context, args []string, stderr io.Writer) error {
 		return err
 	}
 
-	logger := slog.New(slog.NewTextHandler(stderr, nil))
+	if cfg.version {
+		fmt.Fprintln(stderr, "glowpod", version)
+		return nil
+	}
+	logger := newLogger(cfg, stderr)
+	logger.Info("starting glowpod", "version", version, "mode", cfg.mode)
 
 	var lc net.ListenConfig
 	ln, err := lc.Listen(ctx, "tcp", cfg.addr)
@@ -61,6 +69,7 @@ func run(ctx context.Context, args []string, stderr io.Writer) error {
 	}
 
 	opts := api.Options{
+		Version:       version,
 		Frontend:      web.Handler(web.Dist()),
 		PrometheusURL: cfg.prometheusURL,
 		Logger:        logger,
@@ -165,14 +174,16 @@ func setupServer(ctx context.Context, cfg config, opts *api.Options, logger *slo
 	}
 	provider := cluster.NewServer(base, info)
 	sc := cfg.server
+	proxies, _ := parsePrefixes(sc.trustedProxies) // checked in parseFlags
 	authCfg := auth.ServerConfig{
-		Store:         auth.NewStore(sc.sessionIdle, sc.sessionTTL),
-		SecureCookies: !sc.insecureCookies,
-		WhoAmI:        provider.WhoAmI,
-		Forget:        provider.Forget,
-		Token:         sc.token,
-		OIDCName:      sc.oidcName,
-		Logger:        logger,
+		Store:          auth.NewStore(sc.sessionIdle, sc.sessionTTL),
+		TrustedProxies: proxies,
+		SecureCookies:  !sc.insecureCookies,
+		WhoAmI:         provider.WhoAmI,
+		Forget:         provider.Forget,
+		Token:          sc.token,
+		OIDCName:       sc.oidcName,
+		Logger:         logger,
 	}
 	if sc.oidcIssuer != "" {
 		if authCfg.OIDC, err = newOIDC(ctx, sc); err != nil {
@@ -215,4 +226,13 @@ func serverBase(cfg config) (*rest.Config, cluster.Info, error) {
 		return nil, cluster.Info{}, fmt.Errorf("server mode runs inside the cluster (pass -kubeconfig to run it elsewhere): %w", err)
 	}
 	return restCfg, cluster.InClusterInfo(restCfg, cfg.server.clusterName), nil
+}
+
+func newLogger(cfg config, w io.Writer) *slog.Logger {
+	level, _ := parseLevel(cfg.logLevel) // checked in parseFlags
+	o := &slog.HandlerOptions{Level: level}
+	if cfg.logFormat == "json" {
+		return slog.New(slog.NewJSONHandler(w, o))
+	}
+	return slog.New(slog.NewTextHandler(w, o))
 }

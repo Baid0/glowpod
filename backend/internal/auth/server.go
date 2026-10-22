@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"mime"
 	"net/http"
+	"net/netip"
 	"strings"
 	"time"
 
@@ -40,7 +41,10 @@ type ServerConfig struct {
 	LDAP  *LDAP
 	// OIDCName labels the SSO button, e.g. "Okta".
 	OIDCName string
-	Logger   *slog.Logger
+	// TrustedProxies are the proxies (the ingress controller) whose
+	// X-Forwarded-For gives the client's address.
+	TrustedProxies []netip.Prefix
+	Logger         *slog.Logger
 }
 
 // Server signs people in when Glowpod runs in the cluster for many users.
@@ -140,7 +144,7 @@ func (s *Server) Require(next http.Handler) http.Handler {
 }
 
 // begin starts a session for a signed-in user and sets its cookie.
-func (s *Server) begin(w http.ResponseWriter, sess *Session) error {
+func (s *Server) begin(w http.ResponseWriter, r *http.Request, sess *Session) error {
 	id, err := s.cfg.Store.Create(sess)
 	if err != nil {
 		return err
@@ -154,7 +158,8 @@ func (s *Server) begin(w http.ResponseWriter, sess *Session) error {
 		Secure:   s.cfg.SecureCookies,
 		SameSite: http.SameSiteStrictMode,
 	})
-	s.cfg.Logger.Info("signed in", "method", sess.Info.Method, "identity", sess.Identity.Key)
+	s.cfg.Logger.Info("signed in", "method", sess.Info.Method, "identity", sess.Identity.Key,
+		"user", sess.Info.User, "ip", clientIP(r, s.cfg.TrustedProxies))
 	return nil
 }
 
@@ -182,7 +187,7 @@ func (s *Server) loginRequest(w http.ResponseWriter, r *http.Request, v any) boo
 		writeJSONError(w, http.StatusForbidden, "csrf", "This sign-in didn't come from Glowpod. Reload the page and try again.")
 		return false
 	}
-	if !s.ipLimit.allow(clientIP(r)) {
+	if !s.ipLimit.allow(clientIP(r, s.cfg.TrustedProxies)) {
 		writeJSONError(w, http.StatusTooManyRequests, "too_many_attempts", "Too many sign-in attempts. Wait a few minutes and try again.")
 		return false
 	}
@@ -228,7 +233,7 @@ func (s *Server) loginToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sess := &Session{Identity: id, Info: SessionInfo{Mode: "in-cluster", Method: "token", User: user, Groups: groups}}
-	if err := s.begin(w, sess); err != nil {
+	if err := s.begin(w, r, sess); err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "session_failed", "Couldn't start a session.")
 		return
 	}

@@ -41,6 +41,7 @@ func TestParseFlags(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := parseFlags(tt.args, io.Discard)
 			tt.want.mode = "local"
+			tt.want.logFormat, tt.want.logLevel = "text", "info"
 			tt.want.server = got.server // server defaults are covered below
 			if tt.wantErr {
 				if err == nil {
@@ -119,5 +120,38 @@ func TestServerFlags(t *testing.T) {
 	}
 	if _, err := parseFlags([]string{"-mode", "server", "-public-url", "http://localhost:8080", "-insecure-cookies"}, io.Discard); err != nil {
 		t.Fatalf("plain http is fine for a test with -insecure-cookies: %v", err)
+	}
+}
+
+func TestOperationalFlags(t *testing.T) {
+	got, err := parseFlags([]string{"-mode", "server", "-log-format", "json", "-log-level", "debug", "-trusted-proxies", "10.0.0.0/8, 192.168.1.5"}, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.logFormat != "json" || got.logLevel != "debug" {
+		t.Fatalf("got %+v", got)
+	}
+	prefixes, _ := parsePrefixes(got.server.trustedProxies)
+	if len(prefixes) != 2 || prefixes[1].String() != "192.168.1.5/32" {
+		t.Fatalf("prefixes = %v", prefixes)
+	}
+	for _, bad := range [][]string{
+		{"-log-format", "xml"},
+		{"-log-level", "loud"},
+		{"-mode", "server", "-trusted-proxies", "ingress"},
+	} {
+		if _, err := parseFlags(bad, io.Discard); err == nil {
+			t.Errorf("%v: want an error", bad)
+		}
+	}
+}
+
+func TestVersionFlag(t *testing.T) {
+	var out strings.Builder
+	if err := run(t.Context(), []string{"-version"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.String() != "glowpod dev\n" {
+		t.Fatalf("output = %q", out.String())
 	}
 }
