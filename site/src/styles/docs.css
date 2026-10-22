@@ -225,6 +225,11 @@
   font-size: 15px;
 }
 
+/* Commands in tables stay on one line. */
+.docs-table .inline-code {
+  white-space: nowrap;
+}
+
 .docs-table :is(th, td) {
   padding: 14px 20px;
   vertical-align: top;

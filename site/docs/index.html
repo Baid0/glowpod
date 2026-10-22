@@ -40,6 +40,50 @@
             </div>
           </dl>
 
+          <h2 id="ways">Three ways to run Glowpod</h2>
+          <div class="table-wrap" role="region" aria-label="Ways to run Glowpod" tabindex="0">
+            <table class="docs-table">
+              <thead>
+                <tr>
+                  <th scope="col"></th>
+                  <th scope="col">For</th>
+                  <th scope="col">Runs on</th>
+                  <th scope="col">Signs in with</th>
+                  <th scope="col">Start</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Local dashboard</th>
+                  <td>You, in the browser</td>
+                  <td>Your machine (127.0.0.1 only)</td>
+                  <td>Your kubeconfig</td>
+                  <td><code class="inline-code">glowpod</code></td>
+                </tr>
+                <tr>
+                  <th scope="row">Terminal app</th>
+                  <td>You, in a terminal or over SSH</td>
+                  <td>Your machine</td>
+                  <td>Your kubeconfig</td>
+                  <td>
+                    <a href="/docs/terminal/"><code class="inline-code">glowpod term</code></a>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">In the cluster</th>
+                  <td>Your team</td>
+                  <td>The cluster, with Helm</td>
+                  <td>SSO, LDAP or a token, each person as themselves</td>
+                  <td><a href="/docs/install/">Helm guide</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            The first two are the same <code class="inline-code">glowpod</code> program and need
+            nothing in the cluster. This page starts the local dashboard.
+          </p>
+
           <h2 class="step" id="download">
             <span class="step-number" aria-hidden="true">1</span>Install Glowpod
           </h2>
@@ -199,7 +243,8 @@
 
         <aside class="toc" aria-labelledby="toc-h">
           <h2 id="toc-h" class="eyebrow">On this page</h2>
-          <a href="#download">Download Glowpod</a>
+          <a href="#ways">Three ways to run Glowpod</a>
+          <a href="#download">Install Glowpod</a>
           <a href="#open">Open your cluster</a>
           <a href="#mode">Pick your mode</a>
           <a href="#next">Next steps</a>
