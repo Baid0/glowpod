@@ -6,6 +6,31 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-22
+
+### Security
+
+- go-jose 4.1.6 fixes [GHSA-mgcc-cww5-fp2q](https://github.com/go-jose/go-jose/security/advisories/GHSA-mgcc-cww5-fp2q):
+  oversized RSA keys in an identity provider's key set could slow SSO sign-in down. Also
+  oauth2 0.37 and sync 0.24.
+
+### Changed
+
+- Logs: warnings are orange, errors and critical lines red, on the margin marker and the
+  text, with darker shades in light mode.
+
+### Fixed
+
+- Logs: a line's own level decides its color (JSON or logfmt `level` / `severity`, or
+  klog's `E`/`W` prefix). Warnings that carried an `"err"` field were shown as errors.
+- Helm releases: the Revision column is centered under its header.
+
+### Added
+
+- The glowpod.dev website, with every guide as a docs page, deployed to Cloudflare Pages
+  with a strict Content-Security-Policy.
+- Dependabot keeps GitHub Actions, Go, npm and Docker images current.
+
 ## [0.1.1] - 2026-10-22
 
 ### Added
@@ -41,6 +66,7 @@ First release.
   restricted security context; multi-arch image (amd64, arm64).
 - Light and dark themes, settings for thresholds, density and refresh.
 
-[Unreleased]: https://github.com/Baid0/glowpod/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Baid0/glowpod/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Baid0/glowpod/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Baid0/glowpod/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Baid0/glowpod/releases/tag/v0.1.0

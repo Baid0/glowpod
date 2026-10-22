@@ -118,7 +118,7 @@ Notes:
 ## 4. Install
 
 ```bash
-helm upgrade --install glowpod oci://ghcr.io/baid0/charts/glowpod --version 0.1.1 \
+helm upgrade --install glowpod oci://ghcr.io/baid0/charts/glowpod --version 0.1.2 \
   -n glowpod -f glowpod-values.yaml
 kubectl -n glowpod rollout status deploy/glowpod
 helm test glowpod -n glowpod
@@ -153,7 +153,7 @@ For a quick look, skip the ingress and HTTPS and port-forward. Browsers send
 `Secure` cookies to `localhost`, so this works:
 
 ```bash
-helm upgrade --install glowpod oci://ghcr.io/baid0/charts/glowpod --version 0.1.1 -n glowpod
+helm upgrade --install glowpod oci://ghcr.io/baid0/charts/glowpod --version 0.1.2 -n glowpod
 kubectl -n glowpod port-forward svc/glowpod 8080:80
 ```
 
@@ -166,11 +166,11 @@ without long-lived keys: the signature proves they were built by this
 repository's release workflow from a version tag. Check before you install:
 
 ```bash
-cosign verify ghcr.io/baid0/glowpod:0.1.1 \
+cosign verify ghcr.io/baid0/glowpod:0.1.2 \
   --certificate-identity-regexp '^https://github.com/Baid0/glowpod/\.github/workflows/release\.yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 
-cosign verify ghcr.io/baid0/charts/glowpod:0.1.1 \
+cosign verify ghcr.io/baid0/charts/glowpod:0.1.2 \
   --certificate-identity-regexp '^https://github.com/Baid0/glowpod/\.github/workflows/release\.yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
@@ -179,15 +179,15 @@ The image also carries build provenance and an SBOM (the list of everything
 inside it):
 
 ```bash
-gh attestation verify oci://ghcr.io/baid0/glowpod:0.1.1 -R Baid0/glowpod
-docker buildx imagetools inspect ghcr.io/baid0/glowpod:0.1.1 --format '{{ json .SBOM }}'
+gh attestation verify oci://ghcr.io/baid0/glowpod:0.1.2 -R Baid0/glowpod
+docker buildx imagetools inspect ghcr.io/baid0/glowpod:0.1.2 --format '{{ json .SBOM }}'
 ```
 
 Each `glowpod` download on the GitHub Release has a build attestation and a
 line in `checksums.txt`; the release also has an SPDX SBOM:
 
 ```bash
-gh attestation verify glowpod_0.1.1_linux_amd64.tar.gz -R Baid0/glowpod
+gh attestation verify glowpod_0.1.2_linux_amd64.tar.gz -R Baid0/glowpod
 sha256sum -c checksums.txt --ignore-missing
 ```
 
