@@ -16,6 +16,7 @@ import { Button } from "../../components/Button";
 import { ApiError } from "../../lib/api";
 import { cx } from "../../lib/cx";
 import { describeNamespaces, usePreferences } from "../../lib/preferences";
+import { CreateButtons } from "../create/CreateButtons";
 import type { ResourceRef, TableColumn, TableRow } from "../../lib/types";
 import {
   columnsFor,
@@ -221,6 +222,12 @@ export function ResourceListPage({ resource }: { resource: ResourceRef }) {
           <span className={styles.liveDot} aria-hidden="true" />
           {live ? "Live" : "Not live"}
         </span>
+        <CreateButtons
+          resource={resource}
+          type={type}
+          namespaces={namespaces}
+          deep={mode === "deep"}
+        />
       </div>
 
       {type && !type.namespaced && namespace && (
