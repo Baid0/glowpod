@@ -40,6 +40,17 @@ test-frontend: $(NODE_MODULES)
 e2e: $(NODE_MODULES) ## Run Playwright smoke tests (needs: pnpm exec playwright install chromium)
 	cd frontend && pnpm e2e
 
+image: ## Build the container image (needs Docker): make image TAG=0.1.0
+	docker build -t glowpod:$(or $(TAG),dev) .
+
+chart: ## Lint the Helm chart and render it in its main setups
+	helm lint deploy/helm/glowpod
+	helm template g deploy/helm/glowpod > /dev/null
+	helm template g deploy/helm/glowpod --set publicURL=https://g.example.com \
+		--set auth.oidc.enabled=true --set auth.oidc.issuer=https://sso.example.com --set auth.oidc.clientID=g \
+		--set auth.ldap.enabled=true --set auth.ldap.url=ldaps://ldap.example.com --set auth.ldap.userBase=dc=x \
+		--set ingress.enabled=true --set networkPolicy.enabled=true > /dev/null
+
 lint: lint-backend lint-frontend ## Run linters, type checks and format checks
 
 lint-backend:

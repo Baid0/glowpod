@@ -180,3 +180,14 @@ func TestLDAPSignIn(t *testing.T) {
 		t.Fatalf("empty password = %d", rec.Code)
 	}
 }
+
+func TestLDAPSystemUser(t *testing.T) {
+	l, _ := testLDAP(t, func(c *LDAPConfig) { c.GroupsPrefix = "" })
+	_, groups, err := l.Authenticate(context.Background(), "alice", "correct horse")
+	if err != nil || strings.Join(groups, ",") != "devs,oncall" {
+		t.Fatalf("groups = %v err = %v", groups, err)
+	}
+	if got, err := impersonable("system:kube-controller-manager", nil); err == nil {
+		t.Fatalf("got %v", got)
+	}
+}

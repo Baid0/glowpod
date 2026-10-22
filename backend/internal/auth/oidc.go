@@ -270,7 +270,12 @@ func (o *OIDC) user(t *oidc.IDToken) (string, []string, error) {
 			groups = append(groups, o.cfg.GroupsPrefix+g)
 		}
 	}
-	return o.cfg.UsernamePrefix + name, groups, nil
+	user := o.cfg.UsernamePrefix + name
+	if o.cfg.PassToken {
+		return user, groups, nil // the API server decides; nothing is impersonated
+	}
+	groups, err := impersonable(user, groups)
+	return user, groups, err
 }
 
 // refresher returns the current ID token, refreshing it when it expires.

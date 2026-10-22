@@ -1,0 +1,174 @@
+{{- include "glowpod.validate" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "glowpod.fullname" . }}
+  labels:
+    {{- include "glowpod.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "glowpod.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "glowpod.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      annotations:
+        # Restart when sign-in secrets change.
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "glowpod.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: glowpod
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - -mode=server
+            {{- with .Values.extraArgs }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          env:
+            - name: GLOWPOD_ADDR
+              value: ":8080"
+            - name: GLOWPOD_PUBLIC_URL
+              value: {{ .Values.publicURL | quote }}
+            - name: GLOWPOD_CLUSTER_NAME
+              value: {{ .Values.clusterName | quote }}
+            - name: GLOWPOD_AUTH_TOKEN
+              value: {{ .Values.auth.token.enabled | quote }}
+            - name: GLOWPOD_SESSION_TTL
+              value: {{ .Values.session.ttl | quote }}
+            - name: GLOWPOD_SESSION_IDLE
+              value: {{ .Values.session.idle | quote }}
+            {{- with .Values.prometheusURL }}
+            - name: GLOWPOD_PROMETHEUS_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.auth.oidc }}
+            {{- if .enabled }}
+            - name: GLOWPOD_OIDC_ISSUER
+              value: {{ .issuer | quote }}
+            - name: GLOWPOD_OIDC_CLIENT_ID
+              value: {{ .clientID | quote }}
+            {{- if or .clientSecret .existingSecret }}
+            - name: GLOWPOD_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "glowpod.oidcSecret" $ }}
+                  key: {{ .existingSecretKey }}
+            {{- end }}
+            - name: GLOWPOD_OIDC_NAME
+              value: {{ .name | quote }}
+            - name: GLOWPOD_OIDC_SCOPES
+              value: {{ join "," .scopes | quote }}
+            - name: GLOWPOD_OIDC_USERNAME_CLAIM
+              value: {{ .usernameClaim | quote }}
+            - name: GLOWPOD_OIDC_GROUPS_CLAIM
+              value: {{ .groupsClaim | quote }}
+            - name: GLOWPOD_OIDC_USERNAME_PREFIX
+              value: {{ .usernamePrefix | quote }}
+            - name: GLOWPOD_OIDC_GROUPS_PREFIX
+              value: {{ .groupsPrefix | quote }}
+            - name: GLOWPOD_OIDC_PASS_TOKEN
+              value: {{ .passToken | quote }}
+            {{- end }}
+            {{- end }}
+            {{- with .Values.auth.ldap }}
+            {{- if .enabled }}
+            - name: GLOWPOD_LDAP_URL
+              value: {{ .url | quote }}
+            - name: GLOWPOD_LDAP_BIND_DN
+              value: {{ .bindDN | quote }}
+            {{- if or .bindPassword .existingSecret }}
+            - name: GLOWPOD_LDAP_BIND_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "glowpod.ldapSecret" $ }}
+                  key: {{ .existingSecretKey }}
+            {{- end }}
+            - name: GLOWPOD_LDAP_USER_BASE
+              value: {{ .userBase | quote }}
+            - name: GLOWPOD_LDAP_USER_FILTER
+              value: {{ .userFilter | quote }}
+            - name: GLOWPOD_LDAP_USERNAME_ATTRIBUTE
+              value: {{ .usernameAttribute | quote }}
+            - name: GLOWPOD_LDAP_GROUP_BASE
+              value: {{ .groupBase | quote }}
+            - name: GLOWPOD_LDAP_GROUP_FILTER
+              value: {{ .groupFilter | quote }}
+            - name: GLOWPOD_LDAP_GROUP_ATTRIBUTE
+              value: {{ .groupAttribute | quote }}
+            - name: GLOWPOD_LDAP_GROUPS_PREFIX
+              value: {{ .groupsPrefix | quote }}
+            - name: GLOWPOD_LDAP_START_TLS
+              value: {{ .startTLS | quote }}
+            - name: GLOWPOD_LDAP_INSECURE_SKIP_VERIFY
+              value: {{ .insecureSkipVerify | quote }}
+            {{- if .caSecret }}
+            - name: GLOWPOD_LDAP_CA_FILE
+              value: /etc/glowpod/ldap/ca.crt
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- if and .Values.auth.ldap.enabled .Values.auth.ldap.caSecret }}
+          volumeMounts:
+            - name: ldap-ca
+              mountPath: /etc/glowpod/ldap
+              readOnly: true
+          {{- end }}
+      {{- if and .Values.auth.ldap.enabled .Values.auth.ldap.caSecret }}
+      volumes:
+        - name: ldap-ca
+          secret:
+            secretName: {{ .Values.auth.ldap.caSecret }}
+            items:
+              - key: ca.crt
+                path: ca.crt
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

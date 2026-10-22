@@ -151,6 +151,9 @@ func (l *LDAP) Authenticate(ctx context.Context, username, password string) (str
 	if err != nil {
 		return "", nil, err
 	}
+	if groups, err = impersonable(name, groups); err != nil {
+		return "", nil, ErrBadCredentials
+	}
 	return name, groups, nil
 }
 

@@ -41,3 +41,23 @@ session cookie.
 per check. The UI shows a button only when discovery says the API supports
 the verb **and** the review allows it. A 403 on the real request is still
 shown in plain words, with the cluster's reason.
+
+## Server mode identities (Phase 5)
+
+- **Token sign-in** passes the token through on its own; none of Glowpod's
+  credentials are mixed in.
+- **SSO and LDAP** impersonate the user by default, so they work on any
+  cluster without API-server flags. Glowpod's service account has only the
+  `impersonate` verb on users and groups. Glowpod refuses `system:` users and
+  drops `system:` groups; the chart prefixes groups (`oidc:`, `ldap:`).
+- SSO can instead pass the ID token through (`passToken`) where the API
+  server trusts the issuer.
+- Sessions are in memory, so the chart runs one replica.
+- People who can't list nodes or namespaces still get a working UI: the
+  load gauges say "No access", and the namespace picker lets them type one.
+
+## Libraries added in Phase 5
+
+`github.com/coreos/go-oidc/v3` (ID token verification, discovery) and
+`github.com/go-ldap/ldap/v3`. Both are security-sensitive protocol code
+that shouldn't be hand-written.

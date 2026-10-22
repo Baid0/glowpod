@@ -153,12 +153,19 @@ type ssoEnv struct {
 
 func newSSOEnv(t *testing.T, pass bool) *ssoEnv {
 	t.Helper()
+	return newSSOEnvWith(t, func(c *OIDCConfig) { c.PassToken = pass })
+}
+
+func newSSOEnvWith(t *testing.T, mod func(*OIDCConfig)) *ssoEnv {
+	t.Helper()
 	env := &ssoEnv{idp: newFakeIDP(t)}
-	o, err := NewOIDC(OIDCConfig{
+	cfg := OIDCConfig{
 		Issuer: env.idp.srv.URL, ClientID: "glowpod", ClientSecret: "s3cret",
 		RedirectURL:    "https://glowpod.example.com" + OIDCCallbackPath,
-		UsernamePrefix: "oidc:", GroupsPrefix: "oidc:", PassToken: pass,
-	})
+		UsernamePrefix: "oidc:", GroupsPrefix: "oidc:",
+	}
+	mod(&cfg)
+	o, err := NewOIDC(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -313,5 +320,32 @@ func TestLocalPath(t *testing.T) {
 		if got := localPath(in); got != want {
 			t.Errorf("localPath(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+func TestNoSystemIdentities(t *testing.T) {
+	t.Run("system groups from the provider are dropped", func(t *testing.T) {
+		env := newSSOEnvWith(t, func(c *OIDCConfig) { c.UsernamePrefix, c.GroupsPrefix = "", "" })
+		env.idp.claims["groups"] = []string{"devs", "system:masters"}
+		sess := sessionCookie(env.signIn(t, "/"))
+		env.get(t, "/api/v1/session", sess)
+		if got := strings.Join(env.seen[0].Groups, ","); got != "devs" {
+			t.Fatalf("groups = %q", got)
+		}
+	})
+	t.Run("a system user is refused", func(t *testing.T) {
+		env := newSSOEnvWith(t, func(c *OIDCConfig) { c.UsernameClaim, c.UsernamePrefix = "sub", "" })
+		env.idp.claims["sub"] = "system:admin"
+		rec := env.signIn(t, "/")
+		if rec.Header().Get("Location") != SignInPage+"?error=sso_no_user" {
+			t.Fatalf("got %d → %s", rec.Code, rec.Header().Get("Location"))
+		}
+	})
+	if _, err := impersonable("system:admin", nil); err == nil {
+		t.Fatal("system users are refused")
+	}
+	groups, err := impersonable("alice", []string{"devs", "system:masters", "system:serviceaccounts"})
+	if err != nil || strings.Join(groups, ",") != "devs" {
+		t.Fatalf("groups = %v, err = %v", groups, err)
 	}
 }

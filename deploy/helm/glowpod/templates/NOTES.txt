@@ -1,0 +1,26 @@
+Glowpod is installed. Everyone signs in and acts as themselves.
+
+{{- if .Values.publicURL }}
+
+Open {{ .Values.publicURL }}
+{{- else }}
+
+Try it with a port-forward:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "glowpod.fullname" . }} 8080:{{ .Values.service.port }}
+and open http://localhost:8080. Set publicURL and serve it over HTTPS for real use:
+the session cookie is Secure, so browsers only send it over HTTPS (localhost excepted).
+{{- end }}
+
+Sign-in methods:
+{{- if .Values.auth.oidc.enabled }}
+  - SSO ({{ .Values.auth.oidc.name }}). Redirect URI: {{ trimSuffix "/" .Values.publicURL }}/auth/oidc/callback
+    Bind RBAC to {{ if .Values.auth.oidc.groupsPrefix }}"{{ .Values.auth.oidc.groupsPrefix }}<group>"{{ else }}your groups{{ end }}, e.g.:
+      kubectl create rolebinding team-view --clusterrole=view --group={{ .Values.auth.oidc.groupsPrefix }}team -n team
+{{- end }}
+{{- if .Values.auth.ldap.enabled }}
+  - LDAP ({{ .Values.auth.ldap.url }}). Groups appear as "{{ .Values.auth.ldap.groupsPrefix }}<cn>".
+{{- end }}
+{{- if .Values.auth.token.enabled }}
+  - Token. Make one for a service account with the rights you want:
+      kubectl create token NAME -n NAMESPACE --duration=8h
+{{- end }}

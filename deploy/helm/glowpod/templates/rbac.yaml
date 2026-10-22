@@ -1,0 +1,30 @@
+{{- if and .Values.rbac.create (include "glowpod.impersonates" .) }}
+# Glowpod's only right: act as the person who signed in. Everything they
+# do is then checked against their own RBAC. Glowpod refuses to impersonate
+# system: users and drops system: groups.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "glowpod.fullname" . }}-impersonator
+  labels:
+    {{- include "glowpod.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [users, groups]
+    verbs: [impersonate]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "glowpod.fullname" . }}-impersonator
+  labels:
+    {{- include "glowpod.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "glowpod.fullname" . }}-impersonator
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "glowpod.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

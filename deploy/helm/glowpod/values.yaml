@@ -1,0 +1,140 @@
+# Glowpod: everyone signs in and acts as themselves. Glowpod's own service
+# account can only impersonate (for SSO and LDAP users); it never reads or
+# changes anything on its own behalf.
+
+image:
+  repository: ghcr.io/glowpod/glowpod
+  # Defaults to the chart's appVersion.
+  tag: ""
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+# Sessions live in memory, so keep one replica. More need sticky sessions at
+# the ingress and allowManyReplicas: true (a session then works on one pod only).
+replicaCount: 1
+allowManyReplicas: false
+
+# The URL people open, e.g. https://glowpod.example.com. Needed for SSO; it
+# also becomes the only Host header Glowpod answers to.
+publicURL: ""
+# The cluster's name in the UI.
+clusterName: ""
+
+auth:
+  # Sign in with a service-account (or any bearer) token. The token is used
+  # as-is: the person gets exactly its rights.
+  token:
+    enabled: true
+
+  # OpenID Connect SSO: Okta, Google, Microsoft Entra ID, Keycloak, Dex, ...
+  # Register the redirect URI <publicURL>/auth/oidc/callback with your provider.
+  oidc:
+    enabled: false
+    name: SSO # on the sign-in button, e.g. Okta
+    issuer: ""
+    clientID: ""
+    # The client secret: inline here, or in an existing Secret (preferred).
+    clientSecret: ""
+    existingSecret: ""
+    existingSecretKey: client-secret
+    scopes: [openid, email, profile]
+    usernameClaim: email
+    groupsClaim: groups
+    # Prefixes keep provider names apart from Kubernetes' own (system:...);
+    # bind RBAC to the prefixed names, e.g. group "oidc:platform-team".
+    usernamePrefix: ""
+    groupsPrefix: "oidc:"
+    # true: send the ID token to the API server (it must trust this issuer and
+    # client). false: Glowpod impersonates the user, which works anywhere.
+    passToken: false
+
+  # LDAP / Active Directory.
+  ldap:
+    enabled: false
+    url: "" # ldaps://ldap.example.com:636
+    bindDN: "" # Glowpod's search account; empty = anonymous search
+    bindPassword: ""
+    existingSecret: ""
+    existingSecretKey: bind-password
+    userBase: "" # ou=people,dc=example,dc=com
+    userFilter: "(uid={username})" # Active Directory: (sAMAccountName={username})
+    usernameAttribute: uid
+    groupBase: "" # ou=groups,dc=example,dc=com; empty = no groups
+    groupFilter: "(member={dn})"
+    groupAttribute: cn
+    groupsPrefix: "ldap:"
+    startTLS: false
+    # A Secret with ca.crt to trust the directory's certificate.
+    caSecret: ""
+    insecureSkipVerify: false
+
+session:
+  ttl: 12h
+  idle: 2h
+
+# Prometheus base URL for the network gauge; empty = find it in the cluster.
+prometheusURL: ""
+
+rbac:
+  # A ClusterRole whose only right is to impersonate users and groups, bound
+  # to Glowpod's service account. Only created when SSO (impersonating) or
+  # LDAP is on; token sign-in needs no rights at all.
+  create: true
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: "" # glowpod.example.com
+  tls: []
+  #  - secretName: glowpod-tls
+  #    hosts: [glowpod.example.com]
+
+networkPolicy:
+  # Allow traffic to Glowpod only from these peers (e.g. the ingress
+  # controller's namespace); kubelet probes are always allowed.
+  enabled: false
+  from: []
+  #  - namespaceSelector:
+  #      matchLabels:
+  #        kubernetes.io/metadata.name: ingress-nginx
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# More GLOWPOD_* settings or flags, e.g. [{name: GLOWPOD_OIDC_USERNAME_CLAIM, value: preferred_username}].
+extraEnv: []
+extraArgs: []

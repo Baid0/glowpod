@@ -1,0 +1,10 @@
+.git
+bin
+**/node_modules
+frontend/dist
+frontend/coverage
+frontend/playwright-report
+frontend/test-results
+backend/internal/web/dist/*
+!backend/internal/web/dist/.gitkeep
+docs
