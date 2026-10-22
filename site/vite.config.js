@@ -5,14 +5,19 @@ import { docInputs, docSources, writeDocPages } from "./scripts/docs.mjs";
 
 const root = import.meta.dirname;
 
+// Cloudflare Web Analytics, which Cloudflare adds to every page it serves: its beacon script (a
+// module with an integrity hash) and the one address it reports to. Paths, not whole hosts.
+const ANALYTICS_SCRIPT = "https://static.cloudflareinsights.com/beacon.min.js/";
+const ANALYTICS_REPORT = "https://cloudflareinsights.com/cdn-cgi/rum";
+
 // The page's Content-Security-Policy. Only in the build: the dev server injects styles inline.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self'",
+  `script-src 'self' ${ANALYTICS_SCRIPT}`,
   "style-src 'self'",
   "img-src 'self'",
   "font-src 'self'",
-  "connect-src 'self'",
+  `connect-src 'self' ${ANALYTICS_REPORT}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'none'",
