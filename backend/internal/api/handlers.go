@@ -6,10 +6,12 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	authnv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -81,7 +83,8 @@ func (s *server) clusterError(w http.ResponseWriter, err error) {
 
 // sessionResponse is GET /api/v1/session.
 type sessionResponse struct {
-	Mode string `json:"mode"`
+	Mode   string `json:"mode"`
+	Method string `json:"method"`
 	// CSRFToken goes in the X-CSRF-Token header of every write.
 	CSRFToken string         `json:"csrfToken"`
 	User      sessionUser    `json:"user"`
@@ -89,19 +92,27 @@ type sessionResponse struct {
 }
 
 type sessionUser struct {
-	Username string `json:"username"`
+	Username string   `json:"username"`
+	Groups   []string `json:"groups,omitempty"`
 }
 
 func (s *server) session(w http.ResponseWriter, r *http.Request) {
-	info := s.opts.Provider.Info()
-	resp := sessionResponse{Mode: "local", CSRFToken: auth.CSRFTokenFrom(r.Context()), Clusters: []cluster.Info{info}}
-
-	// Ask the cluster who we are; this is the name RBAC sees.
-	id, _ := auth.IdentityFrom(r.Context())
-	if clients, err := s.opts.Provider.ClientsFor(r.Context(), id); err == nil {
-		review, err := clients.Kube.AuthenticationV1().SelfSubjectReviews().Create(r.Context(), &authnv1.SelfSubjectReview{}, metav1.CreateOptions{})
-		if err == nil {
-			resp.User.Username = review.Status.UserInfo.Username
+	info := auth.SessionInfoFrom(r.Context())
+	resp := sessionResponse{
+		Mode:      info.Mode,
+		Method:    info.Method,
+		CSRFToken: auth.CSRFTokenFrom(r.Context()),
+		User:      sessionUser{Username: info.User, Groups: info.Groups},
+		Clusters:  []cluster.Info{s.opts.Provider.Info()},
+	}
+	// Local mode doesn't know the kubeconfig user's name; ask the cluster.
+	if resp.User.Username == "" {
+		id, _ := auth.IdentityFrom(r.Context())
+		if clients, err := s.opts.Provider.ClientsFor(r.Context(), id); err == nil {
+			review, err := clients.Kube.AuthenticationV1().SelfSubjectReviews().Create(r.Context(), &authnv1.SelfSubjectReview{}, metav1.CreateOptions{})
+			if err == nil {
+				resp.User.Username = review.Status.UserInfo.Username
+			}
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -136,6 +147,9 @@ func (s *server) overview(w http.ResponseWriter, r *http.Request) {
 
 type namespacesResponse struct {
 	Namespaces []string `json:"namespaces"`
+	// Restricted is set when the user may not list namespaces: the list
+	// holds only the ones Glowpod could guess, and the UI lets them type one.
+	Restricted bool `json:"restricted,omitempty"`
 }
 
 func (s *server) namespaces(w http.ResponseWriter, r *http.Request) {
@@ -144,6 +158,10 @@ func (s *server) namespaces(w http.ResponseWriter, r *http.Request) {
 	opts := metav1.ListOptions{Limit: listPage}
 	for {
 		list, err := kube.CoreV1().Namespaces().List(r.Context(), opts)
+		if apierrors.IsForbidden(err) {
+			writeJSON(w, http.StatusOK, namespacesResponse{Namespaces: guessNamespaces(r), Restricted: true})
+			return
+		}
 		if err != nil {
 			s.clusterError(w, err)
 			return
@@ -158,6 +176,17 @@ func (s *server) namespaces(w http.ResponseWriter, r *http.Request) {
 	}
 	slices.Sort(names)
 	writeJSON(w, http.StatusOK, namespacesResponse{Namespaces: names})
+}
+
+// guessNamespaces offers a service account its own namespace.
+func guessNamespaces(r *http.Request) []string {
+	user := auth.SessionInfoFrom(r.Context()).User
+	if rest, ok := strings.CutPrefix(user, "system:serviceaccount:"); ok {
+		if ns, _, ok := strings.Cut(rest, ":"); ok && ns != "" {
+			return []string{ns}
+		}
+	}
+	return []string{}
 }
 
 type eventsResponse struct {

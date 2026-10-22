@@ -62,6 +62,9 @@ func detail(err error) string {
 		return ""
 	}
 	msg := status.Status().Message
+	if msg == "unknown" { // what some API paths say instead of nothing
+		return ""
+	}
 	if len(msg) > maxDetail {
 		msg = msg[:maxDetail] + "…"
 	}

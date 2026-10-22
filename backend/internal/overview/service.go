@@ -12,6 +12,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -107,6 +108,9 @@ type snapshot struct {
 	prom         metrics.Prometheus
 	promErr      error
 	errs         map[string]error
+	// noNodes is set when the user may not list nodes: the load gauges
+	// can't be computed, the rest of the page still works.
+	noNodes bool
 }
 
 // Build loads the cluster state and assembles the Overview for namespace
@@ -175,11 +179,22 @@ func (s *Service) gauges(ctx context.Context, id cluster.Identity, snap *snapsho
 	g.CPU, g.Memory = metrics.CPUAndMemory(snap.nodes, snap.pods, snap.nodeUsage, snap.nodeUsageErr)
 	g.Pods = metrics.Pods(snap.nodes, snap.pods)
 	g.Storage = metrics.Storage(snap.pvcs, snap.volumeUsage, snap.volumeErr)
-	if snap.errs["storage"] != nil {
+	switch err := snap.errs["storage"]; {
+	case apierrors.IsForbidden(err):
+		g.Storage = metrics.Gauge{State: metrics.NoAccess, Unit: "bytes", Message: "You can't see the cluster's volumes."}
+	case err != nil:
 		g.Storage = metrics.Gauge{State: metrics.Failed, Unit: "bytes", Message: "Couldn't list volumes."}
+	}
+	if snap.noNodes {
+		const msg = "You can't see the cluster's nodes, so its load isn't shown."
+		g.CPU = metrics.Gauge{State: metrics.NoAccess, Unit: "cores", Message: msg}
+		g.Memory = metrics.Gauge{State: metrics.NoAccess, Unit: "bytes", Message: msg}
+		g.Pods = metrics.Gauge{State: metrics.NoAccess, Unit: "pods", Message: msg}
 	}
 
 	switch {
+	case apierrors.IsForbidden(snap.promErr):
+		// Prometheus out of reach for this user: like not having it, hide the gauge.
 	case snap.promErr != nil:
 		g.Network = &metrics.Gauge{State: metrics.Failed, Unit: "bytes/s", Source: "prometheus", Message: "Couldn't look for Prometheus."}
 	case snap.prom != nil:
@@ -188,6 +203,10 @@ func (s *Service) gauges(ctx context.Context, id cluster.Identity, snap *snapsho
 	}
 
 	h := s.history(id)
+	if snap.noNodes {
+		h.Apply("storage", &g.Storage, now)
+		return g
+	}
 	h.Apply("cpu", &g.CPU, now)
 	h.Apply("memory", &g.Memory, now)
 	h.Apply("pods", &g.Pods, now)
@@ -326,6 +345,20 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 	}
 	wg.Wait()
 
+	// People with access to some namespaces only can't list nodes or every
+	// pod; show them what they can see.
+	if apierrors.IsForbidden(nodeErr) {
+		snap.noNodes, nodeErr = true, nil
+	}
+	if apierrors.IsForbidden(podErr) && namespace != "" {
+		snap.pods, podErr = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.Pod, string, error) {
+			l, err := kube.CoreV1().Pods(namespace).List(ctx, o)
+			if err != nil {
+				return nil, "", err
+			}
+			return l.Items, l.Continue, nil
+		})
+	}
 	if nodeErr != nil {
 		return nil, &RequiredError{What: "nodes", Err: nodeErr}
 	}

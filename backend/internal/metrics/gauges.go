@@ -14,6 +14,8 @@ const (
 	Live      State = "live"
 	NoMetrics State = "no-metrics"
 	Failed    State = "error"
+	// NoAccess means the signed-in user may not read what the gauge needs.
+	NoAccess State = "no-access"
 )
 
 // Gauge is one Overview gauge.

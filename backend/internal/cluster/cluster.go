@@ -7,12 +7,16 @@ package cluster
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
+	"slices"
+	"strings"
 
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -33,8 +37,38 @@ type Info struct {
 
 // Identity is who a request acts as. Key separates per-user state such as
 // caches and metric history; it is never a credential.
+//
+// In server mode an identity is either impersonated (User and Groups, for
+// SSO and LDAP sign-in) or carries the user's own bearer Token (a
+// service-account token, or an OIDC ID token passed through). Token is a
+// credential: Identity redacts it when logged or printed.
 type Identity struct {
-	Key string
+	Key    string
+	User   string
+	Groups []string
+	Token  string
+}
+
+// String keeps the token out of fmt output.
+func (i Identity) String() string { return i.Key }
+
+// LogValue keeps the token out of structured logs.
+func (i Identity) LogValue() slog.Value { return slog.StringValue(i.Key) }
+
+// TokenIdentity identifies a bearer token by its hash, so the key can be
+// logged and used for caches without revealing the token.
+func TokenIdentity(token string) Identity {
+	sum := sha256.Sum256([]byte(token))
+	return Identity{Key: "token:" + hex.EncodeToString(sum[:16]), Token: token}
+}
+
+// UserIdentity is someone to impersonate. The key covers the groups, so a
+// change in group membership gets fresh clients and caches.
+func UserIdentity(user string, groups []string) Identity {
+	sorted := slices.Clone(groups)
+	slices.Sort(sorted)
+	sum := sha256.Sum256([]byte(strings.Join(sorted, "\n")))
+	return Identity{Key: "user:" + user + "|" + hex.EncodeToString(sum[:8]), User: user, Groups: sorted}
 }
 
 // Clients are Kubernetes clients bound to one identity.
@@ -110,20 +144,11 @@ type Local struct {
 
 // NewLocal builds clients from cfg.
 func NewLocal(cfg *rest.Config, info Info) (*Local, error) {
-	kube, err := kubernetes.NewForConfig(cfg)
+	c, err := newClients(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("create kubernetes client: %w", err)
+		return nil, err
 	}
-	dyn, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("create dynamic client: %w", err)
-	}
-	return &Local{info: info, clients: &Clients{
-		Kube:      kube,
-		Dynamic:   dyn,
-		Discovery: memory.NewMemCacheClient(kube.Discovery()),
-		Config:    cfg,
-	}}, nil
+	return &Local{info: info, clients: c}, nil
 }
 
 // NewLocalWithClients is for tests.

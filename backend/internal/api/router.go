@@ -30,10 +30,13 @@ type Options struct {
 	// Frontend serves the single-page app for every non-API path.
 	Frontend http.Handler
 	Provider cluster.Provider
-	Auth     *auth.Local
+	Auth     auth.Authenticator
 	Overview *overview.Service
 	// Hosts are the Host header values to accept; nil skips the check.
+	// /healthz is always answered, for kubelet probes.
 	Hosts []string
+	// HSTS sends Strict-Transport-Security; for HTTPS installs.
+	HSTS bool
 	// PrometheusURL, when set, is used instead of discovering Prometheus.
 	PrometheusURL string
 	// Metrics builds the usage reader for a client; defaults to metrics.NewReader.
@@ -86,54 +89,59 @@ func NewRouter(opts Options) http.Handler {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
-	r.Use(securityHeaders)
-	if opts.Hosts != nil {
-		r.Use(auth.RequireHost(opts.Hosts))
-	}
-
+	r.Use(securityHeaders(opts.HSTS))
 	r.Get("/healthz", healthz)
-	if opts.Provider != nil && opts.Auth != nil {
-		r.Get(auth.LoginPath, opts.Auth.HandleLogin)
-		r.Route("/api/v1", func(r chi.Router) {
-			r.Use(opts.Auth.Require, auth.RequireCSRF)
-			r.Get("/session", s.session)
-			r.Route("/clusters/{cluster}", func(r chi.Router) {
-				r.Use(s.requireCluster, requireNamespace)
-				r.Get("/overview", s.overview)
-				r.Get("/namespaces", s.namespaces)
-				r.Get("/events", s.events)
-				r.Method(http.MethodGet, "/stream", &stream.Handler{Provider: opts.Provider, Logger: opts.Logger})
-				r.Get("/apps", s.listApps)
-				r.Get("/apps/{namespace}/{name}", s.getApp)
-				r.Get("/pods/{namespace}/{name}", s.pod)
-				r.Get("/map", s.resourceMap)
-				r.Get("/helm", s.helmReleases)
-				r.Get("/helm/{namespace}/{name}", s.helmRelease)
-				r.Get("/nodes/{name}", s.node)
-				r.Post("/nodes/{name}/cordon", s.cordonNode)
-				r.Get("/nodes/{name}/drain", s.drainPlan)
-				r.Post("/nodes/{name}/drain", s.drainNode)
-				r.Get("/logs/{namespace}/{pod}", s.streamLogs)
-				r.Get("/logs/{namespace}/{pod}/download", s.downloadLogs)
-				r.Get("/exec/{namespace}/{pod}", s.openTerminal)
-				r.Get("/resources", s.resourceTypes)
-				r.Get("/resources/{group}/{version}/{resource}", s.listResource)
-				r.Get("/resources/{group}/{version}/{resource}/{name}", s.getResource)
-				r.Put("/resources/{group}/{version}/{resource}/{name}", s.updateResource)
-				r.Delete("/resources/{group}/{version}/{resource}/{name}", s.deleteResource)
-				r.Put("/resources/{group}/{version}/{resource}/{name}/scale", s.scaleResource)
-				r.Post("/resources/{group}/{version}/{resource}/{name}/restart", s.restartResource)
-				r.Post("/access", s.access)
-				r.Get("/watch/{group}/{version}/{resource}", s.watchResource)
+
+	r.Group(func(r chi.Router) {
+		if opts.Hosts != nil {
+			r.Use(auth.RequireHost(opts.Hosts))
+		}
+		if opts.Provider != nil && opts.Auth != nil {
+			opts.Auth.MountRoot(r)
+			r.Route("/api/v1", func(r chi.Router) {
+				opts.Auth.MountAPI(r)
+				r.Group(func(r chi.Router) {
+					r.Use(opts.Auth.Require, auth.RequireCSRF)
+					r.Get("/session", s.session)
+					r.Route("/clusters/{cluster}", func(r chi.Router) {
+						r.Use(s.requireCluster, requireNamespace)
+						r.Get("/overview", s.overview)
+						r.Get("/namespaces", s.namespaces)
+						r.Get("/events", s.events)
+						r.Method(http.MethodGet, "/stream", &stream.Handler{Provider: opts.Provider, Logger: opts.Logger})
+						r.Get("/apps", s.listApps)
+						r.Get("/apps/{namespace}/{name}", s.getApp)
+						r.Get("/pods/{namespace}/{name}", s.pod)
+						r.Get("/map", s.resourceMap)
+						r.Get("/helm", s.helmReleases)
+						r.Get("/helm/{namespace}/{name}", s.helmRelease)
+						r.Get("/nodes/{name}", s.node)
+						r.Post("/nodes/{name}/cordon", s.cordonNode)
+						r.Get("/nodes/{name}/drain", s.drainPlan)
+						r.Post("/nodes/{name}/drain", s.drainNode)
+						r.Get("/logs/{namespace}/{pod}", s.streamLogs)
+						r.Get("/logs/{namespace}/{pod}/download", s.downloadLogs)
+						r.Get("/exec/{namespace}/{pod}", s.openTerminal)
+						r.Get("/resources", s.resourceTypes)
+						r.Get("/resources/{group}/{version}/{resource}", s.listResource)
+						r.Get("/resources/{group}/{version}/{resource}/{name}", s.getResource)
+						r.Put("/resources/{group}/{version}/{resource}/{name}", s.updateResource)
+						r.Delete("/resources/{group}/{version}/{resource}/{name}", s.deleteResource)
+						r.Put("/resources/{group}/{version}/{resource}/{name}/scale", s.scaleResource)
+						r.Post("/resources/{group}/{version}/{resource}/{name}/restart", s.restartResource)
+						r.Post("/access", s.access)
+						r.Get("/watch/{group}/{version}/{resource}", s.watchResource)
+					})
+				})
+				r.NotFound(apiNotFound)
+				r.MethodNotAllowed(apiMethodNotAllowed)
 			})
-			r.NotFound(apiNotFound)
-			r.MethodNotAllowed(apiMethodNotAllowed)
-		})
-	}
-	r.Handle("/api/*", http.HandlerFunc(apiNotFound))
-	if opts.Frontend != nil {
-		r.Handle("/*", opts.Frontend)
-	}
+		}
+		r.Handle("/api/*", http.HandlerFunc(apiNotFound))
+		if opts.Frontend != nil {
+			r.Handle("/*", opts.Frontend)
+		}
+	})
 	return r
 }
 

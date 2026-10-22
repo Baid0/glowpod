@@ -7,14 +7,14 @@
 package auth
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/go-chi/chi/v5"
 
 	"glowpod/internal/cluster"
 )
@@ -99,19 +99,22 @@ func (l *Local) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+// MountRoot implements Authenticator: the launch link.
+func (l *Local) MountRoot(r chi.Router) { r.Get(LoginPath, l.HandleLogin) }
+
+// MountAPI implements Authenticator. Local mode signs in only by the launch link.
+func (l *Local) MountAPI(chi.Router) {}
+
 // Require rejects API requests without a session and attaches the identity.
 func (l *Local) Require(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !l.disabled && !l.validSession(r) {
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			w.WriteHeader(http.StatusUnauthorized)
-			_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]string{
-				"code":    "unauthenticated",
-				"message": "Open Glowpod from the link in your terminal to sign in.",
-			}})
+			writeJSONError(w, http.StatusUnauthorized, "unauthenticated",
+				"Open Glowpod from the link in your terminal to sign in.")
 			return
 		}
 		ctx := WithCSRFToken(WithIdentity(r.Context(), LocalIdentity), l.csrf)
+		ctx = WithSessionInfo(ctx, SessionInfo{Mode: "local", Method: "kubeconfig"})
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -131,17 +134,4 @@ func randomSecret() (string, error) {
 		return "", fmt.Errorf("generate secret: %w", err)
 	}
 	return base64.RawURLEncoding.EncodeToString(b), nil
-}
-
-type identityKey struct{}
-
-// WithIdentity returns ctx carrying id.
-func WithIdentity(ctx context.Context, id cluster.Identity) context.Context {
-	return context.WithValue(ctx, identityKey{}, id)
-}
-
-// IdentityFrom returns the identity Require attached.
-func IdentityFrom(ctx context.Context) (cluster.Identity, bool) {
-	id, ok := ctx.Value(identityKey{}).(cluster.Identity)
-	return id, ok
 }

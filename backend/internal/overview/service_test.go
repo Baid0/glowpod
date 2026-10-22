@@ -379,6 +379,37 @@ func TestBuildTrendsAppearAfterFiveMinutes(t *testing.T) {
 	}
 }
 
+// Someone with access to one namespace can't list nodes or every pod; the
+// Overview still works for their namespace, without the load gauges.
+func TestBuildForNamespaceUser(t *testing.T) {
+	kube := fake.NewClientset(labCluster()...)
+	kube.PrependReactor("list", "nodes", func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, apierrors.NewForbidden(schema.GroupResource{Resource: "nodes"}, "", errors.New("rbac"))
+	})
+	kube.PrependReactor("list", "pods", func(a k8stesting.Action) (bool, runtime.Object, error) {
+		if a.GetNamespace() == "" {
+			return true, nil, apierrors.NewForbidden(schema.GroupResource{Resource: "pods"}, "", errors.New("rbac"))
+		}
+		return false, nil, nil
+	})
+	deps := Deps{Kube: kube, Metrics: healthyMetrics()}
+	resp, err := newTestService().Build(context.Background(), cluster.Identity{Key: "t"}, cluster.Info{}, deps, "payments")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, g := range map[string]metrics.Gauge{"cpu": resp.Gauges.CPU, "memory": resp.Gauges.Memory, "pods": resp.Gauges.Pods} {
+		if g.State != metrics.NoAccess || g.Message == "" {
+			t.Errorf("%s gauge = %+v, want no-access", name, g)
+		}
+	}
+	if resp.Health.Running+resp.Health.Pending+resp.Health.Failing == 0 {
+		t.Fatal("the namespace's pods still count")
+	}
+	if _, err := newTestService().Build(context.Background(), cluster.Identity{Key: "t"}, cluster.Info{}, deps, ""); !apierrors.IsForbidden(err) {
+		t.Fatalf("all namespaces without access = %v", err)
+	}
+}
+
 func TestBuildFailures(t *testing.T) {
 	forbidden := func(resource string) k8stesting.ReactionFunc {
 		return func(k8stesting.Action) (bool, runtime.Object, error) {
@@ -391,8 +422,7 @@ func TestBuildFailures(t *testing.T) {
 		wantErr     bool
 		unavailable string
 	}{
-		{name: "nodes are required", resource: "nodes", wantErr: true},
-		{name: "pods are required", resource: "pods", wantErr: true},
+		{name: "pods in all namespaces are required", resource: "pods", wantErr: true},
 		{name: "workloads are optional", resource: "deployments", unavailable: "workloads"},
 		{name: "jobs are optional", resource: "jobs", unavailable: "jobs"},
 	}

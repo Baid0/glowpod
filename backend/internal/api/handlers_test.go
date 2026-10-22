@@ -149,7 +149,14 @@ func TestAPI(t *testing.T) {
 				}
 			},
 		},
-		{name: "overview when nodes are forbidden", path: "/api/v1/clusters/default/overview", setup: forbidNodes, wantStatus: 403, wantCode: "forbidden"},
+		{
+			name: "overview when nodes are forbidden", path: "/api/v1/clusters/default/overview", setup: forbidNodes, wantStatus: 200,
+			check: func(t *testing.T, body []byte) {
+				if !strings.Contains(string(body), `"cpu":{"state":"no-access"`) {
+					t.Fatalf("load gauges show no access: %s", body)
+				}
+			},
+		},
 		{
 			name: "namespaces are sorted", path: "/api/v1/clusters/default/namespaces", wantStatus: 200,
 			check: func(t *testing.T, body []byte) {
@@ -240,6 +247,19 @@ func TestAPI(t *testing.T) {
 					}
 					return false, nil, nil
 				})
+			},
+		},
+		{
+			name: "namespaces without access", path: "/api/v1/clusters/default/namespaces", wantStatus: 200,
+			setup: func(k *fake.Clientset) {
+				k.PrependReactor("list", "namespaces", func(k8stesting.Action) (bool, runtime.Object, error) {
+					return true, nil, apierrors.NewForbidden(schema.GroupResource{Resource: "namespaces"}, "", errors.New("rbac"))
+				})
+			},
+			check: func(t *testing.T, body []byte) {
+				if !strings.Contains(string(body), `"restricted":true`) {
+					t.Fatalf("body = %s", body)
+				}
 			},
 		},
 		{name: "map needs a namespace", path: "/api/v1/clusters/default/map", wantStatus: 400, wantCode: "namespace_required"},

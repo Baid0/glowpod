@@ -73,7 +73,7 @@ func TestRequire(t *testing.T) {
 	var gotIdentity bool
 	h := l.Require(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id, ok := IdentityFrom(r.Context())
-		gotIdentity = ok && id == LocalIdentity
+		gotIdentity = ok && id.Key == LocalIdentity.Key
 		w.WriteHeader(http.StatusNoContent)
 	}))
 
