@@ -9,6 +9,7 @@ async function fakeBackend(page: Page) {
     const ns = url.searchParams.get("namespace") ?? "";
     const body: Record<string, unknown> = {
       "/api/v1/session": fx.session,
+      "/api/v1/clusters": { clusters: fx.clusters },
       "/api/v1/clusters/default/namespaces": { namespaces: fx.namespaces },
       "/api/v1/clusters/default/overview": fx.overview(ns),
       "/api/v1/clusters/default/events": { events: fx.events() },
