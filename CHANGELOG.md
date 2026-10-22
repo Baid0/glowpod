@@ -11,6 +11,9 @@ All notable changes to Glowpod. The format follows
 - Classic chart repository: `helm repo add glowpod https://glowpod.dev/charts`. Every release
   adds its version, and the chart file is attached to the GitHub Release (with a checksum and a
   build attestation). 0.1.1 and 0.1.2 are in it already.
+- Artifact Hub: the chart lists its image (for security scanning), each release's changes from
+  this changelog, a category and links to the website, docs and security policy. The chart's
+  README links to glowpod.dev, so they work on the package page.
 
 ## [0.1.2] - 2026-10-22
 

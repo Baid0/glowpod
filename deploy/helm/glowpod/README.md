@@ -20,12 +20,12 @@ helm repo add glowpod https://glowpod.dev/charts
 Serve it over HTTPS: the session cookie is `Secure`, so browsers only send it
 over HTTPS (and to `localhost`, which is enough for a port-forward test).
 
-Full guides: [install](../../../docs/install.md),
-[sign-in and access](../../../docs/authentication.md) (more provider
+Full guides: [install](https://glowpod.dev/docs/install/),
+[sign-in and access](https://glowpod.dev/docs/authentication/) (more provider
 examples, Active Directory, troubleshooting),
-[configuration](../../../docs/configuration.md) and
-[operations](../../../docs/operations.md). To try SSO and LDAP without a
-provider of your own, run the [SSO demo](../../examples/sso-demo/README.md).
+[configuration](https://glowpod.dev/docs/configuration/) and
+[operations](https://glowpod.dev/docs/operations/). To try SSO and LDAP without a
+provider of your own, run the [SSO demo](https://glowpod.dev/docs/sso-demo/).
 
 ## Sign-in methods
 
@@ -123,6 +123,6 @@ same answer for an unknown user and a wrong password.
 
 ## Values
 
-See [values.yaml](values.yaml); every setting there is commented. Anything
+See [values.yaml](https://github.com/Baid0/glowpod/blob/main/deploy/helm/glowpod/values.yaml); every setting there is commented. Anything
 else can be passed as a `GLOWPOD_*` variable in `extraEnv` (run
 `glowpod -h` for the full list).

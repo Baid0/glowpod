@@ -6,13 +6,28 @@ version: 0.1.2
 appVersion: "0.1.2"
 # SelfSubjectReview (who am I) is GA since 1.28.
 kubeVersion: ">=1.28.0-0"
-home: https://github.com/Baid0/glowpod
+home: https://glowpod.dev
 sources: [https://github.com/Baid0/glowpod]
 keywords: [kubernetes, dashboard, rbac, sso]
+# Artifact Hub (https://artifacthub.io). The release workflow sets the image
+# tag to the version it publishes and adds artifacthub.io/changes from that
+# version's CHANGELOG.md section.
 annotations:
   artifacthub.io/license: MIT
+  artifacthub.io/category: monitoring-logging
+  artifacthub.io/images: |
+    - name: glowpod
+      image: ghcr.io/baid0/glowpod:0.1.2
   artifacthub.io/links: |
+    - name: Website
+      url: https://glowpod.dev
+    - name: Documentation
+      url: https://glowpod.dev/docs/
     - name: Install guide
-      url: https://github.com/Baid0/glowpod/blob/main/docs/install.md
+      url: https://glowpod.dev/docs/install/
     - name: Sign-in and access
-      url: https://github.com/Baid0/glowpod/blob/main/docs/authentication.md
+      url: https://glowpod.dev/docs/authentication/
+    - name: Security policy
+      url: https://github.com/Baid0/glowpod/security/policy
+    - name: Source
+      url: https://github.com/Baid0/glowpod

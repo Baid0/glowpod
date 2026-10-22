@@ -105,6 +105,8 @@ jobs:
           # The published chart points at the image published with it.
           sed -i -E "s#repository: ghcr.io/[^/]+/glowpod#repository: ${IMAGE}#" deploy/helm/glowpod/values.yaml
           grep -q "repository: ${IMAGE}$" deploy/helm/glowpod/values.yaml
+          # Artifact Hub: this version's image, changes and pre-release flag.
+          python3 -I .github/scripts/chart-annotations.py "$VERSION" "$IMAGE"
           helm package deploy/helm/glowpod --version "$VERSION" --app-version "$VERSION"
           echo "$TOKEN" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
           digest=$(helm push "glowpod-${VERSION}.tgz" "oci://ghcr.io/${OWNER}/charts" 2>&1 | tee /dev/stderr | awk '/^Digest:/ {print $2}')
