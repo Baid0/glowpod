@@ -153,6 +153,51 @@ helm upgrade glowpod deploy/helm/glowpod -n glowpod -f glowpod-values.yaml
 When `usernameClaim` is `email`, Glowpod refuses a token whose
 `email_verified` is `false`, as Kubernetes does.
 
+### Try it on your laptop first
+
+Before installing in a cluster, you can check a provider end to end from
+your laptop: Glowpod in server mode on `localhost`, against any cluster your
+kubeconfig can reach. Your kubeconfig user must be allowed to impersonate
+(cluster admins are), because Glowpod acts as whoever signs in.
+
+1. In your provider, use the redirect URI
+   `http://localhost:8080/auth/oidc/callback`. Google and Microsoft both
+   accept plain `http` for `localhost`.
+2. Put the client secret in your shell without it showing or landing in
+   your history. Paste it, then press Enter:
+
+   ```bash
+   read -rs GLOWPOD_OIDC_CLIENT_SECRET && export GLOWPOD_OIDC_CLIENT_SECRET
+   ```
+
+3. Start Glowpod in the same shell (the provider's own values are below):
+
+   ```bash
+   glowpod -mode server -addr 127.0.0.1:8080 \
+     -public-url http://localhost:8080 -insecure-cookies -auth-token=false \
+     -oidc-name Google -oidc-issuer https://accounts.google.com \
+     -oidc-client-id <client id> -oidc-groups-prefix oidc:
+   ```
+
+   `-insecure-cookies` is only for this plain-HTTP test. Add
+   `-kubeconfig` or `-context` to pick the cluster.
+4. Open **http://localhost:8080** (exactly `localhost`, matching the redirect
+   URI) and sign in. You arrive with no rights at all: "You don't have
+   access to this". That's right, and it shows Glowpod acts as you, not as
+   the kubeconfig's user.
+5. Give your provider identity some rights and refresh. Read-only, for
+   example:
+
+   ```bash
+   kubectl create clusterrolebinding sso-test-view --clusterrole=view --user=alice@example.com
+   kubectl create clusterrole sso-test-cluster-read --verb=get,list,watch --resource=namespaces,nodes
+   kubectl create clusterrolebinding sso-test-cluster-read --clusterrole=sso-test-cluster-read --user=alice@example.com
+   ```
+
+   Glowpod now shows the cluster, but no Scale, Restart, Edit or Delete
+   buttons. Delete the test bindings when you're done, and the test client
+   in your provider if you won't use it again.
+
 ### Provider examples
 
 **Okta**
@@ -210,9 +255,24 @@ auth:
     scopes: [openid, email, profile]
 ```
 
-Create an *OAuth client ID* of type *Web application*. Google doesn't send
-groups, so bind RBAC to users (`--user=alice@example.com`), or put Dex in
-front of Google to get Workspace groups.
+Tested with Glowpod 0.3.0 and a personal Google account. Set it up in
+[Google Cloud Console](https://console.cloud.google.com):
+
+1. Create (or pick) a project.
+2. **Google Auth Platform → Get started** (older consoles: *APIs & Services
+   → OAuth consent screen*): an app name, a support email, and the
+   **Audience**: *Internal* for your Google Workspace organization only, or
+   *External*.
+3. With *External* in testing mode, add the people who may sign in under
+   **Audience → Test users**. Publish the app when everyone should be able
+   to.
+4. **Clients → Create client**: type **Web application**, and under
+   **Authorized redirect URIs** add `<publicURL>/auth/oidc/callback`.
+   Copy the **Client ID**; keep the **Client secret** in a Secret.
+
+Glowpod signs people in by their Google email, so bind RBAC to users:
+`--user=alice@example.com`. Google doesn't send groups; to use Google
+Workspace groups, put Dex in front of Google.
 
 **Keycloak**
 
