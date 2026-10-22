@@ -30,18 +30,24 @@ type Detail struct {
 	Deploys   []Deploy          `json:"deploys"`
 }
 
-type snapshot struct {
-	workloads   Workloads
-	replicaSets []appsv1.ReplicaSet
-	pods        []corev1.Pod
+// Snapshot is a namespace's workloads, ReplicaSets and pods, read together.
+type Snapshot struct {
+	Workloads   Workloads
+	ReplicaSets []appsv1.ReplicaSet
+	Pods        []corev1.Pod
 }
 
-func load(ctx context.Context, kube kubernetes.Interface, namespace string) (*snapshot, error) {
-	var snap snapshot
+// Load reads a Snapshot of namespace ("" = all namespaces).
+func Load(ctx context.Context, kube kubernetes.Interface, namespace string) (*Snapshot, error) {
+	return load(ctx, kube, namespace)
+}
+
+func load(ctx context.Context, kube kubernetes.Interface, namespace string) (*Snapshot, error) {
+	var snap Snapshot
 	g, ctx := errgroup.WithContext(ctx)
 	apps := kube.AppsV1()
 	g.Go(func() (err error) {
-		snap.workloads.Deployments, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.Deployment, string, error) {
+		snap.Workloads.Deployments, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.Deployment, string, error) {
 			l, err := apps.Deployments(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -51,7 +57,7 @@ func load(ctx context.Context, kube kubernetes.Interface, namespace string) (*sn
 		return err
 	})
 	g.Go(func() (err error) {
-		snap.workloads.StatefulSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.StatefulSet, string, error) {
+		snap.Workloads.StatefulSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.StatefulSet, string, error) {
 			l, err := apps.StatefulSets(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -61,7 +67,7 @@ func load(ctx context.Context, kube kubernetes.Interface, namespace string) (*sn
 		return err
 	})
 	g.Go(func() (err error) {
-		snap.workloads.DaemonSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.DaemonSet, string, error) {
+		snap.Workloads.DaemonSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.DaemonSet, string, error) {
 			l, err := apps.DaemonSets(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -71,7 +77,7 @@ func load(ctx context.Context, kube kubernetes.Interface, namespace string) (*sn
 		return err
 	})
 	g.Go(func() (err error) {
-		snap.replicaSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.ReplicaSet, string, error) {
+		snap.ReplicaSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.ReplicaSet, string, error) {
 			l, err := apps.ReplicaSets(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -81,7 +87,7 @@ func load(ctx context.Context, kube kubernetes.Interface, namespace string) (*sn
 		return err
 	})
 	g.Go(func() (err error) {
-		snap.pods, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.Pod, string, error) {
+		snap.Pods, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.Pod, string, error) {
 			l, err := kube.CoreV1().Pods(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -102,8 +108,8 @@ func List(ctx context.Context, kube kubernetes.Interface, namespace string, now 
 	if err != nil {
 		return nil, err
 	}
-	ix := NewIndex(snap.replicaSets)
-	return Group(snap.workloads, ix, Failing(snap.pods, ix, now)), nil
+	ix := NewIndex(snap.ReplicaSets)
+	return Group(snap.Workloads, ix, Failing(snap.Pods, ix, now)), nil
 }
 
 // Get returns one app with its workloads, pods, problems and recent deploys.
@@ -112,21 +118,21 @@ func Get(ctx context.Context, kube kubernetes.Interface, namespace, name string,
 	if err != nil {
 		return nil, err
 	}
-	ix := NewIndex(snap.replicaSets)
-	failing := Failing(snap.pods, ix, now)
+	ix := NewIndex(snap.ReplicaSets)
+	failing := Failing(snap.Pods, ix, now)
 
 	mine := Workloads{}
-	for _, d := range snap.workloads.Deployments {
+	for _, d := range snap.Workloads.Deployments {
 		if Key(&d.ObjectMeta) == name {
 			mine.Deployments = append(mine.Deployments, d)
 		}
 	}
-	for _, s := range snap.workloads.StatefulSets {
+	for _, s := range snap.Workloads.StatefulSets {
 		if Key(&s.ObjectMeta) == name {
 			mine.StatefulSets = append(mine.StatefulSets, s)
 		}
 	}
-	for _, d := range snap.workloads.DaemonSets {
+	for _, d := range snap.Workloads.DaemonSets {
 		if Key(&d.ObjectMeta) == name {
 			mine.DaemonSets = append(mine.DaemonSets, d)
 		}
@@ -156,17 +162,17 @@ func Get(ctx context.Context, kube kubernetes.Interface, namespace, name string,
 			deployments[w.Name] = true
 		}
 	}
-	for i := range snap.pods {
-		o, ok := ix.OwnerOf(&snap.pods[i])
+	for i := range snap.Pods {
+		o, ok := ix.OwnerOf(&snap.Pods[i])
 		if !ok || !owners[o] {
 			continue
 		}
-		pod := summary.PodOf(&snap.pods[i], now)
+		pod := summary.PodOf(&snap.Pods[i], now)
 		d.Pods = append(d.Pods, pod)
 		if pod.Problem != nil {
 			d.Problems = append(d.Problems, *pod.Problem)
 		}
 	}
-	d.Deploys = RecentDeploys(snap.replicaSets, 10, func(dep string) bool { return deployments[dep] })
+	d.Deploys = RecentDeploys(snap.ReplicaSets, 10, func(dep string) bool { return deployments[dep] })
 	return d, nil
 }

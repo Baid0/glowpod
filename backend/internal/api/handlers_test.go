@@ -242,6 +242,11 @@ func TestAPI(t *testing.T) {
 				})
 			},
 		},
+		{name: "map needs a namespace", path: "/api/v1/clusters/default/map", wantStatus: 400, wantCode: "namespace_required"},
+		{name: "map", path: "/api/v1/clusters/default/map?namespace=alpha", wantStatus: 200},
+		{name: "helm releases", path: "/api/v1/clusters/default/helm?namespace=alpha", wantStatus: 200},
+		{name: "helm release missing", path: "/api/v1/clusters/default/helm/alpha/web", wantStatus: 404, wantCode: "not_found"},
+		{name: "helm release bad name", path: "/api/v1/clusters/default/helm/alpha/Bad_Name", wantStatus: 400, wantCode: "bad_name"},
 		{name: "exec needs a container", path: "/api/v1/clusters/default/exec/alpha/api-1", wantStatus: 400, wantCode: "bad_container"},
 		{name: "exec bad pod name", path: "/api/v1/clusters/default/exec/alpha/Bad_Pod?container=app", wantStatus: 400, wantCode: "bad_pod"},
 		{name: "pod in a bad namespace", path: "/api/v1/clusters/default/pods/Not_Valid/x", wantStatus: 400, wantCode: "bad_namespace"},

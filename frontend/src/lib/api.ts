@@ -4,6 +4,8 @@ import type {
   AppSummary,
   DrainPlan,
   DrainResult,
+  HelmRelease,
+  HelmReleaseDetail,
   KubeEvent,
   NodeDetail,
   Overview,
@@ -11,6 +13,7 @@ import type {
   ResourceObject,
   ResourceRef,
   ResourceTable,
+  ResourceMap,
   ResourceType,
   Session,
   UpdateResult,
@@ -210,6 +213,17 @@ export const api = {
       clusterPath(cluster, `pods/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`, {}),
       signal,
     ),
+  helmReleases: (cluster: string, namespace: string, signal?: AbortSignal) =>
+    apiGet<{ releases: HelmRelease[] }>(clusterPath(cluster, "helm", { namespace }), signal).then(
+      (r) => r.releases,
+    ),
+  helmRelease: (cluster: string, namespace: string, name: string, signal?: AbortSignal) =>
+    apiGet<HelmReleaseDetail>(
+      clusterPath(cluster, `helm/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`, {}),
+      signal,
+    ),
+  resourceMap: (cluster: string, namespace: string, signal?: AbortSignal) =>
+    apiGet<ResourceMap>(clusterPath(cluster, "map", { namespace }), signal),
   node: (cluster: string, name: string, signal?: AbortSignal) =>
     apiGet<NodeDetail>(clusterPath(cluster, `nodes/${encodeURIComponent(name)}`, {}), signal),
   cordon: (cluster: string, name: string, cordon: boolean) =>

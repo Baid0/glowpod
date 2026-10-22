@@ -131,6 +131,7 @@ export const deepSections: Section[] = [
     label: "Network",
     icon: IconShare,
     items: [
+      { label: "Map", path: "/network/map", phase: 4 },
       {
         label: "Services",
         path: "/network/services",

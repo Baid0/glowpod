@@ -1,0 +1,109 @@
+.muted {
+  color: var(--muted);
+}
+
+.skeleton {
+  height: 320px;
+  border-radius: var(--radius-control);
+  background: var(--surface-elevated);
+}
+
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.heading {
+  fill: var(--muted);
+  font: 600 12px var(--font-sans);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.scroll {
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.edge {
+  fill: none;
+  stroke: var(--hairline-strong);
+  stroke-width: 1.5;
+  transition: stroke var(--duration-press) var(--ease-out);
+}
+
+.edge[data-lit="true"] {
+  stroke: var(--ink);
+}
+
+.edge[data-dim="true"] {
+  stroke: var(--hairline);
+}
+
+.node {
+  cursor: default;
+  transition: opacity var(--duration-press) var(--ease-out);
+}
+
+.node[role="link"] {
+  cursor: pointer;
+}
+
+.node[data-dim="true"] {
+  opacity: 0.35;
+}
+
+.node:focus-visible {
+  outline: none;
+}
+
+.node:focus-visible .box {
+  stroke: var(--focus-ring);
+  stroke-width: 2;
+}
+
+.box {
+  fill: var(--surface-elevated);
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
+}
+
+.node[role="link"]:hover .box {
+  stroke: var(--ink);
+}
+
+.node[data-missing="true"] .box {
+  stroke: var(--state-critical);
+  stroke-dasharray: 4 3;
+}
+
+.dot {
+  stroke: var(--lime-outline);
+  stroke-width: 1.5;
+}
+
+.kind {
+  fill: var(--muted);
+  font: 500 11px var(--font-sans);
+}
+
+.name {
+  fill: var(--ink);
+  font: 500 13px var(--font-mono);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edge,
+  .node {
+    transition: none;
+  }
+}

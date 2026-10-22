@@ -340,3 +340,42 @@ export interface DrainResult {
   failed: DrainPod[];
   skipped: DrainPod[];
 }
+
+export interface HelmRelease {
+  name: string;
+  namespace: string;
+  revision: number;
+  /** deployed, failed, pending-install, pending-upgrade, superseded, uninstalling… */
+  status: string;
+  chart: string;
+  chartVersion: string;
+  appVersion?: string;
+  updated: string;
+  description?: string;
+}
+
+export interface HelmReleaseDetail extends HelmRelease {
+  history: HelmRelease[];
+  objects: { apiVersion: string; kind: string; namespace?: string; name: string }[];
+}
+
+export type MapStatus = "ok" | "high" | "critical" | "neutral";
+
+export interface MapNode {
+  id: string;
+  /** 0 entry (Ingress), 1 Services, 2 workloads, 3 ConfigMaps / Secrets / claims. */
+  column: 0 | 1 | 2 | 3;
+  kind: string;
+  namespace: string;
+  name: string;
+  status: MapStatus;
+  detail?: string;
+  missing?: boolean;
+}
+
+export interface ResourceMap {
+  namespace: string;
+  nodes: MapNode[];
+  edges: { from: string; to: string }[];
+  truncated: boolean;
+}
