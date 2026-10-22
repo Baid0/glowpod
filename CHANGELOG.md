@@ -8,6 +8,11 @@ All notable changes to Glowpod. The format follows
 
 ### Added
 
+- `glowpod term`: Glowpod in the terminal. It starts on Glance (half-gauges drawn in the
+  terminal, what needs attention in plain words, recent events); `Tab` goes to Deep, with the
+  API server's columns for any resource or CRD, `/` filter, namespace switching, live updates
+  and a `:` command palette. Pods open to live logs (warnings orange, errors red), events and
+  YAML. Scale, restart, delete (type the name) and shell show only when RBAC allows them.
 - A live demo at https://glowpod.dev/demo/: the real app on a sample cluster that runs in the
   browser, with a crash-looping pod, a pod that doesn't fit and a node short of memory to look
   into. Scaling, restarting, deleting, editing YAML, the terminal and Secret reveal all work on

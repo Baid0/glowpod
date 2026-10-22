@@ -116,7 +116,8 @@ Where Glowpod differs on purpose:
   rules as the web log viewer (stated level first: JSON, logfmt, klog; then
   words). This is the only place orange is used (see `docs/decisions.md`).
 - **Events** for this pod, newest first.
-- **YAML**, read-only, Secrets redacted unless revealed (and allowed).
+- **YAML**, read-only. Secret values stay hidden (revealing them comes later,
+  with the same RBAC check as the web).
 - **Shell** (`s`): the terminal hands itself to `kubectl exec`-style
   streaming through the API server and comes back when you exit.
 
@@ -153,7 +154,7 @@ Actions, only shown when allowed: `s` scale (workloads) or shell (pods),
   `:pods kube-system` also sets the namespace.
 - **Namespaces:** `:ns monitoring`, `:ns all`.
 - **Screens:** `:glance`, `:deep`, `:help`, `:quit`.
-- **Actions on the selected row:** `:logs`, `:yaml`, `:scale 3`, `:restart`,
+- **Actions on the selected row:** `:logs`, `:yaml`, `:scale`, `:restart`,
   `:delete`, listed only when allowed.
 
 `Tab` completes, `↑↓` picks, `Enter` runs, `Esc` closes.
@@ -208,8 +209,9 @@ with an HTTP client.
   critical (≥ 85 %, CrashLoopBackOff, OOMKilled, failed).
 - Status is always **● + word** (plus `⚠`/`✕` icons in lists), never colour
   alone, so it still reads with `NO_COLOR` or a colour-blind palette.
-- Hairline borders in `#2A2A2A`, rounded, no heavy boxes. Pod and node names
-  in the terminal's font (it is already mono).
+- Hairline rules in `#2A2A2A`; card and dialog borders in `#3A3A3A`
+  (thin terminal lines vanish in the darker grey), rounded, no heavy boxes.
+  Pod and node names in the terminal's font (it is already mono).
 - Lip Gloss picks the best the terminal supports (true colour → 256 → 16),
   and `NO_COLOR` turns colour off. Light theme comes with the web's Phase 6
   settings.
