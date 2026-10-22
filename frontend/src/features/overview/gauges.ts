@@ -54,6 +54,15 @@ export function gaugeView(
   };
   if (ctx.loading) return { ...base, state: "loading" };
   if (!g) return { ...base, state: "error" };
+  if (g.state === "no-access") {
+    return {
+      ...base,
+      state: "no-metrics",
+      noDataLabel: "No access",
+      helpHref: null,
+      helpLabel: g.message ?? "You can't see what this gauge needs.",
+    };
+  }
 
   const state = g.state === "live" && ctx.stale ? "stale" : g.state;
   const common: HalfGaugeProps = {

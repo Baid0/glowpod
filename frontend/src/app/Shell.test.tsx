@@ -59,7 +59,7 @@ describe("Shell (Deep mode)", () => {
     );
 
     expect(
-      await screen.findByRole("img", { name: "Signed in as kubernetes-admin" }),
+      await screen.findByRole("button", { name: "Signed in as kubernetes-admin" }),
     ).toHaveTextContent("KA");
     expect(await screen.findByText(/updated \d+ s ago/)).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: /Cluster: prod-eu-1/ })).toBeInTheDocument();
@@ -253,26 +253,34 @@ describe("Sign-in and missing pages", () => {
         : undefined,
     );
     expect(await screen.findByRole("heading", { name: "Sign in to Glowpod" })).toBeInTheDocument();
-    expect(
-      screen.getByText("Open Glowpod from the link in your terminal to sign in."),
-    ).toBeInTheDocument();
+    // Local mode has no sign-in methods: the launch link is the way in.
+    expect(await screen.findByText(/link printed where you ran/)).toBeInTheDocument();
   });
 
   it("asks to sign in again when the server forgets the session", async () => {
-    renderApp("/", (url) =>
-      url.pathname.endsWith("/overview")
+    let sessionCalls = 0;
+    const { router } = renderApp("/workloads/pods", (url) =>
+      url.pathname === "/api/v1/session" && sessionCalls++ > 0
         ? Response.json(
-            {
-              error: {
-                code: "unauthenticated",
-                message: "Open Glowpod from the link in your terminal to sign in.",
-              },
-            },
+            { error: { code: "unauthenticated", message: "Sign in to continue." } },
             { status: 401 },
           )
-        : undefined,
+        : url.pathname.endsWith("/overview")
+          ? Response.json(
+              {
+                error: {
+                  code: "unauthenticated",
+                  message: "Open Glowpod from the link in your terminal to sign in.",
+                },
+              },
+              { status: 401 },
+            )
+          : undefined,
     );
     expect(await screen.findByRole("heading", { name: "Sign in to Glowpod" })).toBeInTheDocument();
+    expect(router.state.location.pathname + router.state.location.search).toBe(
+      "/sign-in?return=%2Fworkloads%2Fpods",
+    );
   });
 
   it("shows a plain 404 inside the shell", () => {

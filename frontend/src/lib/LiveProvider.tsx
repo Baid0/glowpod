@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { api } from "./api";
 import { applyMessage, LiveContext, POD_REFRESH_DEBOUNCE_MS, type Live } from "./live";
 import { usePreferences } from "./preferences";
-import { useClusterId } from "./queries";
+import { useClusterId, useSession } from "./queries";
 import { queryKeys } from "./queryKeys";
 import { connectSocket } from "./socket";
 import type { StreamMessage } from "./types";
@@ -13,6 +13,8 @@ import type { StreamMessage } from "./types";
 export function LiveProvider({ children }: { children: ReactNode }) {
   const client = useQueryClient();
   const cluster = useClusterId();
+  // No socket until signed in: it would only be refused, again and again.
+  const signedIn = useSession().isSuccess;
   const { namespace } = usePreferences();
   const key = cluster + "/" + namespace;
   // State belongs to one socket (key); a new namespace reads as connecting
@@ -24,6 +26,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
+    if (!signedIn) return;
     let podTimer: ReturnType<typeof setTimeout> | undefined;
     const schedulePodRefresh = () => {
       podTimer ??= setTimeout(() => {
@@ -52,7 +55,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       close();
       clearTimeout(podTimer);
     };
-  }, [client, cluster, namespace, key]);
+  }, [client, cluster, namespace, key, signedIn]);
 
   const live: Live =
     state.key === key ? state : { status: "connecting", lastMessageAt: state.lastMessageAt };

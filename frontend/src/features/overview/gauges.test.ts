@@ -129,3 +129,25 @@ describe("trendWindowLabel", () => {
     expect(trendWindowLabel(s)).toBe(want);
   });
 });
+
+describe("gauges a user may not see", () => {
+  it("say why instead of showing zero", () => {
+    const view = gaugeView(
+      "cpu",
+      {
+        state: "no-access",
+        value: 0,
+        max: 0,
+        unit: "cores",
+        message: "You can't see the cluster's nodes.",
+      },
+      { loading: false, stale: false },
+    );
+    expect(view).toMatchObject({
+      state: "no-metrics",
+      noDataLabel: "No access",
+      helpHref: null,
+      helpLabel: "You can't see the cluster's nodes.",
+    });
+  });
+});

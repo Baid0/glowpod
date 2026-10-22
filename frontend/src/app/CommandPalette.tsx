@@ -19,7 +19,8 @@ import { allPages, deepSections, glanceSections, settingsSection } from "./navig
 function useCommands(): Command[] {
   const navigate = useNavigate();
   const { mode, setMode, panelCollapsed, setPanelCollapsed, setNamespace } = usePreferences();
-  const { data: namespaces } = useNamespaces();
+  const { data: namespaceList } = useNamespaces();
+  const namespaces = namespaceList?.namespaces;
 
   return useMemo(() => {
     const iconFor = (path: string) =>

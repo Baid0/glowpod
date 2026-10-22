@@ -6,15 +6,19 @@ export interface ClusterInfo {
   server: string;
 }
 
+export type SignInMethod = "kubeconfig" | "token" | "oidc" | "ldap";
+
 export interface Session {
   mode: "local" | "in-cluster";
+  method: SignInMethod;
   /** Sent back in X-CSRF-Token on every write. */
   csrfToken: string;
-  user: { username: string };
+  user: { username: string; groups?: string[] };
   clusters: ClusterInfo[];
 }
 
-export type GaugeState = "live" | "no-metrics" | "error";
+/** no-access: the signed-in user may not read what the gauge needs. */
+export type GaugeState = "live" | "no-metrics" | "no-access" | "error";
 
 export interface Gauge {
   state: GaugeState;
@@ -378,4 +382,16 @@ export interface ResourceMap {
   nodes: MapNode[];
   edges: { from: string; to: string }[];
   truncated: boolean;
+}
+
+/** GET /api/v1/auth/methods: how people can sign in (server mode). */
+export interface AuthMethod {
+  type: "oidc" | "ldap" | "token";
+  name?: string;
+}
+
+export interface NamespaceList {
+  namespaces: string[];
+  /** The user may not list namespaces; these are guesses and others can be typed. */
+  restricted?: boolean;
 }

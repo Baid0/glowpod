@@ -1,10 +1,15 @@
-import { IconChevronDown, IconSearch } from "@tabler/icons-react";
+import { IconChevronDown, IconLogout, IconSearch } from "@tabler/icons-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router";
 
+import { api } from "../lib/api";
 import { initials } from "../lib/format";
 import { useLive } from "../lib/live";
 import { usePreferences, type Mode } from "../lib/preferences";
 import { useNamespaces, useOverview, useSession } from "../lib/queries";
 import { formatAge, useNow } from "../lib/time";
+import type { SignInMethod } from "../lib/types";
 import styles from "./TopBar.module.css";
 
 /** How old data may get before the live dot goes grey. */
@@ -66,12 +71,59 @@ function Updated() {
   );
 }
 
+const OTHER = "\u0000other";
+const DNS_LABEL = /^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/;
+
 function NamespacePicker() {
   const { namespace, setNamespace } = usePreferences();
   const { data } = useNamespaces();
-  const names = data ?? [];
+  const names = data?.namespaces ?? [];
+  const restricted = data?.restricted ?? false;
+  const [typing, setTyping] = useState(false);
   // Keep a saved namespace selectable even if it's gone or not loaded yet.
   const options = namespace && !names.includes(namespace) ? [namespace, ...names] : names;
+
+  // Someone who may not list namespaces can't see "all" either: start them
+  // in one they can.
+  const first = names[0];
+  useEffect(() => {
+    if (restricted && namespace === "" && first) setNamespace(first);
+  }, [restricted, namespace, first, setNamespace]);
+
+  if (typing) {
+    return (
+      <form
+        className={styles.namespace}
+        onSubmit={(e) => {
+          e.preventDefault();
+          const value = new FormData(e.currentTarget).get("ns");
+          const ns = typeof value === "string" ? value.trim() : "";
+          if (DNS_LABEL.test(ns)) {
+            setNamespace(ns);
+            setTyping(false);
+          }
+        }}
+      >
+        <label className="visually-hidden" htmlFor="namespace-input">
+          Namespace
+        </label>
+        <input
+          id="namespace-input"
+          name="ns"
+          className={styles.nsInput}
+          placeholder="Type a namespace, then Enter"
+          pattern="[a-z0-9]([\-a-z0-9]*[a-z0-9])?"
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setTyping(false);
+          }}
+          onBlur={() => {
+            setTyping(false);
+          }}
+        />
+      </form>
+    );
+  }
 
   return (
     <label className={styles.namespace}>
@@ -80,15 +132,18 @@ function NamespacePicker() {
         className={styles.select}
         value={namespace}
         onChange={(e) => {
-          setNamespace(e.target.value);
+          if (e.target.value === OTHER) setTyping(true);
+          else setNamespace(e.target.value);
         }}
       >
-        <option value="">All namespaces</option>
+        {!restricted && <option value="">All namespaces</option>}
+        {restricted && namespace === "" && <option value="">Pick a namespace</option>}
         {options.map((ns) => (
           <option key={ns} value={ns}>
             {ns}
           </option>
         ))}
+        {restricted && <option value={OTHER}>Other namespace…</option>}
       </select>
       <IconChevronDown className={styles.chevron} size={16} stroke={1.75} aria-hidden="true" />
     </label>
@@ -121,17 +176,91 @@ function ModeTabs() {
   );
 }
 
+const METHOD_WORDS: Record<SignInMethod, string> = {
+  kubeconfig: "Using your kubeconfig",
+  token: "Signed in with a token",
+  oidc: "Signed in with SSO",
+  ldap: "Signed in with your directory account",
+};
+
+/** Who you are, how you signed in, and Sign out. */
 function Avatar() {
   const { data } = useSession();
+  const { mode } = usePreferences();
+  const client = useQueryClient();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState("");
+  const box = useRef<HTMLDivElement>(null);
   const name = data?.user.username ?? "";
+  const groups = data?.user.groups ?? [];
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!box.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+    };
+  }, [open]);
+
+  const signOut = async () => {
+    try {
+      await api.signOut();
+      client.clear();
+      await navigate("/sign-in", { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't sign out.");
+    }
+  };
+
   return (
-    <span
-      className={styles.avatar}
-      role="img"
-      aria-label={name ? `Signed in as ${name}` : "Signed in"}
-      title={name}
+    <div
+      ref={box}
+      className={styles.user}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") setOpen(false);
+      }}
     >
-      {initials(name)}
-    </span>
+      <button
+        type="button"
+        className={styles.avatar}
+        aria-label={name ? `Signed in as ${name}` : "Account"}
+        aria-expanded={open}
+        aria-controls="user-menu"
+        onClick={() => {
+          setOpen((o) => !o);
+        }}
+      >
+        {initials(name)}
+      </button>
+      {open && (
+        <div id="user-menu" className={styles.menu} role="region" aria-label="Account">
+          <p className={styles.menuName}>{name || "Signed in"}</p>
+          {data && <p className={styles.menuMeta}>{METHOD_WORDS[data.method]}</p>}
+          {mode === "deep" && groups.length > 0 && (
+            <ul className={styles.menuGroups} aria-label="Groups">
+              {groups.slice(0, 8).map((g) => (
+                <li key={g}>{g}</li>
+              ))}
+              {groups.length > 8 && <li>+{groups.length - 8} more</li>}
+            </ul>
+          )}
+          {data?.mode === "in-cluster" && (
+            <button type="button" className={styles.menuButton} onClick={() => void signOut()}>
+              <IconLogout size={16} stroke={1.75} aria-hidden="true" />
+              Sign out
+            </button>
+          )}
+          {error && (
+            <p className={styles.menuMeta} role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

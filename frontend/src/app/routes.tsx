@@ -16,6 +16,7 @@ import { ResourceListPage } from "../features/resources/ResourceListPage";
 import { ResourceTypesPage } from "../features/resources/ResourceTypesPage";
 import { allPages, type NavItem } from "./navigation";
 import { Shell, type RouteHandle } from "./Shell";
+import { SignInPage } from "./SignIn";
 
 // Component sheets are for development only and are left out of release builds.
 const GaugeDemo = import.meta.env.DEV
@@ -42,6 +43,7 @@ const pages: RouteObject[] = allPages()
   .map((p) => ({ path: p.path.slice(1), element: pageElement(p), handle: handle(p.label) }));
 
 export const routes: RouteObject[] = [
+  { path: "/sign-in", element: <SignInPage /> },
   {
     path: "/",
     element: <Shell />,

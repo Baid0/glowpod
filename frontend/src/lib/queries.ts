@@ -1,4 +1,4 @@
-import { QueryClient, useQuery } from "@tanstack/react-query";
+import { QueryCache, QueryClient, useQuery } from "@tanstack/react-query";
 
 import { api, ApiError, DEFAULT_CLUSTER } from "./api";
 import { usePreferences } from "./preferences";
@@ -9,7 +9,20 @@ export const OVERVIEW_REFRESH_MS = 15_000;
 export const EVENTS_LIMIT = 20;
 
 export function createQueryClient() {
-  return new QueryClient({
+  const client: QueryClient = new QueryClient({
+    // Any call finding the session gone makes the session query ask again;
+    // the shell then sends the user to sign in.
+    queryCache: new QueryCache({
+      onError: (err, query) => {
+        if (
+          err instanceof ApiError &&
+          err.code === "unauthenticated" &&
+          query.queryKey[0] !== "session"
+        ) {
+          void client.invalidateQueries({ queryKey: queryKeys.session });
+        }
+      },
+    }),
     defaultOptions: {
       queries: {
         refetchOnWindowFocus: true,
@@ -21,6 +34,7 @@ export function createQueryClient() {
       },
     },
   });
+  return client;
 }
 
 export function useSession() {

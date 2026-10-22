@@ -10,7 +10,7 @@ export function ClusterHealthCard() {
   const state = (g: Gauge | undefined): GaugeState => {
     if (isPending) return "loading";
     if (!g || isError) return "error";
-    return g.state;
+    return g.state === "no-access" ? "no-metrics" : g.state;
   };
   const gauges: { label: string; gauge: Gauge | undefined }[] = [
     { label: "CPU", gauge: data?.gauges.cpu },

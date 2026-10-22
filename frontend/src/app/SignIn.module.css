@@ -1,0 +1,140 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6) var(--space-4);
+  background: var(--canvas);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: min(400px, 100%);
+}
+
+.title {
+  color: var(--ink);
+  font: var(--text-display-sm);
+  letter-spacing: var(--tracking-display-sm);
+  text-align: center;
+}
+
+.text {
+  color: var(--body);
+  text-align: center;
+}
+
+.text code,
+.hint code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.methods {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.sso {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--control-height);
+  border: 1px solid var(--lime-outline);
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--on-primary);
+  font: var(--text-button);
+  text-decoration: none;
+}
+
+.sso:hover {
+  background: color-mix(in srgb, var(--primary) 88%, var(--ink));
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--hairline);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+}
+
+.form > button {
+  margin-top: var(--space-2);
+}
+
+.label {
+  color: var(--body);
+  font: var(--text-body-sm-strong);
+}
+
+.input,
+.token {
+  padding: 0 var(--space-3);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-control);
+  background: var(--canvas);
+  color: var(--ink);
+  font: var(--text-body-sm);
+}
+
+.input {
+  height: var(--control-height);
+}
+
+.token {
+  padding: var(--space-2) var(--space-3);
+  font: 400 12px / 18px var(--font-mono);
+  resize: vertical;
+  word-break: break-all;
+}
+
+.input:focus-visible,
+.token:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.hint {
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.error {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--state-critical);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+}
+
+.skeleton {
+  width: 100%;
+  height: 160px;
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+}

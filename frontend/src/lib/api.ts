@@ -1,5 +1,6 @@
 import type {
   AccessCheck,
+  AuthMethod,
   AppDetail,
   AppSummary,
   DrainPlan,
@@ -7,6 +8,7 @@ import type {
   HelmRelease,
   HelmReleaseDetail,
   KubeEvent,
+  NamespaceList,
   NodeDetail,
   Overview,
   PodDetail,
@@ -117,6 +119,22 @@ function clusterPath(cluster: string, rest: string, params: Record<string, strin
   return `/api/v1/clusters/${encodeURIComponent(cluster)}/${rest}${qs ? "?" + qs : ""}`;
 }
 
+/** A sign-in POST: no session yet, so no CSRF token; the server checks the origin. */
+async function signIn(path: string, body: unknown): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw unreachable();
+  }
+  if (!res.ok) throw await toApiError(res);
+  csrfToken = "";
+}
+
 export const api = {
   session: (signal?: AbortSignal) =>
     apiGet<Session>("/api/v1/session", signal).then((s) => {
@@ -124,9 +142,16 @@ export const api = {
       return s;
     }),
   namespaces: (cluster: string, signal?: AbortSignal) =>
-    apiGet<{ namespaces: string[] }>(clusterPath(cluster, "namespaces", {}), signal).then(
-      (r) => r.namespaces,
-    ),
+    apiGet<NamespaceList>(clusterPath(cluster, "namespaces", {}), signal),
+  authMethods: (signal?: AbortSignal) =>
+    apiGet<{ methods: AuthMethod[] }>("/api/v1/auth/methods", signal).then((r) => r.methods),
+  signInToken: (token: string) => signIn("/api/v1/auth/token", { token }),
+  signInLDAP: (username: string, password: string) =>
+    signIn("/api/v1/auth/ldap", { username, password }),
+  signOut: async () => {
+    await apiSend("POST", "/api/v1/auth/logout");
+    csrfToken = "";
+  },
   overview: (cluster: string, namespace: string, signal?: AbortSignal) =>
     apiGet<Overview>(clusterPath(cluster, "overview", { namespace }), signal),
   events: (cluster: string, namespace: string, limit: number, signal?: AbortSignal) =>

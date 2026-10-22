@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import { Outlet, useMatches, type Params } from "react-router";
+import { Navigate, Outlet, useLocation, useMatches, type Params } from "react-router";
 
 import { ApiError } from "../lib/api";
 import { usePreferences } from "../lib/preferences";
 import { useOverview, useSession } from "../lib/queries";
 import { CommandPalette } from "./CommandPalette";
-import { Logo } from "./Logo";
 import { Rail } from "./Rail";
 import { SectionPanel } from "./SectionPanel";
 import styles from "./Shell.module.css";
@@ -29,6 +28,7 @@ function usePageTitle(): string {
 
 /** Rail + collapsible section panel + top bar around the current page. */
 export function Shell() {
+  const location = useLocation();
   const { panelCollapsed } = usePreferences();
   const session = useSession();
   const overview = useOverview();
@@ -52,12 +52,21 @@ export function Shell() {
     };
   }, []);
 
-  // A 401 on any call means the session ended, e.g. glowpod was restarted.
-  const signedOut = [session.error, overview.error].find(
-    (e): e is ApiError => e instanceof ApiError && e.status === 401,
-  );
-  if (signedOut) {
-    return <SignInNeeded message={signedOut.message} />;
+  // The session ended (sign-out elsewhere, expiry, a restart): sign in again.
+  const here = location.pathname + location.search;
+  if (session.error instanceof ApiError && session.error.status === 401) {
+    return <Navigate to={`/sign-in?return=${encodeURIComponent(here)}`} replace />;
+  }
+  // In the cluster, the cluster itself refusing the user's token means it
+  // expired or was revoked. (Locally it means a bad kubeconfig; the page says so.)
+  if (
+    session.data?.mode === "in-cluster" &&
+    overview.error instanceof ApiError &&
+    overview.error.code === "cluster_unauthorized"
+  ) {
+    return (
+      <Navigate to={`/sign-in?error=cluster_rejected&return=${encodeURIComponent(here)}`} replace />
+    );
   }
 
   return (
@@ -85,19 +94,5 @@ export function Shell() {
         }}
       />
     </div>
-  );
-}
-
-function SignInNeeded({ message }: { message: string }) {
-  return (
-    <main className={styles.signIn}>
-      <Logo size={40} />
-      <h1 className={styles.signInTitle}>Sign in to Glowpod</h1>
-      <p className={styles.signInText}>{message}</p>
-      <p className={styles.signInText}>
-        Look for the line starting with <code>http://127.0.0.1</code> where you ran{" "}
-        <code>glowpod</code>.
-      </p>
-    </main>
   );
 }
