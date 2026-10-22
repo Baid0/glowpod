@@ -73,3 +73,62 @@ test("Overview renders, switches to Glance and navigates with ⌘K", async ({ pa
 
   expect(errors).toEqual([]);
 });
+
+test("Scale a deployment: the dialog, the CSRF header and the toast", async ({ page }) => {
+  await fakeBackend(page);
+  const web = {
+    object: {
+      apiVersion: "apps/v1",
+      kind: "Deployment",
+      metadata: { name: "web", namespace: "shop", resourceVersion: "5" },
+      spec: { replicas: 2 },
+    },
+    yaml: "apiVersion: apps/v1\nkind: Deployment\n",
+    redacted: false,
+  };
+  let scaled: { body: unknown; csrf: string | undefined } | undefined;
+  // Registered last, so these win over the generic fake backend.
+  await page.route("**/api/v1/clusters/default/resources", (route) =>
+    route.fulfill({
+      json: {
+        types: [
+          {
+            group: "apps",
+            version: "v1",
+            resource: "deployments",
+            kind: "Deployment",
+            namespaced: true,
+            verbs: ["get", "list", "update", "patch", "delete"],
+            subresources: ["scale"],
+          },
+        ],
+      },
+    }),
+  );
+  await page.route("**/api/v1/clusters/default/access", (route) =>
+    route.fulfill({ json: { allowed: [true, true, true, true, false] } }),
+  );
+  await page.route("**/resources/apps/v1/deployments/web?**", (route) =>
+    route.fulfill({ json: web }),
+  );
+  await page.route("**/resources/apps/v1/deployments/web/scale?**", async (route) => {
+    scaled = {
+      body: route.request().postDataJSON() as unknown,
+      csrf: await route
+        .request()
+        .headerValue("x-csrf-token")
+        .then((v) => v ?? undefined),
+    };
+    await route.fulfill({ status: 204 });
+  });
+
+  await page.goto("/workloads/deployments/shop/web");
+  await page.getByRole("button", { name: "Scale" }).click();
+  const dialog = page.getByRole("dialog", { name: "Scale web" });
+  await dialog.getByLabel("Replicas").fill("5");
+  await dialog.getByRole("button", { name: "Scale to 5" }).click();
+
+  await expect(page.getByText("Scaled web to 5 replicas.")).toBeVisible();
+  await expect(dialog).toBeHidden();
+  expect(scaled).toEqual({ body: { replicas: 5 }, csrf: "test-csrf" });
+});
