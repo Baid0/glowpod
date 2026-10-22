@@ -96,6 +96,25 @@ func (r *Reader) PodUsage(ctx context.Context, namespace string) ([]PodUsage, er
 	return out, nil
 }
 
+// ContainerUsage returns one pod's usage per container name.
+func (r *Reader) ContainerUsage(ctx context.Context, namespace, name string) (map[string]Usage, error) {
+	var item struct {
+		Containers []struct {
+			Name  string            `json:"name"`
+			Usage map[string]string `json:"usage"`
+		} `json:"containers"`
+	}
+	path := "/apis/metrics.k8s.io/v1beta1/namespaces/" + namespace + "/pods/" + name
+	if err := r.getMetrics(ctx, path, &item); err != nil {
+		return nil, err
+	}
+	out := make(map[string]Usage, len(item.Containers))
+	for _, c := range item.Containers {
+		out[c.Name] = parseUsage(c.Usage)
+	}
+	return out, nil
+}
+
 func (r *Reader) getMetrics(ctx context.Context, path string, into any) error {
 	raw, err := r.rest.Get().AbsPath(path).DoRaw(ctx)
 	if err != nil {

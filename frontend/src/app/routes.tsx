@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import type { RouteObject } from "react-router";
 
 import { OverviewPage } from "../features/overview/OverviewPage";
+import { PodPage } from "../features/pod/PodPage";
 import { ComingSoon, NotFound } from "../features/placeholder/ComingSoon";
 import { GenericList } from "../features/resources/GenericList";
 import { ResourceListPage } from "../features/resources/ResourceListPage";
@@ -35,6 +36,11 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <OverviewPage />, handle: handle("Overview") },
       ...pages,
+      {
+        path: "workloads/pods/:namespace/:name",
+        element: <PodPage />,
+        handle: handle("Pod"),
+      },
       {
         path: "workloads/:kind/:namespace/:name",
         element: <ComingSoon title="Details" phase={2} />,

@@ -25,6 +25,7 @@ import (
 	"glowpod/internal/cluster"
 	"glowpod/internal/metrics"
 	"glowpod/internal/overview"
+	"glowpod/internal/pods"
 )
 
 type noMetrics struct{}
@@ -60,6 +61,11 @@ func objects() []runtime.Object {
 			}},
 		},
 		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "zeta"}},
+		&corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Namespace: "alpha", Name: "api-1", UID: "u1"},
+			Spec:       corev1.PodSpec{NodeName: "w1", Containers: []corev1.Container{{Name: "app", Image: "api:v1"}}},
+			Status:     corev1.PodStatus{Phase: corev1.PodRunning},
+		},
 		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "alpha"}},
 		event("alpha", "old", "Pulled", now.Add(-time.Hour)),
 		event("alpha", "new", "BackOff", now.Add(-time.Minute)),
@@ -80,6 +86,7 @@ func testRouter(t *testing.T, kube *fake.Clientset) (http.Handler, *http.Cookie)
 		Auth:     authn,
 		Hosts:    auth.LoopbackHosts("7171"),
 		Metrics:  func(kubernetes.Interface) overview.MetricsSource { return noMetrics{} },
+		PodUsage: func(kubernetes.Interface) pods.UsageSource { return nil },
 	})
 
 	launch, err := url.Parse(authn.LaunchURL("http://127.0.0.1:7171"))
@@ -174,6 +181,18 @@ func TestAPI(t *testing.T) {
 			},
 		},
 		{name: "bad event limit", path: "/api/v1/clusters/default/events?limit=5000", wantStatus: 400, wantCode: "bad_limit"},
+		{
+			name: "pod detail", path: "/api/v1/clusters/default/pods/alpha/api-1", wantStatus: 200,
+			check: func(t *testing.T, body []byte) {
+				var d pods.Detail
+				mustDecode(t, body, &d)
+				if d.Pod.Name != "api-1" || len(d.Containers) != 1 || d.Containers[0].Image != "api:v1" || d.Story == nil {
+					t.Fatalf("detail = %+v", d)
+				}
+			},
+		},
+		{name: "missing pod", path: "/api/v1/clusters/default/pods/alpha/nope", wantStatus: 404, wantCode: "not_found"},
+		{name: "pod in a bad namespace", path: "/api/v1/clusters/default/pods/Not_Valid/x", wantStatus: 400, wantCode: "bad_namespace"},
 		{name: "unknown api path", path: "/api/v1/nope", wantStatus: 404, wantCode: "not_found"},
 		{name: "wrong method", method: http.MethodPost, path: "/api/v1/clusters/default/overview", wantStatus: 405, wantCode: "method_not_allowed"},
 	}

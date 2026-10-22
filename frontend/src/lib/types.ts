@@ -172,3 +172,49 @@ export interface WatchMessage {
   code?: string;
   message?: string;
 }
+
+export interface Resources {
+  cpu?: number;
+  memory?: number;
+}
+
+export interface PodContainer {
+  name: string;
+  role: "init" | "sidecar" | "app";
+  image: string;
+  state: "running" | "waiting" | "terminated" | "unknown";
+  reason?: string;
+  message?: string;
+  exitCode?: number;
+  since?: string;
+  ready: boolean;
+  restarts: number;
+  lastTermination?: { reason?: string; exitCode: number; finishedAt: string };
+  requests: Resources;
+  limits: Resources;
+  usage?: Resources;
+  ports?: { name?: string; port: number; protocol: string }[];
+  probes?: { kind: string; action: string; periodSeconds: number }[];
+}
+
+export interface StoryItem {
+  time: string;
+  tone: "ok" | "info" | "high" | "critical";
+  title: string;
+  detail?: string;
+  count: number;
+}
+
+export interface PodDetail {
+  pod: PodSummary;
+  createdAt: string;
+  ip?: string;
+  qosClass?: string;
+  owner?: { group: string; version: string; resource: string; kind: string; name: string };
+  containers: PodContainer[];
+  conditions: { type: string; status: string; reason?: string; message?: string; since?: string }[];
+  volumes: { name: string; kind: string; source?: string }[];
+  events: KubeEvent[];
+  story: StoryItem[];
+  metricsAvailable: boolean;
+}

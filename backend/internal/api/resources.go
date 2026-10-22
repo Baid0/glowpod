@@ -126,10 +126,10 @@ func (s *server) watchResource(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "not_watchable", "This resource can't be watched for changes.")
 		return
 	}
-	label, _, ok := selectors(w, r)
+	label, field, ok := selectors(w, r)
 	if !ok {
 		return
 	}
-	src := stream.ListSource(clientsFrom(r).Dynamic, t.GVR(), t.Namespaced, r.URL.Query().Get("namespace"), label)
+	src := stream.ListSource(clientsFrom(r).Dynamic, t.GVR(), t.Namespaced, r.URL.Query().Get("namespace"), label, field)
 	stream.Serve(w, r, []stream.Source{src}, s.opts.StreamBackoff, s.opts.Logger)
 }

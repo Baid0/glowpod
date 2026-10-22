@@ -1,4 +1,4 @@
-import type { KubeEvent, Overview, Problem, ResourceTable, Session } from "../lib/types";
+import type { KubeEvent, Overview, PodDetail, Problem, ResourceTable, Session } from "../lib/types";
 
 export const session: Session = {
   mode: "local",
@@ -222,5 +222,107 @@ export function podTable(
     })),
     ...(opts.next ? { continue: opts.next } : {}),
     ...(opts.remaining ? { remainingItemCount: opts.remaining } : {}),
+  };
+}
+
+/** A crash-looping pod, like the design board's payments-api. */
+export function podDetail(): PodDetail {
+  const ago = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
+  return {
+    pod: {
+      namespace: "payments",
+      name: "payments-api-7d9f6b-x2kq9",
+      phase: "Running",
+      health: "failing",
+      ready: "0/1",
+      restarts: 14,
+      node: "ip-10-0-1-21",
+      problem: problems()[0],
+    },
+    createdAt: ago(60),
+    ip: "10.244.1.7",
+    qosClass: "Burstable",
+    owner: {
+      group: "apps",
+      version: "v1",
+      resource: "deployments",
+      kind: "Deployment",
+      name: "payments-api",
+    },
+    containers: [
+      {
+        name: "app",
+        role: "app",
+        image: "ghcr.io/acme/payments:v3",
+        state: "waiting",
+        reason: "CrashLoopBackOff",
+        message: "back-off 5m0s restarting failed container",
+        ready: false,
+        restarts: 14,
+        lastTermination: { reason: "Error", exitCode: 1, finishedAt: ago(2) },
+        requests: { cpu: 0.25, memory: 256 * 1024 ** 2 },
+        limits: { memory: 512 * 1024 ** 2 },
+        usage: { cpu: 0.01, memory: 400 * 1024 ** 2 },
+        ports: [{ name: "http", port: 8080, protocol: "TCP" }],
+        probes: [{ kind: "readiness", action: "GET /ready on port http", periodSeconds: 10 }],
+      },
+      {
+        name: "proxy",
+        role: "sidecar",
+        image: "envoyproxy/envoy:v1.36",
+        state: "running",
+        since: ago(58),
+        ready: true,
+        restarts: 0,
+        requests: {},
+        limits: {},
+      },
+    ],
+    conditions: [
+      { type: "PodScheduled", status: "True", since: ago(59) },
+      {
+        type: "Ready",
+        status: "False",
+        message: "containers with unready status: [app]",
+        since: ago(40),
+      },
+    ],
+    volumes: [
+      { name: "config", kind: "configMap", source: "payments-config" },
+      { name: "tmp", kind: "emptyDir" },
+    ],
+    events: [
+      {
+        ...event("ev1", "Warning", 1),
+        message: "Back-off restarting failed container app",
+        count: 14,
+      },
+      { ...event("ev2", "Normal", 57), reason: "Started", message: "Started container app" },
+    ],
+    story: [
+      { time: ago(60), tone: "info", title: "Created by ReplicaSet payments-api-7d9f6b", count: 1 },
+      { time: ago(59), tone: "info", title: "Scheduled on ip-10-0-1-21", count: 1 },
+      {
+        time: ago(20),
+        tone: "critical",
+        title: "Back-off restarting a failed container (BackOff)",
+        detail: "Back-off restarting failed container app",
+        count: 14,
+      },
+      {
+        time: ago(2),
+        tone: "critical",
+        title: "Container app exited with code 1 (Error)",
+        detail: "missing env DB_URL",
+        count: 1,
+      },
+      {
+        time: ago(0),
+        tone: "critical",
+        title: "Container app keeps restarting (CrashLoopBackOff)",
+        count: 1,
+      },
+    ],
+    metricsAvailable: true,
   };
 }

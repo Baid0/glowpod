@@ -281,7 +281,7 @@ func TestListSourceSaysWhatChanged(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	msgs := collect(ctx, t, ListSource(client, gvr, true, "shop", "app=web"), 1)
+	msgs := collect(ctx, t, ListSource(client, gvr, true, "shop", "app=web", ""), 1)
 	m := msgs[0]
 	if m.Type != "changed" || m.Op != "modified" || m.Ref == nil || *m.Ref != (summary.ObjectRef{Kind: "Deployment", Namespace: "shop", Name: "web"}) {
 		t.Fatalf("message = %+v ref %+v", m, m.Ref)

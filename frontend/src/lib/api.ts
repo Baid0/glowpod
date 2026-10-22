@@ -1,6 +1,7 @@
 import type {
   KubeEvent,
   Overview,
+  PodDetail,
   ResourceRef,
   ResourceTable,
   ResourceType,
@@ -89,19 +90,26 @@ export const api = {
   watchURL: (
     cluster: string,
     ref: ResourceRef,
-    opts: Pick<ListOptions, "namespace" | "labelSelector">,
+    opts: Pick<ListOptions, "namespace" | "labelSelector" | "fieldSelector">,
   ) =>
     wsURL(
       clusterPath(cluster, `watch/${refPath(ref)}`, {
         namespace: opts.namespace,
         labelSelector: opts.labelSelector,
+        fieldSelector: opts.fieldSelector,
       }),
+    ),
+  pod: (cluster: string, namespace: string, name: string, signal?: AbortSignal) =>
+    apiGet<PodDetail>(
+      clusterPath(cluster, `pods/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`, {}),
+      signal,
     ),
 };
 
 export interface ListOptions {
   namespace?: string;
   labelSelector?: string;
+  fieldSelector?: string;
   continue?: string;
   limit?: number;
 }

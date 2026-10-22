@@ -19,6 +19,7 @@ import (
 	"glowpod/internal/cluster"
 	"glowpod/internal/metrics"
 	"glowpod/internal/overview"
+	"glowpod/internal/pods"
 	"glowpod/internal/stream"
 )
 
@@ -38,6 +39,10 @@ type Options struct {
 	Metrics func(kube kubernetes.Interface) overview.MetricsSource
 	// TableClient is the REST client for Table output; defaults to the core client.
 	TableClient func(c *cluster.Clients) rest.Interface
+	// PodUsage reads per-container usage; defaults to metrics.NewReader.
+	PodUsage func(kube kubernetes.Interface) pods.UsageSource
+	// Now is the clock; defaults to time.Now.
+	Now func() time.Time
 	// StreamBackoff paces watch retries; nil uses the default.
 	StreamBackoff func() stream.Backoff
 	Logger        *slog.Logger
@@ -61,6 +66,12 @@ func NewRouter(opts Options) http.Handler {
 	}
 	if opts.TableClient == nil {
 		opts.TableClient = func(c *cluster.Clients) rest.Interface { return c.Kube.CoreV1().RESTClient() }
+	}
+	if opts.PodUsage == nil {
+		opts.PodUsage = func(kube kubernetes.Interface) pods.UsageSource { return metrics.NewReader(kube) }
+	}
+	if opts.Now == nil {
+		opts.Now = time.Now
 	}
 	if opts.Metrics == nil {
 		opts.Metrics = func(kube kubernetes.Interface) overview.MetricsSource { return metrics.NewReader(kube) }
@@ -86,6 +97,7 @@ func NewRouter(opts Options) http.Handler {
 				r.Get("/namespaces", s.namespaces)
 				r.Get("/events", s.events)
 				r.Method(http.MethodGet, "/stream", &stream.Handler{Provider: opts.Provider, Logger: opts.Logger})
+				r.Get("/pods/{namespace}/{name}", s.pod)
 				r.Get("/resources", s.resourceTypes)
 				r.Get("/resources/{group}/{version}/{resource}", s.listResource)
 				r.Get("/resources/{group}/{version}/{resource}/{name}", s.getResource)

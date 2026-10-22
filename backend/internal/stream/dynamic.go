@@ -15,7 +15,7 @@ import (
 
 // ListSource watches any resource and says which object changed. Open lists
 // use it to refresh; the rows themselves come from the Table API.
-func ListSource(client dynamic.Interface, gvr schema.GroupVersionResource, namespaced bool, namespace, labelSelector string) Source {
+func ListSource(client dynamic.Interface, gvr schema.GroupVersionResource, namespaced bool, namespace, labelSelector, fieldSelector string) Source {
 	var res dynamic.ResourceInterface = client.Resource(gvr)
 	if namespaced && namespace != "" {
 		res = client.Resource(gvr).Namespace(namespace)
@@ -23,7 +23,7 @@ func ListSource(client dynamic.Interface, gvr schema.GroupVersionResource, names
 	return Source{
 		Name: gvr.Resource,
 		List: listVersion(func(ctx context.Context, o metav1.ListOptions) (string, error) {
-			o.LabelSelector = labelSelector
+			o.LabelSelector, o.FieldSelector = labelSelector, fieldSelector
 			l, err := res.List(ctx, o)
 			if err != nil {
 				return "", err //nolint:wrapcheck // classified by Run
@@ -31,7 +31,7 @@ func ListSource(client dynamic.Interface, gvr schema.GroupVersionResource, names
 			return l.GetResourceVersion(), nil
 		}),
 		Watch: func(ctx context.Context, o metav1.ListOptions) (watch.Interface, error) {
-			o.LabelSelector = labelSelector
+			o.LabelSelector, o.FieldSelector = labelSelector, fieldSelector
 			return res.Watch(ctx, o) //nolint:wrapcheck // classified by Run
 		},
 		Convert: func(t watch.EventType, obj runtime.Object) (Message, bool) {
