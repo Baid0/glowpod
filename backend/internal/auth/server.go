@@ -98,7 +98,7 @@ func (s *Server) MountRoot(r chi.Router) {
 // MountAPI implements Authenticator.
 func (s *Server) MountAPI(r chi.Router) {
 	r.Get("/auth/methods", func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, http.StatusOK, map[string][]Method{"methods": s.Methods()})
+		writeOK(w, map[string][]Method{"methods": s.Methods()})
 	})
 	if s.cfg.Token {
 		r.Post("/auth/token", s.loginToken)
@@ -232,12 +232,13 @@ func (s *Server) loginToken(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusInternalServerError, "session_failed", "Couldn't start a session.")
 		return
 	}
-	writeJSON(w, http.StatusOK, sess.Info)
+	writeOK(w, sess.Info)
 }
 
-func writeJSON(w http.ResponseWriter, status int, v any) {
+// writeOK sends v as a 200 JSON response.
+func writeOK(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	w.WriteHeader(status)
+	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(v)
 }

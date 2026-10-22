@@ -48,7 +48,7 @@ func newServerEnv(t *testing.T) *serverEnv {
 		r.With(srv.Require, RequireCSRF).Get("/session", func(w http.ResponseWriter, r *http.Request) {
 			id, _ := IdentityFrom(r.Context())
 			env.reached = append(env.reached, id)
-			writeJSON(w, http.StatusOK, map[string]any{"info": SessionInfoFrom(r.Context()), "csrf": CSRFTokenFrom(r.Context())})
+			writeOK(w, map[string]any{"info": SessionInfoFrom(r.Context()), "csrf": CSRFTokenFrom(r.Context())})
 		})
 	})
 	env.router = r
