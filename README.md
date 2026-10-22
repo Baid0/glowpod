@@ -20,6 +20,9 @@ A web dashboard for Kubernetes with two views of the same cluster: **Glance**
 for app developers and **Deep** for platform teams. Nothing is hidden in
 Glance mode; it only shows less at once.
 
+**[Try the demo](https://glowpod.dev/demo/)**: the real app on a sample cluster, in your
+browser. Nothing to install.
+
 ## Run it on your machine
 
 Download `glowpod` for your system from the

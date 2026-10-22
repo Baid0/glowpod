@@ -1,11 +1,12 @@
 # glowpod.dev
 
-The Glowpod website: the home page, the quick start and the brand guidelines. Plain HTML and CSS
+The Glowpod website: the home page, the quick start, the guides and the demo. Plain HTML and CSS
 built with Vite, separate from the app in `frontend/`.
 
 ```bash
-make site-dev   # dev server on http://localhost:5180
-make site       # format check, build into site/dist, check the CSP
+make site-dev      # dev server on http://localhost:5180 (no demo)
+make site          # demo build, format check, build into site/dist, check the CSP and links
+make site-preview  # serve site/dist like Cloudflare Pages on http://localhost:5181, demo included
 ```
 
 - **Pages:** `index.html`, `docs/index.html` (the quick start), `404.html`.
@@ -30,6 +31,17 @@ make site       # format check, build into site/dist, check the CSP
   URLs. The build also writes `dist/_headers` from the same policy, so Cloudflare Pages sends it
   as a header, plus `frame-ancestors 'none'` (which a meta tag can't set), HSTS, `nosniff` and a
   year-long cache for the hashed files in `/assets/`.
+- **Demo:** `/demo/` is the real app from `frontend/`, built with `pnpm build:demo` (Vite's
+  `demo` mode). Its entry, `frontend/src/demo/main.tsx`, answers the app's API calls and
+  WebSockets from an in-memory sample cluster (`frontend/src/demo/`), so it needs no server and
+  nothing leaves the browser; the release build never includes it. `make site` copies the build
+  into `dist/demo/`. To work on it with hot reload, run
+  `pnpm --dir frontend exec vite --mode demo --port 5174` and open http://localhost:5174/demo/.
+- **Demo CSP:** the app's YAML editor and terminal create `<style>` elements, which need a nonce.
+  `public/_worker.js` serves the demo's pages (only those: see `public/_routes.json`) with a
+  fresh nonce per response, the way the Glowpod server does, so the demo keeps
+  `script-src 'self'` and a `style-src` without `'unsafe-inline'`; its policy also sets
+  `connect-src 'none'`. `make site-preview` (`scripts/serve.mjs`) runs that worker locally.
 - **Deploy:** `.github/workflows/site.yml` builds the site and deploys it to the Cloudflare Pages
   project `glowpod`: pushes to `main` go live, pull requests get a preview URL. It needs the
   repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; without them it only
