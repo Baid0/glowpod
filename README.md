@@ -7,7 +7,7 @@ Glance mode; it only shows less at once.
 ## Run it on your machine
 
 Download `glowpod` for your system from the
-[latest release](https://github.com/Baid0/glowpod/releases/latest), unpack it
+[latest release](https://github.com/glowpod-dev/glowpod/releases/latest), unpack it
 and run it:
 
 ```bash

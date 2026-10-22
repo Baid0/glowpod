@@ -123,6 +123,6 @@ same answer for an unknown user and a wrong password.
 
 ## Values
 
-See [values.yaml](https://github.com/Baid0/glowpod/blob/main/deploy/helm/glowpod/values.yaml); every setting there is commented. Anything
+See [values.yaml](https://github.com/glowpod-dev/glowpod/blob/main/deploy/helm/glowpod/values.yaml); every setting there is commented. Anything
 else can be passed as a `GLOWPOD_*` variable in `extraEnv` (run
 `glowpod -h` for the full list).

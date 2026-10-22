@@ -32,7 +32,7 @@ LABEL org.opencontainers.image.title="Glowpod" \
       org.opencontainers.image.description="Kubernetes dashboard: people sign in and act as themselves" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.source="https://github.com/Baid0/glowpod"
+      org.opencontainers.image.source="https://github.com/glowpod-dev/glowpod"
 COPY --from=api /glowpod /glowpod
 USER 65532:65532
 EXPOSE 8080

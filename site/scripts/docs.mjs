@@ -7,7 +7,7 @@ import { Marked, Renderer } from "marked";
 
 const site = resolve(import.meta.dirname, "..");
 const repo = resolve(site, "..");
-const GITHUB = "https://github.com/Baid0/glowpod/blob/main/";
+const GITHUB = "https://github.com/glowpod-dev/glowpod/blob/main/";
 
 // In reading order; the quick start (docs/index.html) comes first and is written by hand.
 export const DOC_PAGES = [

@@ -6,7 +6,7 @@ security reports seriously and fix them first.
 ## Report a vulnerability
 
 **Please don't open a public issue.** Report it privately instead:
-[Security → Report a vulnerability](https://github.com/Baid0/glowpod/security/advisories/new)
+[Security → Report a vulnerability](https://github.com/glowpod-dev/glowpod/security/advisories/new)
 on GitHub.
 
 Tell us what you found, how to reproduce it, and what an attacker could do
