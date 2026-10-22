@@ -1,0 +1,190 @@
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.liveDot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--muted-soft);
+}
+
+.live[data-live="true"] .liveDot {
+  background: var(--primary);
+  border: 1px solid var(--lime-outline);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+/* Segmented control: radius 6 segments on an elevated track. */
+.segments {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-control);
+  background: var(--surface-elevated);
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-segment);
+  background: transparent;
+  color: var(--body);
+  font: var(--text-body-sm-strong);
+  cursor: pointer;
+}
+
+.segment:hover {
+  color: var(--ink);
+}
+
+.active {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+.count {
+  color: var(--muted);
+  font: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.search {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-segment);
+  background: var(--canvas);
+  color: var(--muted);
+}
+
+.search input {
+  width: 260px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: var(--text-body-sm);
+}
+
+.search input:focus-visible {
+  outline: none;
+}
+
+.search:focus-within {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.message {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.reason {
+  margin-right: var(--space-2);
+  color: var(--body);
+  font-weight: 600;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.object {
+  color: var(--body);
+  font-family: var(--font-mono);
+}
+
+a.object {
+  color: var(--ink);
+}
+
+.age {
+  color: var(--muted);
+  font: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.note {
+  padding: var(--space-4) 0;
+  color: var(--muted);
+}
+
+.skeleton {
+  height: 320px;
+  border-radius: var(--radius-control);
+  background: var(--surface-elevated);
+}
+
+/* Narrow cards: the pill goes above the message. */
+.list {
+  container-type: inline-size;
+}
+
+@container (max-width: 560px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .row > :first-child {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 720px) {
+  .search,
+  .search input {
+    width: 100%;
+  }
+
+  .search {
+    flex: 1 1 100%;
+  }
+}

@@ -10,34 +10,16 @@ import { Card } from "../../components/Card";
 import { useLive } from "../../lib/live";
 import { useEvents } from "../../lib/queries";
 import { formatAgeShort, useNow } from "../../lib/time";
-import type { KubeEvent } from "../../lib/types";
+import { EVENT_WORDS, eventTone } from "../events/tone";
 import styles from "./OverviewPage.module.css";
 import { shortObject } from "./paths";
 
 const VISIBLE = 6;
-const CRITICAL_REASONS = /BackOff|Failed|Kill|Unhealthy|Evict|OOM|Error/i;
-const DONE_REASONS = /^(Completed|SuccessfulCreate|SawCompletedJob)$/;
-
-type EventTone = "critical" | "high" | "ok" | "info";
-
-function eventTone(e: KubeEvent): EventTone {
-  if (e.type === "Warning") return CRITICAL_REASONS.test(e.reason) ? "critical" : "high";
-  if (DONE_REASONS.test(e.reason)) return "ok";
-  return "info";
-}
-
 const ICONS = {
   critical: IconCircleX,
   high: IconAlertTriangle,
   ok: IconCircleCheck,
   info: IconInfoCircle,
-};
-
-const WORDS: Record<EventTone, string> = {
-  critical: "Problem",
-  high: "Warning",
-  ok: "Done",
-  info: "Info",
 };
 
 /** The newest events, live from the WebSocket stream. */
@@ -75,7 +57,7 @@ export function RecentEvents() {
                   data-tone={tone}
                   aria-hidden="true"
                 />
-                <span className="visually-hidden">{WORDS[tone]}: </span>
+                <span className="visually-hidden">{EVENT_WORDS[tone]}: </span>
                 <span className={styles.eventText}>
                   <span className={styles.eventMessage} title={e.message}>
                     {e.message || e.reason}

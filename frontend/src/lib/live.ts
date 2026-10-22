@@ -15,6 +15,8 @@ export interface Live {
 export const LiveContext = createContext<Live>({ status: "connecting", lastMessageAt: null });
 
 const MAX_EVENTS = 50;
+/** The Events page keeps more. */
+export const PAGE_EVENTS = 200;
 /** Pod changes come in bursts; refetch the Overview at most this often. */
 export const POD_REFRESH_DEBOUNCE_MS = 2_000;
 
@@ -27,15 +29,18 @@ export function applyMessage(
   schedulePodRefresh: () => void,
 ) {
   switch (msg.type) {
-    case "event":
-      client.setQueryData<KubeEvent[]>(queryKeys.events(cluster, namespace), (old) => {
+    case "event": {
+      const add = (limit: number) => (old: KubeEvent[] | undefined) => {
         if (!old) return old; // not loaded yet; the first fetch will include it
         const rest = old.filter((e) => e.id !== msg.event.id);
         return [msg.event, ...rest]
           .sort((a, b) => Date.parse(b.time) - Date.parse(a.time))
-          .slice(0, MAX_EVENTS);
-      });
+          .slice(0, limit);
+      };
+      client.setQueryData<KubeEvent[]>(queryKeys.events(cluster, namespace), add(MAX_EVENTS));
+      client.setQueryData<KubeEvent[]>(queryKeys.eventsPage(cluster, namespace), add(PAGE_EVENTS));
       break;
+    }
     case "pod":
       schedulePodRefresh();
       break;

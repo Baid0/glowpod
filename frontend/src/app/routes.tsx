@@ -6,6 +6,7 @@ import { AppsPage, LogsPage } from "../features/apps/AppsPage";
 import { OverviewPage } from "../features/overview/OverviewPage";
 import { PodPage } from "../features/pod/PodPage";
 import { ComingSoon, NotFound } from "../features/placeholder/ComingSoon";
+import { EventsPage } from "../features/events/EventsPage";
 import { NodePage } from "../features/nodes/NodePage";
 import { GenericDetail, WorkloadDetail } from "../features/resources/DetailRoutes";
 import { GenericList } from "../features/resources/GenericList";
@@ -23,6 +24,7 @@ const handle = (title: string): RouteHandle => ({ title });
 
 function pageElement(p: NavItem) {
   if (p.path === "/apps") return <AppsPage />;
+  if (p.path === "/events") return <EventsPage />;
   if (p.path === "/logs") return <LogsPage />;
   // key: a fresh page (search, sort) per resource.
   if (p.resource) return <ResourceListPage key={p.path} resource={p.resource} />;
