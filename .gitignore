@@ -3,6 +3,7 @@
 
 node_modules/
 /frontend/dist/
+/frontend/dist-demo/
 /frontend/coverage/
 /frontend/playwright-report/
 /frontend/test-results/
