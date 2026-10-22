@@ -6,20 +6,20 @@
 const PLACEHOLDER = "__GLOWPOD_NONCE__";
 
 // The Glowpod server's policy (backend/internal/web/csp.go), plus Cloudflare Web Analytics, which
-// Cloudflare adds to every page: its beacon script and the one address it reports to (the same
-// two paths as in vite.config.js). connect-src allows nothing else: the demo answers its API
-// inside the page.
+// Cloudflare adds to every page: its beacon script and where it reports, which is this site's own
+// /cdn-cgi/rum (or cloudflareinsights.com when it isn't served from the site's zone). connect-src
+// allows nothing else: the demo answers its API inside the page.
 const ANALYTICS_SCRIPT = "https://static.cloudflareinsights.com/beacon.min.js/";
 const ANALYTICS_REPORT = "https://cloudflareinsights.com/cdn-cgi/rum";
 
-function policy(nonce) {
+function policy(nonce, origin) {
   return [
     "default-src 'self'",
     `script-src 'self' ${ANALYTICS_SCRIPT}`,
     `style-src 'self' 'nonce-${nonce}'`,
     "img-src 'self' data:",
     "font-src 'self'",
-    `connect-src ${ANALYTICS_REPORT}`,
+    `connect-src ${origin}/cdn-cgi/rum ${ANALYTICS_REPORT}`,
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'self'",
@@ -61,7 +61,7 @@ export default {
         "Content-Type": "text/html; charset=utf-8",
         // The nonce is good for one response only.
         "Cache-Control": "no-store",
-        "Content-Security-Policy": policy(nonce),
+        "Content-Security-Policy": policy(nonce, url.origin),
         ...HEADERS,
       },
     });
