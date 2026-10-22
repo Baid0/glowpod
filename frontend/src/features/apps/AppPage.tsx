@@ -7,10 +7,11 @@ import { Card } from "../../components/Card";
 import { ApiError } from "../../lib/api";
 import { imageTag } from "../../lib/format";
 import { formatAge, useNow } from "../../lib/time";
-import type { AppDetail, PodSummary } from "../../lib/types";
+import type { AppDetail } from "../../lib/types";
 import { LogViewer } from "../logs/LogViewer";
+import { podPath } from "../pod/paths";
+import { PodTable } from "../pod/PodTable";
 import { usePod } from "../pod/usePod";
-import { statusTone } from "../resources/cells";
 import { APP_BADGES } from "./appLinks";
 import styles from "./AppPage.module.css";
 import { useApp } from "./useApps";
@@ -126,10 +127,6 @@ function Header({
   );
 }
 
-function podPath(p: { namespace: string; name: string }, query = "") {
-  return `/workloads/pods/${encodeURIComponent(p.namespace)}/${encodeURIComponent(p.name)}${query}`;
-}
-
 function Overview({ data }: { data: AppDetail }) {
   const now = useNow(30_000);
   return (
@@ -179,7 +176,7 @@ function Overview({ data }: { data: AppDetail }) {
           )}
         </Card>
         <Card title="Pods" actions={String(data.pods.length)}>
-          <PodTable pods={data.pods} now={now} />
+          <PodTable pods={data.pods} now={now} caption="Pods of this app" />
         </Card>
       </div>
       <div className={styles.side}>
@@ -224,48 +221,6 @@ function Overview({ data }: { data: AppDetail }) {
         </Card>
       </div>
     </div>
-  );
-}
-
-function PodTable({ pods, now }: { pods: PodSummary[]; now: number }) {
-  if (pods.length === 0) return <p className={styles.muted}>No pods running.</p>;
-  return (
-    <table className={styles.table}>
-      <caption className="visually-hidden">Pods of this app</caption>
-      <thead>
-        <tr>
-          <th scope="col">Pod</th>
-          <th scope="col">Status</th>
-          <th scope="col">Ready</th>
-          <th scope="col" className={styles.num}>
-            Restarts
-          </th>
-          <th scope="col">Node</th>
-          <th scope="col">Age</th>
-        </tr>
-      </thead>
-      <tbody>
-        {pods.map((p) => {
-          const word = p.problem?.reason ?? p.phase;
-          return (
-            <tr key={p.name}>
-              <td>
-                <Link className={styles.mono} to={podPath(p)}>
-                  {p.name}
-                </Link>
-              </td>
-              <td>
-                <Badge tone={p.problem ? p.problem.severity : statusTone(p.phase)}>{word}</Badge>
-              </td>
-              <td>{p.ready}</td>
-              <td className={styles.num}>{p.restarts}</td>
-              <td className={styles.muted}>{p.node ?? "—"}</td>
-              <td className={styles.muted}>{formatAge(now - Date.parse(p.createdAt))}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
   );
 }
 

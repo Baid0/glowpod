@@ -6,7 +6,8 @@ import { AppsPage, LogsPage } from "../features/apps/AppsPage";
 import { OverviewPage } from "../features/overview/OverviewPage";
 import { PodPage } from "../features/pod/PodPage";
 import { ComingSoon, NotFound } from "../features/placeholder/ComingSoon";
-import { GenericDetail, NodeDetail, WorkloadDetail } from "../features/resources/DetailRoutes";
+import { NodePage } from "../features/nodes/NodePage";
+import { GenericDetail, WorkloadDetail } from "../features/resources/DetailRoutes";
 import { GenericList } from "../features/resources/GenericList";
 import { ResourceListPage } from "../features/resources/ResourceListPage";
 import { ResourceTypesPage } from "../features/resources/ResourceTypesPage";
@@ -63,7 +64,7 @@ export const routes: RouteObject[] = [
       },
       {
         path: "nodes/:name",
-        element: <NodeDetail />,
+        element: <NodePage />,
         handle: handle("Node"),
       },
       {

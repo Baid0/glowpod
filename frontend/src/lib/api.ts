@@ -2,7 +2,10 @@ import type {
   AccessCheck,
   AppDetail,
   AppSummary,
+  DrainPlan,
+  DrainResult,
   KubeEvent,
+  NodeDetail,
   Overview,
   PodDetail,
   ResourceObject,
@@ -195,6 +198,19 @@ export const api = {
     apiGet<PodDetail>(
       clusterPath(cluster, `pods/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`, {}),
       signal,
+    ),
+  node: (cluster: string, name: string, signal?: AbortSignal) =>
+    apiGet<NodeDetail>(clusterPath(cluster, `nodes/${encodeURIComponent(name)}`, {}), signal),
+  cordon: (cluster: string, name: string, cordon: boolean) =>
+    apiSend("POST", clusterPath(cluster, `nodes/${encodeURIComponent(name)}/cordon`, {}), {
+      cordon,
+    }),
+  drainPlan: (cluster: string, name: string, signal?: AbortSignal) =>
+    apiGet<DrainPlan>(clusterPath(cluster, `nodes/${encodeURIComponent(name)}/drain`, {}), signal),
+  drain: (cluster: string, name: string) =>
+    apiSend<DrainResult>(
+      "POST",
+      clusterPath(cluster, `nodes/${encodeURIComponent(name)}/drain`, {}),
     ),
   access: (cluster: string, checks: AccessCheck[]) =>
     apiSend<{ allowed: boolean[] }>("POST", clusterPath(cluster, "access", {}), { checks }).then(

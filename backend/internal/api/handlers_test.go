@@ -214,6 +214,22 @@ func TestAPI(t *testing.T) {
 		},
 		{name: "bad container name", path: "/api/v1/clusters/default/logs/alpha/api-1?container=Bad_Name", wantStatus: 400, wantCode: "bad_container"},
 		{name: "bad tail", path: "/api/v1/clusters/default/logs/alpha/api-1?tailLines=0", wantStatus: 400, wantCode: "bad_tail"},
+		{
+			name: "node detail", path: "/api/v1/clusters/default/nodes/w1", wantStatus: 200,
+			check: func(t *testing.T, body []byte) {
+				var got struct {
+					Name   string
+					Gauges struct{ Pods struct{ Max float64 } }
+				}
+				mustDecode(t, body, &got)
+				if got.Name != "w1" || got.Gauges.Pods.Max != 110 {
+					t.Fatalf("node = %+v", got)
+				}
+			},
+		},
+		{name: "node missing", path: "/api/v1/clusters/default/nodes/w9", wantStatus: 404, wantCode: "not_found"},
+		{name: "node bad name", path: "/api/v1/clusters/default/nodes/Bad_Node", wantStatus: 400, wantCode: "bad_node"},
+		{name: "drain plan", path: "/api/v1/clusters/default/nodes/w1/drain", wantStatus: 200},
 		{name: "exec needs a container", path: "/api/v1/clusters/default/exec/alpha/api-1", wantStatus: 400, wantCode: "bad_container"},
 		{name: "exec bad pod name", path: "/api/v1/clusters/default/exec/alpha/Bad_Pod?container=app", wantStatus: 400, wantCode: "bad_pod"},
 		{name: "pod in a bad namespace", path: "/api/v1/clusters/default/pods/Not_Valid/x", wantStatus: 400, wantCode: "bad_namespace"},

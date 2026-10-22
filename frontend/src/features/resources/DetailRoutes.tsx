@@ -39,16 +39,3 @@ export function WorkloadDetail() {
     />
   );
 }
-
-/** /nodes/:name until Phase 4's node page. */
-export function NodeDetail() {
-  const { name = "" } = useParams();
-  return (
-    <ResourceDetailPage
-      key={name}
-      resource={{ group: "", version: "v1", resource: "nodes" }}
-      namespace=""
-      name={name}
-    />
-  );
-}

@@ -289,3 +289,54 @@ export interface UpdateResult {
   after?: string;
   object?: ResourceObject;
 }
+
+export interface NodeCondition {
+  type: string;
+  status: string;
+  reason?: string;
+  message?: string;
+  since: string;
+  /** Bad news: not Ready, or under memory, disk or PID pressure. */
+  problem: boolean;
+}
+
+export interface NodeDetail {
+  name: string;
+  ready: boolean;
+  unschedulable: boolean;
+  roles: string[];
+  createdAt: string;
+  conditions: NodeCondition[];
+  taints: { key: string; value?: string; effect: string }[];
+  addresses: { type: string; address: string }[];
+  info: {
+    kubeletVersion: string;
+    osImage: string;
+    kernelVersion: string;
+    containerRuntime: string;
+    architecture: string;
+  };
+  gauges: { cpu: Gauge; memory: Gauge; pods: Gauge };
+  pods: PodSummary[];
+  events: KubeEvent[];
+  labels?: Record<string, string>;
+}
+
+export interface DrainPod {
+  namespace: string;
+  name: string;
+  reason?: string;
+  localData?: boolean;
+}
+
+export interface DrainPlan {
+  evict: DrainPod[];
+  skip: DrainPod[];
+}
+
+export interface DrainResult {
+  evicted: DrainPod[];
+  blocked: DrainPod[];
+  failed: DrainPod[];
+  skipped: DrainPod[];
+}

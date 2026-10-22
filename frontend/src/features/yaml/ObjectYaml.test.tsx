@@ -110,7 +110,7 @@ describe("Resource detail with YAML", () => {
     { status: 403, code: "forbidden", text: "You can't read this. Ask an admin for access." },
     { status: 404, code: "not_found", text: "This object is gone." },
   ])("explains $status", async ({ status, code, text }) => {
-    renderApp("/nodes/w9", (url) =>
+    renderApp("/resources/core/v1/nodes/_/w9", (url) =>
       url.pathname === `${BASE}/core/v1/nodes/w9`
         ? Response.json({ error: { code, message: "x" } }, { status })
         : undefined,

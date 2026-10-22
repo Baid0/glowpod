@@ -22,6 +22,8 @@ export const queryKeys = {
     name: string,
     reveal: boolean,
   ) => ["object", cluster, group, version, resource, namespace, name, reveal] as const,
+  node: (cluster: string, name: string) => ["node", cluster, name] as const,
+  drainPlan: (cluster: string, name: string) => ["drainPlan", cluster, name] as const,
   /** Permission answers; cleared when anything is changed. */
   access: (cluster: string, checks: string) => ["access", cluster, checks] as const,
   accessAll: (cluster: string) => ["access", cluster] as const,
