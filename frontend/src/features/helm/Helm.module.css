@@ -88,8 +88,11 @@
   overflow-wrap: anywhere;
 }
 
-.num {
-  text-align: right;
+/* Centered in its column: header and number alike (`.table th` would
+   otherwise pull the header left). Even side padding keeps it centered. */
+.table .num {
+  padding-left: var(--space-3);
+  text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
