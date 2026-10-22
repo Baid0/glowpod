@@ -169,15 +169,17 @@ func (r *ApplyResult) Failed() bool {
 // server-side apply, like `kubectl apply --server-side`: any kind the
 // cluster serves, CRDs included, each as the person applying. Namespaced
 // objects without metadata.namespace go into namespace. One object failing
-// doesn't stop the others; each has its own result.
-func Apply(ctx context.Context, client dynamic.Interface, mapper meta.RESTMapper, namespace, manifest string, dryRun bool) (*ApplyResult, error) {
+// doesn't stop the others; each has its own result. Fields last set another
+// way (an edit, kubectl, a controller) are a conflict unless force, like
+// --force-conflicts, which makes Glowpod their owner.
+func Apply(ctx context.Context, client dynamic.Interface, mapper meta.RESTMapper, namespace, manifest string, dryRun, force bool) (*ApplyResult, error) {
 	docs, err := splitManifest(manifest)
 	if err != nil {
 		return nil, err
 	}
 	res := &ApplyResult{DryRun: dryRun, Items: make([]ApplyItem, 0, len(docs))}
 	for _, doc := range docs {
-		res.Items = append(res.Items, applyOne(ctx, client, mapper, namespace, doc, dryRun))
+		res.Items = append(res.Items, applyOne(ctx, client, mapper, namespace, doc, dryRun, force))
 	}
 	return res, nil
 }
@@ -209,7 +211,7 @@ func stripComments(doc string) string {
 	return b.String()
 }
 
-func applyOne(ctx context.Context, client dynamic.Interface, mapper meta.RESTMapper, namespace, doc string, dryRun bool) ApplyItem {
+func applyOne(ctx context.Context, client dynamic.Interface, mapper meta.RESTMapper, namespace, doc string, dryRun, force bool) ApplyItem {
 	fail := func(it ApplyItem, code, msg, detail string) ApplyItem {
 		it.Result, it.Code, it.Message, it.Detail = Failed, code, msg, detail
 		return it
@@ -278,7 +280,7 @@ func applyOne(ctx context.Context, client dynamic.Interface, mapper meta.RESTMap
 	if err != nil {
 		return fail(it, "bad_manifest", "This object can't be encoded.", "")
 	}
-	opts := metav1.PatchOptions{FieldManager: fieldManager}
+	opts := metav1.PatchOptions{FieldManager: fieldManager, Force: &force}
 	if dryRun {
 		opts.DryRun = []string{metav1.DryRunAll}
 	}
@@ -286,7 +288,7 @@ func applyOne(ctx context.Context, client dynamic.Interface, mapper meta.RESTMap
 	if err != nil {
 		c := kerr.Classify(err)
 		if c.Code == "conflict" {
-			c.Message = "Another tool manages some of these fields. Change them there, or edit this object instead."
+			c.Message = "Some of these fields were set another way (an edit, kubectl or a controller), so applying would overwrite them. Overwrite them on purpose, or leave them out."
 		}
 		return fail(it, c.Code, c.Message, c.Detail)
 	}

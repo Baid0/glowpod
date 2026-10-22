@@ -241,7 +241,7 @@ items: []
 # only a comment
 `
 	client, applies := applyClient(t, map[string]bool{"hidden": true}, map[string]bool{"contested": true}, existing)
-	res, err := Apply(context.Background(), client, applyMapper(), "shop", manifest, false)
+	res, err := Apply(context.Background(), client, applyMapper(), "shop", manifest, false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -269,14 +269,14 @@ items: []
 	if res.Items[1].Group != "apps" || res.Items[2].Group != "core" || res.Items[2].Resource != "configmaps" {
 		t.Fatalf("links = %+v, %+v", res.Items[1], res.Items[2])
 	}
-	if !strings.Contains(res.Items[5].Message, "Another tool manages") {
+	if !strings.Contains(res.Items[5].Message, "set another way") {
 		t.Fatalf("conflict message = %q", res.Items[5].Message)
 	}
 	if !res.Failed() {
 		t.Fatal("Failed() should see the failures")
 	}
 	for _, p := range *applies {
-		if p.PatchOptions.FieldManager != "glowpod" || len(p.PatchOptions.DryRun) != 0 {
+		if p.PatchOptions.FieldManager != "glowpod" || len(p.PatchOptions.DryRun) != 0 || *p.PatchOptions.Force {
 			t.Fatalf("options = %+v", p.PatchOptions)
 		}
 	}
@@ -285,7 +285,7 @@ items: []
 func TestApplyDryRun(t *testing.T) {
 	client, applies := applyClient(t, nil, nil)
 	res, err := Apply(context.Background(), client, applyMapper(), "shop",
-		"apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: a\n", true)
+		"apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: a\n", true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,11 +304,35 @@ func TestApplyLimits(t *testing.T) {
 		"too many": strings.Repeat("apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: a\n---\n", MaxApplyObjects+1),
 	} {
 		t.Run(name, func(t *testing.T) {
-			_, err := Apply(context.Background(), client, applyMapper(), "shop", manifest, false)
+			_, err := Apply(context.Background(), client, applyMapper(), "shop", manifest, false, false)
 			var ie *InputError
 			if err == nil || !errors.As(err, &ie) {
 				t.Fatalf("err = %v, want an input error", err)
 			}
 		})
+	}
+}
+
+func TestApplyForce(t *testing.T) {
+	// The fake refuses "contested" only without force, like the API server.
+	client, applies := applyClient(t, nil, nil)
+	client.PrependReactor("patch", "*", func(a k8stesting.Action) (bool, runtime.Object, error) {
+		p := a.(k8stesting.PatchActionImpl)
+		if p.PatchOptions.Force == nil || !*p.PatchOptions.Force {
+			return true, nil, apierrors.NewConflict(a.GetResource().GroupResource(), p.GetName(), fmt.Errorf("conflict with kubectl: .data.mode"))
+		}
+		return false, nil, nil
+	})
+	manifest := "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: contested\n"
+	without, err := Apply(context.Background(), client, applyMapper(), "shop", manifest, true, false)
+	if err != nil || without.Items[0].Code != "conflict" {
+		t.Fatalf("without force = %+v, %v", without, err)
+	}
+	with, err := Apply(context.Background(), client, applyMapper(), "shop", manifest, true, true)
+	if err != nil || with.Items[0].Result == Failed {
+		t.Fatalf("with force = %+v, %v", with, err)
+	}
+	if last := (*applies)[len(*applies)-1]; !*last.PatchOptions.Force {
+		t.Fatal("force wasn't sent")
 	}
 }

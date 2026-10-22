@@ -123,7 +123,8 @@ func (s *server) createResource(w http.ResponseWriter, r *http.Request) {
 
 // applyManifest creates or updates every object in a multi-document manifest
 // with server-side apply. Each object has its own result; the request only
-// fails when the manifest itself can't be read.
+// fails when the manifest itself can't be read. ?force=true overwrites
+// fields set another way, like kubectl apply --force-conflicts.
 func (s *server) applyManifest(w http.ResponseWriter, r *http.Request) {
 	ns, ok := oneNamespace(w, r)
 	if !ok {
@@ -136,7 +137,8 @@ func (s *server) applyManifest(w http.ResponseWriter, r *http.Request) {
 	dryRun := r.URL.Query().Get("dryRun") == "true"
 	clients := clientsFrom(r)
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(clients.Discovery)
-	res, err := resources.Apply(r.Context(), clients.Dynamic, mapper, ns, req.YAML, dryRun)
+	force := r.URL.Query().Get("force") == "true"
+	res, err := resources.Apply(r.Context(), clients.Dynamic, mapper, ns, req.YAML, dryRun, force)
 	if err != nil {
 		s.writeFailure(w, err)
 		return
