@@ -9,11 +9,14 @@ import { formatAge, useNow } from "../../lib/time";
 import type { PodDetail } from "../../lib/types";
 import { statusTone } from "../resources/cells";
 import { LogViewer } from "../logs/LogViewer";
+import { ObjectYaml } from "../yaml/ObjectYaml";
 import { Containers, Facts } from "./Containers";
 import { PodEvents } from "./PodEvents";
 import styles from "./PodPage.module.css";
 import { Story } from "./Story";
 import { usePod } from "./usePod";
+
+const PODS = { group: "", version: "v1", resource: "pods" };
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -96,7 +99,7 @@ export function PodPage() {
         ) : tab === "logs" ? (
           <LogViewer namespace={namespace} pod={name} containers={data.containers} />
         ) : (
-          <p className={styles.soon}>The YAML view arrives in the next build step.</p>
+          <ObjectYaml resource={PODS} namespace={namespace} name={name} />
         )}
       </div>
     </div>

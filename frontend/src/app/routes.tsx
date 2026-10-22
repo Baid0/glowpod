@@ -4,6 +4,7 @@ import type { RouteObject } from "react-router";
 import { OverviewPage } from "../features/overview/OverviewPage";
 import { PodPage } from "../features/pod/PodPage";
 import { ComingSoon, NotFound } from "../features/placeholder/ComingSoon";
+import { GenericDetail, NodeDetail, WorkloadDetail } from "../features/resources/DetailRoutes";
 import { GenericList } from "../features/resources/GenericList";
 import { ResourceListPage } from "../features/resources/ResourceListPage";
 import { ResourceTypesPage } from "../features/resources/ResourceTypesPage";
@@ -43,7 +44,7 @@ export const routes: RouteObject[] = [
       },
       {
         path: "workloads/:kind/:namespace/:name",
-        element: <ComingSoon title="Details" phase={2} />,
+        element: <WorkloadDetail />,
         handle: handle("Details"),
       },
       {
@@ -53,12 +54,12 @@ export const routes: RouteObject[] = [
       },
       {
         path: "resources/:group/:version/:resource/:namespace/:name",
-        element: <ComingSoon title="Details" phase={2} />,
+        element: <GenericDetail />,
         handle: handle("Details"),
       },
       {
         path: "nodes/:name",
-        element: <ComingSoon title="Node details" phase={4} />,
+        element: <NodeDetail />,
         handle: handle("Node"),
       },
       {

@@ -218,3 +218,20 @@ export interface PodDetail {
   story: StoryItem[];
   metricsAvailable: boolean;
 }
+
+/** GET .../resources/{group}/{version}/{resource}/{name}?format=yaml */
+export interface ResourceObject {
+  object: Record<string, unknown> & {
+    kind?: string;
+    metadata?: {
+      name?: string;
+      namespace?: string;
+      creationTimestamp?: string;
+      labels?: Record<string, string>;
+    };
+    data?: Record<string, string>;
+  };
+  yaml: string;
+  /** Secret values were hidden. */
+  redacted: boolean;
+}

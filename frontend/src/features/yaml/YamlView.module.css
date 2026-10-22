@@ -1,0 +1,88 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.meta {
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.code {
+  max-height: calc(100vh - 64px - 300px);
+  min-height: 240px;
+  margin: 0;
+  padding: var(--space-3) 0;
+  overflow: auto;
+  background: var(--canvas);
+  color: var(--body);
+  font: 400 13px / 20px var(--font-mono);
+  tab-size: 2;
+}
+
+.code:focus-visible {
+  outline-offset: -2px;
+}
+
+.line {
+  display: flex;
+}
+
+.number {
+  flex: none;
+  width: 52px;
+  padding-right: var(--space-3);
+  color: var(--muted-soft);
+  text-align: right;
+  user-select: none;
+}
+
+.text {
+  white-space: pre;
+  padding-right: var(--space-4);
+}
+
+/* Token colors: neutral greys plus lime for keys in dark mode; no rose. */
+[data-token="key"] {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+[data-token="string"] {
+  color: var(--body);
+}
+
+[data-token="number"],
+[data-token="bool"],
+[data-token="null"] {
+  color: var(--primary);
+}
+
+:root[data-theme="light"] [data-token="number"],
+:root[data-theme="light"] [data-token="bool"],
+:root[data-theme="light"] [data-token="null"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+[data-token="comment"] {
+  color: var(--muted);
+  font-style: italic;
+}
+
+[data-token="punct"] {
+  color: var(--muted);
+}

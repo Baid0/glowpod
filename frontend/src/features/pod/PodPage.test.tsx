@@ -84,9 +84,7 @@ describe("Pod page (Deep)", () => {
     await user.keyboard("{ArrowLeft}");
     expect(screen.getByRole("tab", { name: "YAML" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "YAML" })).toHaveFocus();
-    expect(screen.getByRole("tabpanel")).toHaveTextContent(
-      "The YAML view arrives in the next build step.",
-    );
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("id", "panel-yaml");
   });
 
   it("opens straight to a tab from the URL", async () => {

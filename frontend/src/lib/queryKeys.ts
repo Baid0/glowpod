@@ -8,6 +8,15 @@ export const queryKeys = {
   resourceTypes: (cluster: string) => ["resourceTypes", cluster] as const,
   pod: (cluster: string, namespace: string, name: string) =>
     ["pod", cluster, namespace, name] as const,
+  object: (
+    cluster: string,
+    group: string,
+    version: string,
+    resource: string,
+    namespace: string,
+    name: string,
+    reveal: boolean,
+  ) => ["object", cluster, group, version, resource, namespace, name, reveal] as const,
   resourceList: (
     cluster: string,
     group: string,

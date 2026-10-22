@@ -2,6 +2,7 @@ import type {
   KubeEvent,
   Overview,
   PodDetail,
+  ResourceObject,
   ResourceRef,
   ResourceTable,
   ResourceType,
@@ -103,6 +104,22 @@ export const api = {
     wsURL(logsPath(cluster, namespace, pod, "", opts)),
   logsDownloadURL: (cluster: string, namespace: string, pod: string, opts: LogOptions) =>
     logsPath(cluster, namespace, pod, "/download", opts),
+  getResource: (
+    cluster: string,
+    ref: ResourceRef,
+    namespace: string,
+    name: string,
+    opts: { reveal?: boolean },
+    signal?: AbortSignal,
+  ) =>
+    apiGet<ResourceObject>(
+      clusterPath(cluster, `resources/${refPath(ref)}/${encodeURIComponent(name)}`, {
+        namespace,
+        format: "yaml",
+        reveal: opts.reveal ? "true" : undefined,
+      }),
+      signal,
+    ),
   pod: (cluster: string, namespace: string, name: string, signal?: AbortSignal) =>
     apiGet<PodDetail>(
       clusterPath(cluster, `pods/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`, {}),
