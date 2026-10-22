@@ -417,6 +417,73 @@
         </div>
       </section>
 
+      <section class="container section" id="terminal" aria-labelledby="terminal-h">
+        <div class="terminal-showcase">
+          <div class="terminal-copy">
+            <span class="eyebrow">In your terminal</span>
+            <h2 id="terminal-h" class="section-title">Glowpod where you already work.</h2>
+            <p class="section-lead">
+              The same Glance answers and live tables, with keys instead of clicks. Over SSH, in
+              tmux, anywhere your kubeconfig works.
+            </p>
+            <ul class="terminal-points">
+              <li>
+                <code class="inline-code">Tab</code> between Glance and Deep: any resource, CRDs too
+              </li>
+              <li>Live logs, with warnings in orange and errors in red</li>
+              <li>
+                <code class="inline-code">:</code> command palette,
+                <code class="inline-code">/</code> filter, <code class="inline-code">?</code> every
+                key
+              </li>
+              <li>Scale, restart, delete and shell, only when your RBAC allows them</li>
+            </ul>
+            <div class="command-card">
+              <code class="command-lines">
+                <span
+                  ><span class="prompt" aria-hidden="true">$ </span>brew install
+                  glowpod-dev/tap/glowpod</span
+                >
+                <span><span class="prompt" aria-hidden="true">$ </span>glowpod term</span>
+              </code>
+              <button
+                class="icon-button copy-button"
+                type="button"
+                data-copy="brew install glowpod-dev/tap/glowpod&#10;glowpod term"
+                aria-label="Copy the terminal app commands"
+              >
+                <!-- @include copy-icons.html -->
+              </button>
+            </div>
+            <p class="note">
+              On Windows: <code class="inline-code">scoop install glowpod</code>, then
+              <code class="inline-code">glowpod term</code> in Windows Terminal.
+            </p>
+            <a class="arrow-link" href="/docs/terminal/">
+              Read the terminal guide
+              <svg
+                class="icon icon-bold"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14M13 18l6 -6M13 6l6 6" />
+              </svg>
+            </a>
+          </div>
+          <img
+            class="terminal-shot"
+            src="/screens/terminal-glance.webp"
+            alt="glowpod term on Glance: CPU, memory, pods, storage and network gauges, a pod that keeps restarting under Needs attention, and recent events"
+            width="2000"
+            height="1168"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </section>
+
       <section class="container section install" id="install" aria-labelledby="install-h">
         <div class="install-copy">
           <span class="eyebrow">Install</span>
