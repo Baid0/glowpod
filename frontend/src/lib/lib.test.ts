@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, ApiError, apiGet } from "./api";
 import { byteScale, bytes, initials, percent, rate } from "./format";
 import { applyMessage } from "./live";
+import { createQueryClient } from "./queries";
 import { queryKeys } from "./queryKeys";
 import { formatAge } from "./time";
 import type { KubeEvent } from "./types";
@@ -186,5 +187,20 @@ describe("applyMessage", () => {
       queryKeys.events("default", "x"),
       queryKeys.overview("default", "x"),
     ]);
+  });
+});
+
+describe("retries", () => {
+  const retry = createQueryClient().getDefaultOptions().queries?.retry;
+  const retries = (err: Error) => (typeof retry === "function" ? retry(0, err) : retry);
+
+  it.each([
+    [new ApiError(504, "cluster_timeout", "x"), false],
+    [new ApiError(503, "cluster_unreachable", "x"), false],
+    [new ApiError(403, "forbidden", "x"), false],
+    [new ApiError(503, "cluster_busy", "x"), true],
+    [new ApiError(502, "cluster_error", "x"), true],
+  ])("%s: %s", (err, want) => {
+    expect(retries(err)).toBe(want);
   });
 });

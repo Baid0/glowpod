@@ -1,6 +1,5 @@
 import { IconArrowsVertical, IconPencil, IconRefresh, IconTrash } from "@tabler/icons-react";
 import { useState } from "react";
-import { useNavigate } from "react-router";
 
 import { listPathFor } from "../../app/navigation";
 import { Button } from "../../components/Button";
@@ -9,6 +8,7 @@ import styles from "./actions.module.css";
 import { deleteConsequence } from "./consequence";
 import { DeleteDialog, RestartDialog, ScaleDialog } from "./dialogs";
 import { useAllowedActions } from "./useActions";
+import { useNavigate } from "../../lib/clusterPaths";
 
 type Open = "scale" | "restart" | "delete" | null;
 

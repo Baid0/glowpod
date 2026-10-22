@@ -1,11 +1,10 @@
-import { Link } from "react-router";
-
 import { Badge } from "../../components/Badge";
 import { Card } from "../../components/Card";
 import { formatAge, useNow } from "../../lib/time";
 import type { AppSummary } from "../../lib/types";
 import { APP_BADGES, appPath } from "./appLinks";
 import styles from "./Apps.module.css";
+import { Link } from "../../lib/clusterLinks";
 
 /** One app: status, ready replicas, last deploy. */
 export function AppCard({ app }: { app: AppSummary }) {

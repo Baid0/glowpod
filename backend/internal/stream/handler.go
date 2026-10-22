@@ -27,21 +27,21 @@ const (
 // Handler serves GET /api/v1/clusters/{cluster}/stream?namespace=.
 // The router validates the namespace and attaches the identity first.
 type Handler struct {
-	Provider cluster.Provider
-	Logger   *slog.Logger
-	Now      func() time.Time
-	Backoff  func() Backoff
+	// Clients returns the identity's clients for the request's cluster.
+	Clients func(r *http.Request) *cluster.Clients
+	Logger  *slog.Logger
+	Now     func() time.Time
+	Backoff func() Backoff
 }
 
 // ServeHTTP upgrades to a WebSocket. Accept rejects cross-origin requests.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	id, ok := auth.IdentityFrom(r.Context())
-	if !ok {
+	if _, ok := auth.IdentityFrom(r.Context()); !ok {
 		http.Error(w, "unauthenticated", http.StatusUnauthorized)
 		return
 	}
-	clients, err := h.Provider.ClientsFor(r.Context(), id)
-	if err != nil {
+	clients := h.Clients(r)
+	if clients == nil {
 		http.Error(w, "no cluster client", http.StatusInternalServerError)
 		return
 	}

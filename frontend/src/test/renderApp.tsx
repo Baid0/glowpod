@@ -50,6 +50,8 @@ export function defaultResponder(url: URL): Response | undefined {
   switch (url.pathname) {
     case "/api/v1/session":
       return Response.json(fx.session);
+    case "/api/v1/clusters":
+      return Response.json({ clusters: fx.clusters });
     case "/api/v1/clusters/default/namespaces":
       return Response.json({ namespaces: fx.namespaces });
     case "/api/v1/clusters/default/overview":
@@ -63,7 +65,18 @@ export function defaultResponder(url: URL): Response | undefined {
   }
 }
 
-export function renderApp(path = "/", respond: Responder = defaultResponder) {
+/**
+ * Renders the app at path. A page path ("/workloads/pods") opens on the
+ * fixtures' cluster, like a link inside it; paths outside a cluster
+ * ("/sign-in", "/c/…") open as given; renderApp("/", …, { home: true })
+ * opens the Clusters page.
+ */
+export function renderApp(
+  path = "/",
+  respond: Responder = defaultResponder,
+  { home = false }: { home?: boolean } = {},
+) {
+  const start = home || /^\/(c\/|sign-in)/.test(path) ? path : `/c/default${path}`;
   FakeWebSocket.instances = [];
   vi.stubGlobal("WebSocket", FakeWebSocket);
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
@@ -77,7 +90,7 @@ export function renderApp(path = "/", respond: Responder = defaultResponder) {
 
   const client = createQueryClient();
   client.setDefaultOptions({ queries: { ...client.getDefaultOptions().queries, retry: false } });
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
+  const router = createMemoryRouter(routes, { initialEntries: [start] });
   const utils = render(
     <Providers client={client}>
       <RouterProvider router={router} />

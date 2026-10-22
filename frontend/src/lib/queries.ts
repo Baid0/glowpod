@@ -1,4 +1,5 @@
 import { QueryCache, QueryClient, useQuery } from "@tanstack/react-query";
+import { useParams } from "react-router";
 
 import { api, ApiError, DEFAULT_CLUSTER } from "./api";
 import { usePreferences } from "./preferences";
@@ -15,6 +16,9 @@ export function useThresholds(server: [number, number] | undefined): [number, nu
   return thresholdsFor(cluster) ?? server;
 }
 export const EVENTS_LIMIT = 20;
+
+/** Cluster errors that come after waiting the full connect time. */
+const NO_RETRY_CODES = ["cluster_timeout", "cluster_unreachable"];
 
 export function createQueryClient() {
   const client: QueryClient = new QueryClient({
@@ -35,8 +39,10 @@ export function createQueryClient() {
       queries: {
         refetchOnWindowFocus: true,
         retry: (count, err) => {
-          // Don't retry what won't change on its own.
+          // Don't retry what won't change on its own, or a cluster that
+          // already had its full time to connect and didn't.
           if (err instanceof ApiError && [400, 401, 403, 404].includes(err.status)) return false;
+          if (err instanceof ApiError && NO_RETRY_CODES.includes(err.code)) return false;
           return count < 2;
         },
       },
@@ -53,9 +59,32 @@ export function useSession() {
   });
 }
 
+/** The cluster in the URL (/c/<cluster>/…). Outside a cluster's pages, and
+ * in tests that render a page on its own, the in-cluster one. */
 export function useClusterId(): string {
-  const { data } = useSession();
-  return data?.clusters[0]?.id ?? DEFAULT_CLUSTER;
+  return useParams().cluster ?? DEFAULT_CLUSTER;
+}
+
+/** Every cluster this Glowpod serves. */
+export function useClusters() {
+  return useQuery({
+    queryKey: queryKeys.clusters,
+    queryFn: ({ signal }) => api.clusters(signal),
+    staleTime: 60_000,
+  });
+}
+
+/** How often rows on the Clusters page refresh. */
+export const SUMMARY_REFRESH_MS = 30_000;
+
+/** One row of the Clusters page. A cluster that's down doesn't retry for long. */
+export function useClusterSummary(cluster: string) {
+  return useQuery({
+    queryKey: queryKeys.clusterSummary(cluster),
+    queryFn: ({ signal }) => api.clusterSummary(cluster, signal),
+    refetchInterval: SUMMARY_REFRESH_MS,
+    retry: false,
+  });
 }
 
 export function useNamespaces() {

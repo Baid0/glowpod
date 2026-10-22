@@ -66,7 +66,8 @@
 @media (max-width: 720px) {
   /* Phones: the rail becomes a bar at the bottom. */
   .shell,
-  .shell[data-panel="drawer"] {
+  .shell[data-panel="drawer"],
+  .shell[data-panel="collapsed"] {
     grid-template-columns: minmax(0, 1fr);
   }
 

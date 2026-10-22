@@ -1,5 +1,6 @@
 import type {
   AppDetail,
+  ClusterInfo,
   KubeEvent,
   Overview,
   PodDetail,
@@ -14,8 +15,11 @@ export const session: Session = {
   method: "kubeconfig",
   csrfToken: "test-csrf",
   user: { username: "kubernetes-admin" },
-  clusters: [{ id: "default", name: "prod-eu-1", server: "192.0.2.10:6443" }],
 };
+
+export const clusters: ClusterInfo[] = [
+  { id: "default", name: "prod-eu-1", server: "192.0.2.10:6443", current: true },
+];
 
 export const namespaces = ["checkout", "payments", "search"];
 
@@ -30,6 +34,7 @@ export function overview(namespace = ""): Overview {
       server: "192.0.2.10:6443",
       version: "v1.34.2",
       nodes: 3,
+      nodesReady: 3,
       namespaces: 5,
     },
     namespace,

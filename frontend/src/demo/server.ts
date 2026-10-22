@@ -31,7 +31,6 @@ export const session: Session = {
   method: "kubeconfig",
   csrfToken: "demo",
   user: { username: DEMO_USER, groups: ["demo:viewers-and-tinkerers"] },
-  clusters: [CLUSTER_INFO],
 };
 
 const json = (body: unknown, status = 200) =>
@@ -165,6 +164,7 @@ export class DemoServer {
     };
 
     if (path === "/session") return json(session);
+    if (path === "/clusters") return json({ clusters: [{ ...CLUSTER_INFO, current: true }] });
     if (path === "/auth/methods") return json({ methods: [] });
     if (path === "/auth/logout") return new Response(null, { status: 204 });
 
@@ -179,6 +179,17 @@ export class DemoServer {
         return json({ namespaces: c.objects(K.namespaces).map(nameOf).sort() });
       case "overview":
         return json(overview(c, ns));
+      case "summary": {
+        const o = overview(c, "");
+        return json({
+          cluster: o.cluster,
+          gauges: { cpu: o.gauges.cpu, memory: o.gauges.memory, pods: o.gauges.pods },
+          health: o.health,
+          problemCount: o.problemCount,
+          thresholds: o.thresholds,
+          generatedAt: o.generatedAt,
+        });
+      }
       case "events": {
         const limit = Number(q.get("limit") ?? 100);
         return json({

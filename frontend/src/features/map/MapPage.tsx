@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router";
 
 import { Card } from "../../components/Card";
 import { Segmented } from "../../components/Segmented";
@@ -12,6 +11,7 @@ import type { MapStatus, ResourceMap } from "../../lib/types";
 import { ObjectError } from "../yaml/ObjectError";
 import { BOX_H, BOX_W, fit, GAP_X, layout, nodePath, type Placed } from "./layout";
 import styles from "./MapPage.module.css";
+import { useNavigate } from "../../lib/clusterPaths";
 
 const HEADINGS = ["Comes in", "Services", "Runs", "Uses"];
 const KIND_WORDS: Record<string, string> = {

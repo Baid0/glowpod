@@ -94,15 +94,15 @@ func newWriteEnv(t *testing.T) *writeEnv {
 		t.Fatal(err)
 	}
 	router := NewRouter(Options{
-		Provider: cluster.NewLocalWithClients(cluster.Info{ID: cluster.DefaultID}, &cluster.Clients{
+		Clusters: cluster.Single(cluster.NewLocalWithClients(cluster.Info{ID: cluster.DefaultID}, &cluster.Clients{
 			Kube: kube, Dynamic: dyn, Discovery: memory.NewMemCacheClient(kube.Discovery()),
-		}),
+		})),
 		Auth:  authn,
 		Hosts: auth.LoopbackHosts("7171"),
 	})
 	env := &writeEnv{router: router, writes: &writes}
 
-	launch, _ := url.Parse(authn.LaunchURL("http://127.0.0.1:7171"))
+	launch, _ := url.Parse(authn.LaunchURL("http://127.0.0.1:7171", "/"))
 	rec := env.do(t, http.MethodGet, launch.RequestURI(), "", nil)
 	env.cookie = rec.Result().Cookies()[0]
 	var session sessionResponse

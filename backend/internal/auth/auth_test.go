@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"cmp"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -19,7 +20,7 @@ func newLocal(t *testing.T) *Local {
 
 func TestHandleLogin(t *testing.T) {
 	l := newLocal(t)
-	launch, err := url.Parse(l.LaunchURL("http://127.0.0.1:7171"))
+	launch, err := url.Parse(l.LaunchURL("http://127.0.0.1:7171", "/"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,11 +31,15 @@ func TestHandleLogin(t *testing.T) {
 		cookie     string
 		wantStatus int
 		wantCookie bool
+		// wantLocation is where a redirect goes; "/" when empty.
+		wantLocation string
 	}{
 		{name: "valid token sets cookie", query: launch.RawQuery, wantStatus: http.StatusSeeOther, wantCookie: true},
 		{name: "wrong token", query: "token=nope", wantStatus: http.StatusUnauthorized},
 		{name: "missing token", query: "", wantStatus: http.StatusUnauthorized},
 		{name: "already signed in", query: "", cookie: l.session, wantStatus: http.StatusSeeOther},
+		{name: "opens the cluster asked for", query: launch.RawQuery + "&return=%2Fc%2Fkind-lab%2F", wantStatus: http.StatusSeeOther, wantCookie: true, wantLocation: "/c/kind-lab/"},
+		{name: "never leaves the site", query: launch.RawQuery + "&return=%2F%2Fevil.example", wantStatus: http.StatusSeeOther, wantCookie: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -48,6 +53,9 @@ func TestHandleLogin(t *testing.T) {
 			if rec.Code != tt.wantStatus {
 				t.Fatalf("status = %d, want %d", rec.Code, tt.wantStatus)
 			}
+			if want := cmp.Or(tt.wantLocation, "/"); rec.Code == http.StatusSeeOther && rec.Header().Get("Location") != want {
+				t.Fatalf("redirect to %q, want %q", rec.Header().Get("Location"), want)
+			}
 			cookies := rec.Result().Cookies()
 			if tt.wantCookie != (len(cookies) == 1) {
 				t.Fatalf("cookies = %v, want one: %v", cookies, tt.wantCookie)
@@ -59,9 +67,6 @@ func TestHandleLogin(t *testing.T) {
 				}
 				if c.Value == l.token {
 					t.Fatal("the session cookie must not be the launch token")
-				}
-				if loc := rec.Header().Get("Location"); loc != "/" {
-					t.Fatalf("redirect = %q, want /", loc)
 				}
 			}
 		})
@@ -122,7 +127,7 @@ func TestDisabledAllowsEverything(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d", rec.Code)
 	}
-	if got := l.LaunchURL("http://localhost:5173"); got != "http://localhost:5173" {
+	if got := l.LaunchURL("http://localhost:5173", "/c/lab/"); got != "http://localhost:5173/c/lab/" {
 		t.Fatalf("launch URL = %q", got)
 	}
 }

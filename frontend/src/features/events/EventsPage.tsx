@@ -7,7 +7,7 @@ import {
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 
 import { Badge, type StatusTone } from "../../components/Badge";
 import { Card } from "../../components/Card";
@@ -22,6 +22,7 @@ import type { KubeEvent } from "../../lib/types";
 import { shortObject } from "../overview/paths";
 import styles from "./EventsPage.module.css";
 import { EVENT_WORDS, eventObjectPath, eventTone, type EventTone } from "./tone";
+import { Link } from "../../lib/clusterLinks";
 
 const FILTERS = [
   { id: "all", label: "All" },

@@ -15,7 +15,7 @@ export interface Preferences {
   setMode: (m: Mode) => void;
   panelCollapsed: boolean;
   setPanelCollapsed: (c: boolean) => void;
-  /** The picked namespaces; empty means all of them. */
+  /** The picked namespaces on the current cluster; empty means all of them. */
   namespaces: string[];
   setNamespaces: (ns: string[]) => void;
   /** The same as a ?namespace= value: "" for all, else names joined by commas. */
@@ -34,6 +34,25 @@ export interface Preferences {
   /** This user's thresholds for a cluster, if they changed them. */
   thresholdsFor: (cluster: string) => Thresholds | undefined;
   setThresholds: (cluster: string, t: Thresholds | undefined) => void;
+  /** The ?namespace= value saved for a cluster ("" = all). */
+  namespaceFor: (cluster: string) => string;
+  setNamespacesFor: (cluster: string, ns: string[]) => void;
+}
+
+/** prefs with namespace and namespaces read and written for one cluster. */
+export function forCluster(prefs: Preferences, cluster: string): Preferences {
+  const namespace = prefs.namespaceFor(cluster);
+  return {
+    ...prefs,
+    namespace,
+    namespaces: namespace ? namespace.split(",") : [],
+    setNamespaces: (ns) => {
+      prefs.setNamespacesFor(cluster, ns);
+    },
+    setNamespace: (ns) => {
+      prefs.setNamespacesFor(cluster, ns ? ns.split(",") : []);
+    },
+  };
 }
 
 export const PreferencesContext = createContext<Preferences | null>(null);
@@ -43,7 +62,10 @@ export const PreferencesContext = createContext<Preferences | null>(null);
 export const KEYS = {
   mode: "glowpod.mode",
   panelCollapsed: "glowpod.panelCollapsed",
-  namespace: "glowpod.namespace",
+  /** Before many clusters: one ?namespace= value, read once into namespaces. */
+  legacyNamespace: "glowpod.namespace",
+  /** Picked namespaces per cluster, as JSON: { [cluster]: "shop,payments" }. */
+  namespaces: "glowpod.namespaces",
   // public/theme.js reads this key before the app loads.
   theme: "glowpod.theme",
   density: "glowpod.density",

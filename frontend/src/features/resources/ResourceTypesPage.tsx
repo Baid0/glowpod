@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Link } from "react-router";
 
 import { api } from "../../lib/api";
 import { useClusterId } from "../../lib/queries";
@@ -8,6 +7,7 @@ import { queryKeys } from "../../lib/queryKeys";
 import type { ResourceType } from "../../lib/types";
 import { isBuiltInGroup } from "./cells";
 import styles from "./ResourceTypesPage.module.css";
+import { Link } from "../../lib/clusterLinks";
 
 /** Every resource type the cluster serves, grouped by API group. */
 export function ResourceTypesPage({ only }: { only?: "custom" }) {

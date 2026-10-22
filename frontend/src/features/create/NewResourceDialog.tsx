@@ -1,7 +1,6 @@
 import { IconCheck, IconInfoCircle } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useState } from "react";
-import { useNavigate } from "react-router";
 
 import { Button } from "../../components/Button";
 import { Dialog } from "../../components/Dialog";
@@ -13,6 +12,7 @@ import { ChangeError } from "../actions/dialogs";
 import { objectPagePath } from "../resources/cells";
 import styles from "./create.module.css";
 import { templateFor } from "./templates";
+import { useNavigate } from "../../lib/clusterPaths";
 
 // CodeMirror loads only when someone creates or edits.
 const YamlEditor = lazy(() =>

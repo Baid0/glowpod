@@ -32,7 +32,7 @@ describe("Resource list", () => {
 
     expect(
       await within(pods()).findByRole("link", { name: "payments-api-7d9f6b-x2kq9" }),
-    ).toHaveAttribute("href", "/workloads/pods/payments/payments-api-7d9f6b-x2kq9");
+    ).toHaveAttribute("href", "/c/default/workloads/pods/payments/payments-api-7d9f6b-x2kq9");
     const headers = within(pods())
       .getAllByRole("columnheader")
       .map((h) => h.textContent);
@@ -220,7 +220,7 @@ describe("Resource list", () => {
     const list = await screen.findByRole("region", { name: "applications" });
     expect(await within(list).findByRole("link", { name: "guestbook" })).toHaveAttribute(
       "href",
-      "/resources/argoproj.io/v1alpha1/applications/payments/guestbook",
+      "/c/default/resources/argoproj.io/v1alpha1/applications/payments/guestbook",
     );
     expect(screen.getByRole("heading", { level: 1, name: "applications" })).toBeInTheDocument();
   });
@@ -264,7 +264,7 @@ describe("Resource types", () => {
     const argo = await screen.findByRole("region", { name: "argoproj.io" });
     expect(within(argo).getByRole("link", { name: /Application/ })).toHaveAttribute(
       "href",
-      "/resources/argoproj.io/v1alpha1/applications",
+      "/c/default/resources/argoproj.io/v1alpha1/applications",
     );
     expect(screen.getByRole("region", { name: "bitnami.com" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "core" })).not.toBeInTheDocument();

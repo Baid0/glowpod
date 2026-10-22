@@ -39,6 +39,7 @@ type ClusterInfo struct {
 	cluster.Info
 	Version    string `json:"version"`
 	Nodes      int    `json:"nodes"`
+	NodesReady int    `json:"nodesReady"`
 	Namespaces int    `json:"namespaces"`
 }
 

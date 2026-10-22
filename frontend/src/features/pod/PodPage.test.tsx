@@ -27,10 +27,10 @@ describe("Pod page (Deep)", () => {
     const main = screen.getByRole("main");
     expect(
       await within(main).findByRole("link", { name: "Deployment payments-api" }),
-    ).toHaveAttribute("href", "/resources/apps/v1/deployments/payments/payments-api");
+    ).toHaveAttribute("href", "/c/default/resources/apps/v1/deployments/payments/payments-api");
     expect(within(main).getByRole("link", { name: "ip-10-0-1-21" })).toHaveAttribute(
       "href",
-      "/nodes/ip-10-0-1-21",
+      "/c/default/nodes/ip-10-0-1-21",
     );
 
     // Story with the suggested fix on top.
@@ -65,7 +65,7 @@ describe("Pod page (Deep)", () => {
     );
     expect(within(main).getByRole("link", { name: "payments-config" })).toHaveAttribute(
       "href",
-      "/resources/core/v1/configmaps/payments/payments-config",
+      "/c/default/resources/core/v1/configmaps/payments/payments-config",
     );
   });
 
@@ -146,7 +146,7 @@ describe("Pod page errors", () => {
     expect(await screen.findByRole("heading", { name: "This pod is gone" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "See pods in payments" })).toHaveAttribute(
       "href",
-      "/workloads/pods",
+      "/c/default/workloads/pods",
     );
   });
 

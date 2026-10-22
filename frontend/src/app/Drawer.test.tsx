@@ -30,7 +30,7 @@ describe("section panel on narrow screens", () => {
     await userEvent.click(within(rail).getByRole("button", { name: "Expand panel" }));
     const panel = screen.getByRole("complementary");
     await userEvent.click(within(panel).getByRole("link", { name: /StatefulSets/ }));
-    expect(router.state.location.pathname).toBe("/workloads/statefulsets");
+    expect(router.state.location.pathname).toBe("/c/default/workloads/statefulsets");
     expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
   });
 

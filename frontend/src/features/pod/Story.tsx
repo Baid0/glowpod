@@ -1,10 +1,10 @@
 import { IconBulb } from "@tabler/icons-react";
-import { Link } from "react-router";
 
 import { Card } from "../../components/Card";
 import { formatAge, useNow } from "../../lib/time";
 import type { PodDetail } from "../../lib/types";
 import styles from "./PodPage.module.css";
+import { Link } from "../../lib/clusterLinks";
 
 const CRASH_REASONS = new Set(["CrashLoopBackOff", "OOMKilled", "Error"]);
 

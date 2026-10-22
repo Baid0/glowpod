@@ -1,7 +1,6 @@
 import { IconCheck, IconInfoCircle } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useId, useState } from "react";
-import { Link } from "react-router";
 
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
@@ -14,6 +13,7 @@ import { ChangeError } from "../actions/dialogs";
 import { objectPagePath } from "../resources/cells";
 import styles from "./create.module.css";
 import { OUTCOME_TONE, outcomeWord, summarize } from "./outcomes";
+import { Link } from "../../lib/clusterLinks";
 
 const YamlEditor = lazy(() =>
   import("../yaml/CodeEditor").then((m) => ({ default: m.YamlEditor })),

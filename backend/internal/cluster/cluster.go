@@ -1,8 +1,9 @@
 // Package cluster connects to Kubernetes and hands out clients that act as
 // the signed-in identity.
 //
-// v1 serves one cluster, always addressed as DefaultID, so routes and caches
-// already carry a cluster id when more are added.
+// A Registry holds every cluster Glowpod serves: each kubeconfig context in
+// local mode, the one it runs in otherwise. Routes and caches carry the
+// cluster id.
 package cluster
 
 import (
@@ -12,9 +13,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/url"
 	"slices"
 	"strings"
+	"time"
 
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -23,7 +26,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// DefaultID is the id of the only cluster in v1.
+// dialTimeout bounds connecting to a kubeconfig's API server.
+const dialTimeout = 10 * time.Second
+
+// DefaultID is the id of the cluster an in-cluster Glowpod runs in.
 const DefaultID = "default"
 
 // Info describes a cluster connection. It never holds credentials.
@@ -33,6 +39,9 @@ type Info struct {
 	Name string `json:"name"`
 	// Server is the API server host, without credentials or path.
 	Server string `json:"server"`
+	// Current marks the cluster to open first: the kubeconfig's current
+	// context, or the one given with -context.
+	Current bool `json:"current,omitempty"`
 }
 
 // Identity is who a request acts as. Key separates per-user state such as
@@ -123,6 +132,9 @@ func LoadKubeconfig(path, contextName string) (*rest.Config, Info, error) {
 	cfg.UserAgent = "glowpod"
 	cfg.QPS = 50
 	cfg.Burst = 100
+	// A context for a cluster that's gone shouldn't hang its page: give up
+	// connecting after a while. Streams, once open, aren't limited.
+	cfg.Dial = (&net.Dialer{Timeout: dialTimeout, KeepAlive: 30 * time.Second}).DialContext
 
 	return cfg, Info{ID: DefaultID, Name: name, Server: serverHost(cfg.Host)}, nil
 }

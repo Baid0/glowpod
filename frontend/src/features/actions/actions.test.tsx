@@ -165,7 +165,7 @@ describe("resource actions", () => {
     await userEvent.click(confirm);
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe("/workloads/deployments");
+      expect(router.state.location.pathname).toBe("/c/default/workloads/deployments");
     });
     expect(sent.some((s) => s.method === "DELETE")).toBe(true);
     expect(await screen.findByText("Deleted deployment web.")).toBeInTheDocument();

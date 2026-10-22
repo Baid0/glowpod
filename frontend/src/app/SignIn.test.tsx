@@ -104,7 +104,7 @@ describe("sign-in page", () => {
     await userEvent.type(within(form).getByLabelText("Password"), "correct horse");
     await userEvent.click(within(form).getByRole("button", { name: "Sign in" }));
     expect(await screen.findByRole("button", { name: "Signed in as alice" })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe("/workloads/pods");
+    expect(router.state.location.pathname).toBe("/c/default/workloads/pods");
     expect(posted[0]).toMatchObject({
       path: "/api/v1/auth/ldap",
       body: { username: "alice" },

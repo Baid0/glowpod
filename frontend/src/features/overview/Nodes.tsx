@@ -1,11 +1,10 @@
-import { Link } from "react-router";
-
 import { Badge } from "../../components/Badge";
 import { Card } from "../../components/Card";
 import { HalfGauge, zoneFor } from "../../components/HalfGauge";
 import { bytes, cores, percent } from "../../lib/format";
 import type { Overview } from "../../lib/types";
 import styles from "./OverviewPage.module.css";
+import { Link } from "../../lib/clusterLinks";
 
 /** One tile per node: arc = CPU, bar = memory. */
 export function NodeLoad({ data }: { data: Overview | undefined }) {

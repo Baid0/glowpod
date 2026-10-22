@@ -77,10 +77,10 @@ describe("Overview (Deep)", () => {
     expect(rows[0]).toHaveTextContent(/2[23] min/);
     expect(
       within(attention).getByRole("link", { name: "View payments-api-7d9f6b-x2kq9" }),
-    ).toHaveAttribute("href", "/workloads/pods/payments/payments-api-7d9f6b-x2kq9");
+    ).toHaveAttribute("href", "/c/default/workloads/pods/payments/payments-api-7d9f6b-x2kq9");
     expect(within(attention).getByRole("link", { name: "View ip-10-0-2-14" })).toHaveAttribute(
       "href",
-      "/nodes/ip-10-0-2-14",
+      "/c/default/nodes/ip-10-0-2-14",
     );
 
     // Recent events

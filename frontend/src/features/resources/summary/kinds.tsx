@@ -1,5 +1,3 @@
-import { Link } from "react-router";
-
 import { Badge } from "../../../components/Badge";
 import { Card } from "../../../components/Card";
 import { bytes } from "../../../lib/format";
@@ -8,6 +6,7 @@ import { Chips, Fields } from "./Fields";
 import { arr, at, num, record, selectorString, str } from "./read";
 import { SelectedPods } from "./SelectedPods";
 import styles from "./Summary.module.css";
+import { Link } from "../../../lib/clusterLinks";
 
 interface KindProps {
   object: unknown;

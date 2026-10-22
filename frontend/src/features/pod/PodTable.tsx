@@ -1,11 +1,10 @@
-import { Link } from "react-router";
-
 import { Badge } from "../../components/Badge";
 import { formatAge } from "../../lib/time";
 import type { PodSummary } from "../../lib/types";
 import { statusTone } from "../resources/cells";
 import { podPath } from "./paths";
 import styles from "./PodTable.module.css";
+import { Link } from "../../lib/clusterLinks";
 
 /** Pods with their status pill, readiness and restarts. */
 export function PodTable({

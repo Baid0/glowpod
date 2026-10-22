@@ -82,14 +82,14 @@ func testRouter(t *testing.T, kube *fake.Clientset) (http.Handler, *http.Cookie)
 	}
 	router := NewRouter(Options{
 		Frontend: http.NotFoundHandler(),
-		Provider: cluster.NewLocalWithClients(cluster.Info{ID: cluster.DefaultID, Name: "lab"}, &cluster.Clients{Kube: kube}),
+		Clusters: cluster.Single(cluster.NewLocalWithClients(cluster.Info{ID: cluster.DefaultID, Name: "lab"}, &cluster.Clients{Kube: kube})),
 		Auth:     authn,
 		Hosts:    auth.LoopbackHosts("7171"),
 		Metrics:  func(kubernetes.Interface) overview.MetricsSource { return noMetrics{} },
 		PodUsage: func(kubernetes.Interface) pods.UsageSource { return nil },
 	})
 
-	launch, err := url.Parse(authn.LaunchURL("http://127.0.0.1:7171"))
+	launch, err := url.Parse(authn.LaunchURL("http://127.0.0.1:7171", "/"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,8 +128,31 @@ func TestAPI(t *testing.T) {
 			check: func(t *testing.T, body []byte) {
 				var s sessionResponse
 				mustDecode(t, body, &s)
-				if s.Mode != "local" || len(s.Clusters) != 1 || s.Clusters[0].ID != "default" || s.Clusters[0].Name != "lab" {
+				if s.Mode != "local" {
 					t.Fatalf("session = %+v", s)
+				}
+			},
+		},
+		{
+			name: "clusters", path: "/api/v1/clusters", wantStatus: 200,
+			check: func(t *testing.T, body []byte) {
+				var c clustersResponse
+				mustDecode(t, body, &c)
+				if len(c.Clusters) != 1 || c.Clusters[0].ID != "default" || c.Clusters[0].Name != "lab" {
+					t.Fatalf("clusters = %+v", c)
+				}
+			},
+		},
+		{
+			name: "summary", path: "/api/v1/clusters/default/summary", wantStatus: 200,
+			check: func(t *testing.T, body []byte) {
+				var s clusterSummary
+				mustDecode(t, body, &s)
+				if s.Cluster.Name != "lab" || s.Cluster.Nodes != 1 || s.Gauges.Pods.Max != 110 || s.Thresholds[1] != 0.85 {
+					t.Fatalf("summary = %+v", s)
+				}
+				if strings.Contains(string(body), "network") || strings.Contains(string(body), "problems\"") {
+					t.Fatalf("summary has more than one row needs: %s", body)
 				}
 			},
 		},
@@ -347,4 +370,34 @@ func cmpOr(v, def string) string {
 		return def
 	}
 	return v
+}
+
+func TestSummaryGivesUpOnAClusterThatHangs(t *testing.T) {
+	old := summaryTimeout
+	summaryTimeout = 50 * time.Millisecond
+	t.Cleanup(func() { summaryTimeout = old })
+
+	kube := fake.NewClientset()
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	// Like a dial to an address that never answers: no context to cancel.
+	kube.PrependReactor("list", "nodes", func(k8stesting.Action) (bool, runtime.Object, error) {
+		<-release
+		return true, nil, errors.New("gave up")
+	})
+	router, cookie := testRouter(t, kube)
+
+	start := time.Now()
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/clusters/default/summary", nil)
+	req.Host = "127.0.0.1:7171"
+	req.AddCookie(cookie)
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusGatewayTimeout || !strings.Contains(rec.Body.String(), `"cluster_timeout"`) {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	if took := time.Since(start); took > 2*time.Second {
+		t.Fatalf("took %v; the row must not wait for the cluster", took)
+	}
 }

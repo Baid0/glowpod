@@ -1,4 +1,5 @@
 import {
+  IconCloud,
   IconEye,
   IconFolder,
   IconLayoutSidebarLeftCollapse,
@@ -9,15 +10,15 @@ import {
   IconSun,
 } from "@tabler/icons-react";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { useNavigate } from "react-router";
 
 import { cx } from "../lib/cx";
 import { usePreferences } from "../lib/preferences";
-import { useNamespaces } from "../lib/queries";
+import { useClusterId, useClusters, useNamespaces } from "../lib/queries";
 import { filterCommands, type Command } from "./commands";
 import styles from "./CommandPalette.module.css";
 import { allPages, deepSections, glanceSections, settingsSection } from "./navigation";
 import { usePanel } from "./panel";
+import { useNavigate } from "../lib/clusterPaths";
 
 function useCommands(): Command[] {
   const navigate = useNavigate();
@@ -25,6 +26,8 @@ function useCommands(): Command[] {
   const panel = usePanel();
   const { data: namespaceList } = useNamespaces();
   const namespaces = namespaceList?.namespaces;
+  const { data: clusters } = useClusters();
+  const clusterId = useClusterId();
 
   return useMemo(() => {
     const iconFor = (path: string) =>
@@ -94,8 +97,29 @@ function useCommands(): Command[] {
         setNamespace(name);
       },
     }));
-    return [...pages, ...actions, ...ns];
-  }, [navigate, mode, setMode, panel, setNamespace, namespaces, resolvedTheme, setTheme]);
+    const others: Command[] = (clusters ?? [])
+      .filter((c) => c.id !== clusterId)
+      .map((c) => ({
+        id: "cluster:" + c.id,
+        label: c.name,
+        group: "Cluster",
+        icon: IconCloud,
+        keywords: `switch context ${c.server}`,
+        run: () => void navigate(`/c/${encodeURIComponent(c.id)}/`),
+      }));
+    return [...pages, ...actions, ...ns, ...others];
+  }, [
+    navigate,
+    mode,
+    setMode,
+    panel,
+    setNamespace,
+    namespaces,
+    resolvedTheme,
+    setTheme,
+    clusters,
+    clusterId,
+  ]);
 }
 
 /** ⌘K palette: go to any page, switch mode, panel or namespace. */

@@ -126,11 +126,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 
 // setupLocal acts as the kubeconfig's user, for one person on this machine.
 func setupLocal(ctx context.Context, cfg config, opts *api.Options, ln net.Listener, logger *slog.Logger, stderr io.Writer) (func(), error) {
-	restCfg, info, err := cluster.LoadKubeconfig(cfg.kubeconfig, cfg.context)
-	if err != nil {
-		return nil, err
-	}
-	provider, err := cluster.NewLocal(restCfg, info)
+	clusters, err := cluster.LoadContexts(cfg.kubeconfig, cfg.context)
 	if err != nil {
 		return nil, err
 	}
@@ -148,17 +144,19 @@ func setupLocal(ctx context.Context, cfg config, opts *api.Options, ln net.Liste
 	if cfg.dev {
 		hosts = append(hosts, auth.LoopbackHosts(vitePort)...)
 	}
-	opts.Provider, opts.Auth, opts.Hosts = provider, authn, hosts
+	opts.Clusters, opts.Auth, opts.Hosts = clusters, authn, hosts
+	current := clusters.Current().Info()
+	home := "/c/" + current.ID + "/"
 
 	return func() {
-		logger.Info("using kubeconfig context", "context", info.Name, "server", info.Server)
+		logger.Info("using kubeconfig", "contexts", len(clusters.List()), "opening", current.Name, "server", current.Server)
 		if cfg.dev {
 			logger.Info("glowpod API is running; open the Vite dev server", "api", "http://"+ln.Addr().String(), "ui", "http://localhost:"+vitePort)
 			return
 		}
 		// The link carries this run's sign-in token, so it goes to the terminal
 		// only, never to the structured log.
-		launch := authn.LaunchURL("http://" + ln.Addr().String())
+		launch := authn.LaunchURL("http://"+ln.Addr().String(), home)
 		fmt.Fprintf(stderr, "\n  Glowpod is running. Open:\n  %s\n\n", launch)
 		if !cfg.noBrowser {
 			go func() {
@@ -204,7 +202,7 @@ func setupServer(ctx context.Context, cfg config, opts *api.Options, logger *slo
 	if err != nil {
 		return err
 	}
-	opts.Provider, opts.Auth = provider, authn
+	opts.Clusters, opts.Auth = cluster.Single(provider), authn
 	if sc.publicURL != "" {
 		u, _ := url.Parse(sc.publicURL) // checked in parseFlags
 		opts.Hosts = []string{u.Host}

@@ -27,7 +27,7 @@ describe("Apps page", () => {
     expect(payments).toHaveTextContent("Failing");
     expect(within(payments).getByRole("link", { name: "payments-api" })).toHaveAttribute(
       "href",
-      "/apps/payments/payments-api",
+      "/c/default/apps/payments/payments-api",
     );
     expect(within(main).getByText("2 apps")).toBeInTheDocument();
 
@@ -39,7 +39,7 @@ describe("Apps page", () => {
   it("Glance's Logs page starts from apps", async () => {
     renderApp("/logs");
     const link = await screen.findByRole("link", { name: /payments-api/ });
-    expect(link).toHaveAttribute("href", "/apps/payments/payments-api?tab=logs");
+    expect(link).toHaveAttribute("href", "/c/default/apps/payments/payments-api?tab=logs");
   });
 });
 
@@ -57,18 +57,18 @@ describe("App page", () => {
     expect(attention).toHaveTextContent("Check the logs from the last crash.");
     expect(
       within(attention).getByRole("link", { name: "View payments-api-7d9f6b-x2kq9" }),
-    ).toHaveAttribute("href", "/workloads/pods/payments/payments-api-7d9f6b-x2kq9");
+    ).toHaveAttribute("href", "/c/default/workloads/pods/payments/payments-api-7d9f6b-x2kq9");
     expect(
       within(attention).getByRole("link", { name: "Open the last crash's log" }),
     ).toHaveAttribute(
       "href",
-      "/workloads/pods/payments/payments-api-7d9f6b-x2kq9?tab=logs&previous=1",
+      "/c/default/workloads/pods/payments/payments-api-7d9f6b-x2kq9?tab=logs&previous=1",
     );
 
     const workloads = within(main).getByRole("region", { name: "Workloads" });
     expect(within(workloads).getByRole("link", { name: "payments-db" })).toHaveAttribute(
       "href",
-      "/workloads/statefulsets/payments/payments-db",
+      "/c/default/workloads/statefulsets/payments/payments-db",
     );
     // Images show as their tag.
     expect(workloads).toHaveTextContent("17");

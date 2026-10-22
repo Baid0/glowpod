@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router";
 
 import { IconFileText } from "@tabler/icons-react";
 import { AppCard } from "./AppCard";
 import { appPath } from "./appLinks";
 import styles from "./Apps.module.css";
 import { useApps } from "./useApps";
+import { Link } from "../../lib/clusterLinks";
 
 function useFiltered(search: string) {
   const { data, error, isPending } = useApps();

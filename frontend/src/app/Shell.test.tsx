@@ -144,7 +144,7 @@ describe("Namespace picker", () => {
     await waitFor(() => {
       expect(fetched("/overview?namespace=payments")).toHaveLength(1);
     });
-    expect(window.localStorage.getItem("glowpod.namespace")).toBe("payments");
+    expect(window.localStorage.getItem("glowpod.namespaces")).toBe('{"default":"payments"}');
     await waitFor(() => {
       expect(FakeWebSocket.latest().url).toContain("/stream?namespace=payments");
     });
@@ -245,9 +245,11 @@ describe("Live stream", () => {
       renderApp("/");
       const panel = screen.getByRole("complementary", { name: "Cluster panel" });
       await screen.findByRole("button", { name: /Cluster: prod-eu-1$/ });
+      // The socket opens once the session is known, which may come after the cluster list.
+      const socket = await vi.waitFor(() => FakeWebSocket.latest());
 
       act(() => {
-        FakeWebSocket.latest().send({ type: "ready" });
+        socket.send({ type: "ready" });
       });
       expect(
         await screen.findByRole("button", { name: "Cluster: prod-eu-1, live" }),
@@ -325,7 +327,7 @@ describe("Sign-in and missing pages", () => {
     );
     expect(await screen.findByRole("heading", { name: "Sign in to Glowpod" })).toBeInTheDocument();
     expect(router.state.location.pathname + router.state.location.search).toBe(
-      "/sign-in?return=%2Fworkloads%2Fpods",
+      "/sign-in?return=%2Fc%2Fdefault%2Fworkloads%2Fpods",
     );
   });
 

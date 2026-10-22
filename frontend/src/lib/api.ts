@@ -4,6 +4,8 @@ import type {
   AuthMethod,
   AppDetail,
   AppSummary,
+  ClusterInfo,
+  ClusterSummary,
   CreateResult,
   DrainPlan,
   DrainResult,
@@ -23,7 +25,7 @@ import type {
   UpdateResult,
 } from "./types";
 
-/** The only cluster in v1. Routes already carry the id for multi-cluster later. */
+/** The id of the cluster an in-cluster Glowpod runs in. */
 export const DEFAULT_CLUSTER = "default";
 
 /** An API error with the server's code and plain-language message. */
@@ -143,6 +145,10 @@ export const api = {
       csrfToken = s.csrfToken;
       return s;
     }),
+  clusters: (signal?: AbortSignal) =>
+    apiGet<{ clusters: ClusterInfo[] }>("/api/v1/clusters", signal).then((r) => r.clusters),
+  clusterSummary: (cluster: string, signal?: AbortSignal) =>
+    apiGet<ClusterSummary>(clusterPath(cluster, "summary", {}), signal),
   namespaces: (cluster: string, signal?: AbortSignal) =>
     apiGet<NamespaceList>(clusterPath(cluster, "namespaces", {}), signal),
   authMethods: (signal?: AbortSignal) =>

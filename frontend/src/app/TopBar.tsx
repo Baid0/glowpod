@@ -1,7 +1,6 @@
 import { IconLogout, IconSearch } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
 
 import { api } from "../lib/api";
 import { initials } from "../lib/format";
@@ -12,11 +11,33 @@ import { formatAge, useNow } from "../lib/time";
 import type { SignInMethod } from "../lib/types";
 import { NamespacePicker } from "./NamespacePicker";
 import styles from "./TopBar.module.css";
+import { useNavigate } from "../lib/clusterPaths";
 
 /** How old data may get before the live dot goes grey. */
 const STALE_MS = 60_000;
 
-export function TopBar({ title, onSearch }: { title: string; onSearch: () => void }) {
+/** home: the Clusters page, with only the title and who you are. */
+export function TopBar({
+  title,
+  home = false,
+  onSearch,
+}: {
+  title: string;
+  home?: boolean;
+  onSearch: () => void;
+}) {
+  if (home) {
+    return (
+      <header className={styles.bar}>
+        <div className={styles.left}>
+          <h1 className={styles.title}>{title}</h1>
+        </div>
+        <div className={styles.right}>
+          <Avatar />
+        </div>
+      </header>
+    );
+  }
   return (
     <header className={styles.bar}>
       <div className={styles.left}>
@@ -52,7 +73,9 @@ function Updated() {
   const now = useNow();
   const last = Math.max(dataUpdatedAt, lastMessageAt ?? 0);
 
-  if (isError && last === 0) {
+  // Never loaded: say why, even if the live stream is talking (it can
+  // connect while the cluster refuses every list).
+  if (isError && dataUpdatedAt === 0) {
     return (
       <span className={styles.updated}>
         <span className={styles.dot} data-tone="critical" aria-hidden="true" />

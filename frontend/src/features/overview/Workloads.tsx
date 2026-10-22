@@ -1,11 +1,10 @@
-import { Link } from "react-router";
-
 import { Badge, type StatusTone } from "../../components/Badge";
 import { Card } from "../../components/Card";
 import { usePreferences } from "../../lib/preferences";
 import type { Overview, WorkloadCount } from "../../lib/types";
 import { AppCard } from "../apps/AppCard";
 import styles from "./OverviewPage.module.css";
+import { Link } from "../../lib/clusterLinks";
 
 interface Segment {
   value: number;

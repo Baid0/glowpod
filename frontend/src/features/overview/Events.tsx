@@ -4,7 +4,6 @@ import {
   IconCircleX,
   IconInfoCircle,
 } from "@tabler/icons-react";
-import { Link } from "react-router";
 
 import { Card } from "../../components/Card";
 import { useLive } from "../../lib/live";
@@ -13,6 +12,7 @@ import { formatAgeShort, useNow } from "../../lib/time";
 import { EVENT_WORDS, eventTone } from "../events/tone";
 import styles from "./OverviewPage.module.css";
 import { shortObject } from "./paths";
+import { Link } from "../../lib/clusterLinks";
 
 const VISIBLE = 6;
 const ICONS = {

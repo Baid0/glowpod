@@ -9,7 +9,6 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
-import { Link } from "react-router";
 
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
@@ -32,6 +31,7 @@ import {
 } from "./cells";
 import styles from "./ResourceListPage.module.css";
 import { useResourceList } from "./useResourceList";
+import { Link } from "../../lib/clusterLinks";
 
 const features = tableFeatures({ rowSortingFeature, sortedRowModel: createSortedRowModel() });
 const helper = createColumnHelper<typeof features, TableRow>();

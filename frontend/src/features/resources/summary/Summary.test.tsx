@@ -108,7 +108,7 @@ describe("object overview", () => {
     expect(card).toHaveTextContent("https://shop.example.com");
     expect(within(card).getByRole("link", { name: "api:8080" })).toHaveAttribute(
       "href",
-      "/resources/core/v1/services/shop/api",
+      "/c/default/resources/core/v1/services/shop/api",
     );
   });
 

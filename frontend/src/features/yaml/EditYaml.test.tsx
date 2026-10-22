@@ -143,7 +143,9 @@ describe("editing YAML", () => {
     });
     const dialog = await screen.findByRole("dialog", { name: "Leave without saving?" });
     await userEvent.click(within(dialog).getByRole("button", { name: "Keep editing" }));
-    expect(router.state.location.pathname).toBe("/resources/core/v1/configmaps/shop/settings");
+    expect(router.state.location.pathname).toBe(
+      "/c/default/resources/core/v1/configmaps/shop/settings",
+    );
 
     act(() => {
       void router.navigate("/");
@@ -151,7 +153,7 @@ describe("editing YAML", () => {
     await userEvent.click(
       within(await screen.findByRole("dialog")).getByRole("button", { name: "Discard changes" }),
     );
-    expect(router.state.location.pathname).toBe("/");
+    expect(router.state.location.pathname).toBe("/c/default/");
   });
 
   it("reveals a Secret's values before editing it", async () => {

@@ -165,7 +165,7 @@ describe("New", () => {
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(
-        "/resources/core/v1/configmaps/shop/my-config-map",
+        "/c/default/resources/core/v1/configmaps/shop/my-config-map",
       );
     });
     expect(sent.at(-1)).toMatchObject({
@@ -264,7 +264,7 @@ describe("Apply YAML", () => {
     expect(done).toHaveTextContent("1 created, 1 updated.");
     expect(within(done).getByRole("link", { name: "Deployment web" })).toHaveAttribute(
       "href",
-      "/resources/apps/v1/deployments/shop/web",
+      "/c/default/resources/apps/v1/deployments/shop/web",
     );
     expect(sent.at(-1)).toMatchObject({ dryRun: false, force: true, yaml: two });
   });

@@ -1,5 +1,5 @@
 import { IconBulb } from "@tabler/icons-react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 
 import { Badge } from "../../components/Badge";
 import { Button, ButtonLink } from "../../components/Button";
@@ -15,6 +15,7 @@ import { usePod } from "../pod/usePod";
 import { APP_BADGES } from "./appLinks";
 import styles from "./AppPage.module.css";
 import { useApp } from "./useApps";
+import { Link } from "../../lib/clusterLinks";
 
 const TABS = [
   { id: "overview", label: "Overview" },

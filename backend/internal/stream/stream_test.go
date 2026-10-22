@@ -201,8 +201,8 @@ func TestHandler(t *testing.T) {
 	kube.PrependWatchReactor("pods", func(k8stesting.Action) (bool, watch.Interface, error) { return true, fw, nil })
 
 	h := &Handler{
-		Provider: cluster.NewLocalWithClients(cluster.Info{ID: cluster.DefaultID}, &cluster.Clients{Kube: kube}),
-		Backoff:  fastBackoff,
+		Clients: func(*http.Request) *cluster.Clients { return &cluster.Clients{Kube: kube} },
+		Backoff: fastBackoff,
 	}
 	withIdentity := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.ServeHTTP(w, r.WithContext(auth.WithIdentity(r.Context(), auth.LocalIdentity)))

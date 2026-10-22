@@ -15,6 +15,8 @@ import { GenericDetail, WorkloadDetail } from "../features/resources/DetailRoute
 import { GenericList } from "../features/resources/GenericList";
 import { ResourceListPage } from "../features/resources/ResourceListPage";
 import { ResourceTypesPage } from "../features/resources/ResourceTypesPage";
+import { ClustersPage } from "../features/clusters/ClustersPage";
+import { ClusterScope, Home, OnCurrentCluster } from "./ClusterScope";
 import { allPages, type NavItem } from "./navigation";
 import { Shell, type RouteHandle } from "./Shell";
 import { SignInPage } from "./SignIn";
@@ -48,7 +50,14 @@ export const routes: RouteObject[] = [
   { path: "/sign-in", element: <SignInPage /> },
   {
     path: "/",
-    element: <Shell />,
+    element: <Shell home />,
+    children: [
+      { index: true, element: <Home list={<ClustersPage />} />, handle: handle("Clusters") },
+    ],
+  },
+  {
+    path: "/c/:cluster",
+    element: <ClusterScope />,
     children: [
       { index: true, element: <OverviewPage />, handle: handle("Overview") },
       ...pages,
@@ -90,6 +99,8 @@ export const routes: RouteObject[] = [
       { path: "*", element: <NotFound />, handle: handle("Not found") },
     ],
   },
+  // Paths from before there were many clusters: on the current cluster.
+  { path: "*", element: <OnCurrentCluster /> },
   ...(GaugeDemo
     ? [
         {

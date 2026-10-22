@@ -11,7 +11,7 @@ import {
   type Mode,
   type ThemeChoice,
 } from "../../lib/preferences";
-import { useClusterId, useOverview, useSession } from "../../lib/queries";
+import { useClusterId, useClusters, useOverview, useSession } from "../../lib/queries";
 import styles from "./SettingsPage.module.css";
 
 const THEMES = [
@@ -218,7 +218,8 @@ function ThresholdsCard() {
 function AboutCard() {
   const { data: session } = useSession();
   const { data } = useOverview();
-  const cluster = session?.clusters[0];
+  const id = useClusterId();
+  const cluster = useClusters().data?.find((c) => c.id === id);
   return (
     <Card title="About">
       <dl className={styles.about}>

@@ -1,5 +1,3 @@
-import { Link } from "react-router";
-
 import { Badge } from "../../../components/Badge";
 import { Card } from "../../../components/Card";
 import { podPath } from "../../pod/paths";
@@ -7,6 +5,7 @@ import { statusTone } from "../cells";
 import { useResourceList } from "../useResourceList";
 import { str } from "./read";
 import styles from "./Summary.module.css";
+import { Link } from "../../../lib/clusterLinks";
 
 const PODS = { group: "", version: "v1", resource: "pods" };
 const SHOWN = 20;

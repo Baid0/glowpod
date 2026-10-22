@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
-import { Link, type LinkProps } from "react-router";
+import { type LinkProps } from "react-router";
 
 import { cx } from "../../lib/cx";
 import type { ButtonVariant } from "./Button";
 import styles from "./Button.module.css";
+import { Link } from "../../lib/clusterLinks";
 
 export interface ButtonLinkProps extends LinkProps {
   variant?: ButtonVariant;

@@ -67,15 +67,29 @@ func NewService() *Service {
 	}
 }
 
-func (s *Service) history(id cluster.Identity) *metrics.History {
+// history is the trend history of one identity on one cluster.
+func (s *Service) history(clusterID string, id cluster.Identity) *metrics.History {
+	key := clusterID + "|" + id.Key
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	h, ok := s.histories[id.Key]
+	h, ok := s.histories[key]
 	if !ok {
 		h = metrics.NewHistory()
-		s.histories[id.Key] = h
+		s.histories[key] = h
 	}
 	return h
+}
+
+func readyNodes(nodes []corev1.Node) int {
+	n := 0
+	for i := range nodes {
+		for _, c := range nodes[i].Status.Conditions {
+			if c.Type == corev1.NodeReady && c.Status == corev1.ConditionTrue {
+				n++
+			}
+		}
+	}
+	return n
 }
 
 // RequiredError wraps a failure to load data the page can't do without
@@ -127,6 +141,7 @@ func (s *Service) Build(ctx context.Context, id cluster.Identity, info cluster.I
 			Info:       info,
 			Version:    snap.version,
 			Nodes:      len(snap.nodes),
+			NodesReady: readyNodes(snap.nodes),
 			Namespaces: snap.namespaces,
 		},
 		Namespace:   ns.String(),
@@ -134,7 +149,7 @@ func (s *Service) Build(ctx context.Context, id cluster.Identity, info cluster.I
 		Thresholds:  s.thresholds,
 	}
 
-	resp.Gauges = s.gauges(ctx, id, snap, now)
+	resp.Gauges = s.gauges(ctx, info.ID, id, snap, now)
 
 	pods := inNamespaces(snap.pods, ns)
 	for i := range pods {
@@ -175,7 +190,7 @@ func (s *Service) Build(ctx context.Context, id cluster.Identity, info cluster.I
 	return resp, nil
 }
 
-func (s *Service) gauges(ctx context.Context, id cluster.Identity, snap *snapshot, now time.Time) Gauges {
+func (s *Service) gauges(ctx context.Context, clusterID string, id cluster.Identity, snap *snapshot, now time.Time) Gauges {
 	var g Gauges
 	g.CPU, g.Memory = metrics.CPUAndMemory(snap.nodes, snap.pods, snap.nodeUsage, snap.nodeUsageErr)
 	g.Pods = metrics.Pods(snap.nodes, snap.pods)
@@ -203,7 +218,7 @@ func (s *Service) gauges(ctx context.Context, id cluster.Identity, snap *snapsho
 		g.Network = &n
 	}
 
-	h := s.history(id)
+	h := s.history(clusterID, id)
 	if snap.noNodes {
 		h.Apply("storage", &g.Storage, now)
 		return g
@@ -221,12 +236,27 @@ func (s *Service) gauges(ctx context.Context, id cluster.Identity, snap *snapsho
 func load(ctx context.Context, deps Deps, ns scope.Namespaces) (*snapshot, error) {
 	snap := &snapshot{errs: map[string]error{}}
 	kube := deps.Kube
+	// Without nodes or pods there's no Overview; when either fails for a
+	// reason other than RBAC (a cluster that's gone), stop everything else
+	// instead of waiting for each call to time out in turn.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	var (
-		wg      sync.WaitGroup
-		mu      sync.Mutex
-		nodeErr error
-		podErr  error
+		wg       sync.WaitGroup
+		mu       sync.Mutex
+		nodeErr  error
+		podErr   error
+		required error
+		failOnce sync.Once
 	)
+	fail := func(what string, err error) {
+		if err != nil && !apierrors.IsForbidden(err) {
+			failOnce.Do(func() {
+				required = &RequiredError{What: what, Err: err}
+				cancel()
+			})
+		}
+	}
 	optional := func(section string, f func() error) {
 		wg.Go(func() {
 			if err := f(); err != nil {
@@ -245,6 +275,7 @@ func load(ctx context.Context, deps Deps, ns scope.Namespaces) (*snapshot, error
 			}
 			return l.Items, l.Continue, nil
 		})
+		fail("nodes", nodeErr)
 	})
 	wg.Go(func() {
 		// All namespaces: the gauges are cluster-wide.
@@ -255,6 +286,8 @@ func load(ctx context.Context, deps Deps, ns scope.Namespaces) (*snapshot, error
 			}
 			return l.Items, l.Continue, nil
 		})
+		// Forbidden for all namespaces is retried per namespace below.
+		fail("pods", podErr)
 	})
 	optional("version", func() error {
 		v, err := kube.Discovery().ServerVersion()
@@ -345,6 +378,9 @@ func load(ctx context.Context, deps Deps, ns scope.Namespaces) (*snapshot, error
 		wg.Go(func() { snap.prom, snap.promErr = deps.Prometheus(ctx) })
 	}
 	wg.Wait()
+	if required != nil {
+		return nil, required
+	}
 
 	// People with access to some namespaces only can't list nodes or every
 	// pod; show them what they can see.

@@ -40,7 +40,7 @@ describe("picking several namespaces", () => {
     await waitFor(() => {
       expect(fetched("/overview?namespace=checkout%2Cpayments")).not.toHaveLength(0);
     });
-    expect(localStorage.getItem("glowpod.namespace")).toBe("checkout,payments");
+    expect(localStorage.getItem("glowpod.namespaces")).toBe('{"default":"checkout,payments"}');
   });
 
   it("takes one out, clears back to all, and a row click means only that one", async () => {

@@ -452,3 +452,35 @@ func TestBuildFailures(t *testing.T) {
 		})
 	}
 }
+
+// slowMetrics answers only when the context ends, like a call to a cluster
+// that's gone.
+type slowMetrics struct{ fakeMetrics }
+
+func (slowMetrics) NodeUsage(ctx context.Context) (map[string]metrics.Usage, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+
+func TestBuildStopsWhenTheClusterIsGone(t *testing.T) {
+	kube := fake.NewClientset()
+	kube.PrependReactor("list", "nodes", func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.New("dial tcp 192.0.2.10:6443: i/o timeout")
+	})
+	deps := Deps{Kube: kube, Metrics: &slowMetrics{}}
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := newTestService().Build(t.Context(), cluster.Identity{Key: "t"}, cluster.Info{}, deps, nil)
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		var req *RequiredError
+		if !errors.As(err, &req) || req.What != "nodes" {
+			t.Fatalf("err = %v, want the nodes failure", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Build waited on the other calls after nodes failed")
+	}
+}

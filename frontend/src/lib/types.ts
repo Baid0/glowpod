@@ -1,9 +1,23 @@
 // Shapes of the Go API's JSON. Keep in sync with backend/internal/{overview,summary,metrics,api}.
 
 export interface ClusterInfo {
+  /** Used in URLs: /c/<id>/ and /api/v1/clusters/<id>/. */
   id: string;
+  /** The kubeconfig context, or the in-cluster name. */
   name: string;
   server: string;
+  /** The cluster to open first. */
+  current?: boolean;
+}
+
+/** One row of the Clusters page: the same numbers as the cluster's Overview. */
+export interface ClusterSummary {
+  cluster: ClusterInfo & { version: string; nodes: number; nodesReady: number; namespaces: number };
+  gauges: { cpu: Gauge; memory: Gauge; pods: Gauge };
+  health: { running: number; pending: number; failing: number };
+  problemCount: number;
+  thresholds: [number, number];
+  generatedAt: string;
 }
 
 export type SignInMethod = "kubeconfig" | "token" | "oidc" | "ldap";
@@ -16,7 +30,6 @@ export interface Session {
   /** Sent back in X-CSRF-Token on every write. */
   csrfToken: string;
   user: { username: string; groups?: string[] };
-  clusters: ClusterInfo[];
 }
 
 /** no-access: the signed-in user may not read what the gauge needs. */
@@ -62,7 +75,7 @@ export interface WorkloadCount {
 export type AppStatus = "ok" | "high" | "critical";
 
 export interface Overview {
-  cluster: ClusterInfo & { version: string; nodes: number; namespaces: number };
+  cluster: ClusterInfo & { version: string; nodes: number; nodesReady: number; namespaces: number };
   namespace: string;
   generatedAt: string;
   thresholds: [number, number];

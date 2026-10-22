@@ -1,5 +1,3 @@
-import { Link } from "react-router";
-
 import { Badge, type StatusTone } from "../../components/Badge";
 import { Card } from "../../components/Card";
 import { HalfGauge } from "../../components/HalfGauge";
@@ -7,6 +5,7 @@ import { bytes, cores } from "../../lib/format";
 import { usePreferences } from "../../lib/preferences";
 import type { PodContainer, PodDetail } from "../../lib/types";
 import styles from "./PodPage.module.css";
+import { Link } from "../../lib/clusterLinks";
 
 function stateBadge(c: PodContainer): [StatusTone, string] {
   if (c.state === "running")

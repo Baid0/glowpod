@@ -1,6 +1,6 @@
 import { IconInfoCircle } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 
 import { Badge } from "../../components/Badge";
 import { Card } from "../../components/Card";
@@ -12,6 +12,7 @@ import { formatAge, useNow } from "../../lib/time";
 import { ObjectError } from "../yaml/ObjectError";
 import styles from "./Helm.module.css";
 import { helmTone, helmWord, objectPath } from "./status";
+import { Link } from "../../lib/clusterLinks";
 
 const releasePath = (ns: string, name: string) =>
   `/extensions/helm/${encodeURIComponent(ns)}/${encodeURIComponent(name)}`;

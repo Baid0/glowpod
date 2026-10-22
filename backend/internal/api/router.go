@@ -24,14 +24,15 @@ import (
 	"glowpod/internal/terminal"
 )
 
-// Options configures the router. Without Provider and Auth only the
+// Options configures the router. Without Clusters and Auth only the
 // frontend and /healthz are served.
 type Options struct {
 	// Version is Glowpod's version, shown in Settings.
 	Version string
 	// Frontend serves the single-page app for every non-API path.
 	Frontend http.Handler
-	Provider cluster.Provider
+	// Clusters are the clusters served, under /api/v1/clusters/{cluster}.
+	Clusters *cluster.Registry
 	Auth     auth.Authenticator
 	Overview *overview.Service
 	// Hosts are the Host header values to accept; nil skips the check.
@@ -39,7 +40,8 @@ type Options struct {
 	Hosts []string
 	// HSTS sends Strict-Transport-Security; for HTTPS installs.
 	HSTS bool
-	// PrometheusURL, when set, is used instead of discovering Prometheus.
+	// PrometheusURL, when set, is used instead of discovering Prometheus on
+	// the current cluster (Clusters.Current).
 	PrometheusURL string
 	// Metrics builds the usage reader for a client; defaults to metrics.NewReader.
 	Metrics func(kube kubernetes.Interface) overview.MetricsSource
@@ -98,19 +100,21 @@ func NewRouter(opts Options) http.Handler {
 		if opts.Hosts != nil {
 			r.Use(auth.RequireHost(opts.Hosts))
 		}
-		if opts.Provider != nil && opts.Auth != nil {
+		if opts.Clusters != nil && opts.Auth != nil {
 			opts.Auth.MountRoot(r)
 			r.Route("/api/v1", func(r chi.Router) {
 				opts.Auth.MountAPI(r)
 				r.Group(func(r chi.Router) {
 					r.Use(opts.Auth.Require, auth.RequireCSRF)
 					r.Get("/session", s.session)
+					r.Get("/clusters", s.clusters)
 					r.Route("/clusters/{cluster}", func(r chi.Router) {
 						r.Use(s.requireCluster, requireNamespace)
 						r.Get("/overview", s.overview)
+						r.Get("/summary", s.summary)
 						r.Get("/namespaces", s.namespaces)
 						r.Get("/events", s.events)
-						r.Method(http.MethodGet, "/stream", &stream.Handler{Provider: opts.Provider, Logger: opts.Logger})
+						r.Method(http.MethodGet, "/stream", &stream.Handler{Clients: clientsFrom, Logger: opts.Logger})
 						r.Get("/apps", s.listApps)
 						r.Get("/apps/{namespace}/{name}", s.getApp)
 						r.Get("/pods/{namespace}/{name}", s.pod)

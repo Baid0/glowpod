@@ -1,5 +1,5 @@
 import { useRef, useState, type KeyboardEvent } from "react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
@@ -18,6 +18,7 @@ import { PodEvents } from "./PodEvents";
 import styles from "./PodPage.module.css";
 import { Story } from "./Story";
 import { usePod } from "./usePod";
+import { Link } from "../../lib/clusterLinks";
 
 const PODS = { group: "", version: "v1", resource: "pods" };
 

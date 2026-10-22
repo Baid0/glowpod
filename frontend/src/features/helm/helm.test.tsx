@@ -32,7 +32,7 @@ describe("helm pages", () => {
     expect(row).toHaveTextContent("web-1.2.0");
     expect(within(row).getByRole("link", { name: "web" })).toHaveAttribute(
       "href",
-      "/extensions/helm/shop/web",
+      "/c/default/extensions/helm/shop/web",
     );
     expect(screen.getByRole("row", { name: /backup/ })).toHaveTextContent("Failed");
   });
@@ -63,7 +63,7 @@ describe("helm pages", () => {
     const objects = await screen.findByRole("region", { name: "Installed 2 objects" });
     expect(within(objects).getAllByRole("link")[1]).toHaveAttribute(
       "href",
-      "/resources/networking.k8s.io/v1/ingresses/shop/web",
+      "/c/default/resources/networking.k8s.io/v1/ingresses/shop/web",
     );
     expect(screen.getByRole("region", { name: "History" })).toHaveTextContent("Superseded");
     expect(screen.getByText(/Values aren.t shown/)).toBeInTheDocument();

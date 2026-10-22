@@ -257,3 +257,14 @@ export function listPathFor(ref: ResourceRef): string {
   );
   return item?.path ?? `/resources/${group || "core"}/${ref.version}/${ref.resource}`;
 }
+
+/** The list page path is on, so it exists on any cluster: "/workloads/pods/shop/web-1" → "/workloads/pods". */
+export function samePage(path: string): string {
+  let best = "/";
+  for (const p of allPages()) {
+    if ((path === p.path || path.startsWith(p.path + "/")) && p.path.length > best.length) {
+      best = p.path;
+    }
+  }
+  return best;
+}

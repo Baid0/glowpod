@@ -624,6 +624,7 @@ export function overview(c: DemoCluster, scope: string): Overview {
       ...CLUSTER_INFO,
       version: KUBE_VERSION,
       nodes: c.objects(K.nodes).length,
+      nodesReady: c.objects(K.nodes).length,
       namespaces: c.objects(K.namespaces).length,
     },
     namespace: scope,

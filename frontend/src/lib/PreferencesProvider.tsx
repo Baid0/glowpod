@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
+import { DEFAULT_CLUSTER } from "./api";
 import {
   DEFAULT_REFRESH_MS,
+  forCluster,
   KEYS,
   normalizeNamespaces,
   PreferencesContext,
@@ -57,22 +59,27 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     false,
     (raw) => raw === "true",
   );
-  // Stored as the ?namespace= value, so a single saved namespace still reads back.
-  const [namespace, setNamespaceRaw] = usePersisted<string>(KEYS.namespace, "", (raw) =>
-    normalizeNamespaces(raw.split(",")).join(","),
+  // Per cluster, each stored as the ?namespace= value. The one namespace
+  // saved before there were many clusters belongs to the in-cluster one.
+  const [namespaceMap, setNamespaceMap] = usePersisted<string>(
+    KEYS.namespaces,
+    legacyNamespaces(),
+    (raw) => raw,
   );
-  const namespaces = useMemo(() => (namespace ? namespace.split(",") : []), [namespace]);
-  const setNamespaces = useCallback(
-    (list: string[]) => {
-      setNamespaceRaw(normalizeNamespaces(list).join(","));
+  const namespaceFor = useCallback(
+    (cluster: string) => {
+      const v = parseMap(namespaceMap)[cluster];
+      return typeof v === "string" ? normalizeNamespaces(v.split(",")).join(",") : "";
     },
-    [setNamespaceRaw],
+    [namespaceMap],
   );
-  const setNamespace = useCallback(
-    (ns: string) => {
-      setNamespaceRaw(ns);
+  const setNamespacesFor = useCallback(
+    (cluster: string, list: string[]) => {
+      const others = Object.entries(parseMap(namespaceMap)).filter(([k]) => k !== cluster);
+      const v = normalizeNamespaces(list).join(",");
+      setNamespaceMap(JSON.stringify(Object.fromEntries(v ? [...others, [cluster, v]] : others)));
     },
-    [setNamespaceRaw],
+    [namespaceMap, setNamespaceMap],
   );
   const [theme, setTheme] = usePersisted<ThemeChoice>(KEYS.theme, "dark", (raw) =>
     raw === "dark" || raw === "light" || raw === "system" ? raw : undefined,
@@ -114,35 +121,40 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     [thresholdMap, setThresholdMap],
   );
 
+  // Outside a cluster's pages (and in tests), namespaces are the in-cluster one's.
   const value = useMemo(
-    () => ({
-      mode,
-      setMode,
-      panelCollapsed,
-      setPanelCollapsed,
-      namespace,
-      setNamespace,
-      namespaces,
-      setNamespaces,
-      theme,
-      setTheme,
-      resolvedTheme,
-      density,
-      setDensity,
-      refreshMs,
-      setRefreshMs,
-      thresholdsFor,
-      setThresholds,
-    }),
+    () =>
+      forCluster(
+        {
+          mode,
+          setMode,
+          panelCollapsed,
+          setPanelCollapsed,
+          namespace: "",
+          setNamespace: () => undefined,
+          namespaces: [],
+          setNamespaces: () => undefined,
+          namespaceFor,
+          setNamespacesFor,
+          theme,
+          setTheme,
+          resolvedTheme,
+          density,
+          setDensity,
+          refreshMs,
+          setRefreshMs,
+          thresholdsFor,
+          setThresholds,
+        },
+        DEFAULT_CLUSTER,
+      ),
     [
-      namespaces,
-      setNamespaces,
+      namespaceFor,
+      setNamespacesFor,
       mode,
       setMode,
       panelCollapsed,
       setPanelCollapsed,
-      namespace,
-      setNamespace,
       theme,
       setTheme,
       resolvedTheme,
@@ -155,6 +167,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     ],
   );
   return <PreferencesContext value={value}>{children}</PreferencesContext>;
+}
+
+/** The namespaces saved before there were many clusters, as a map. */
+function legacyNamespaces(): string {
+  const ns = read(KEYS.legacyNamespace);
+  return JSON.stringify(ns ? { [DEFAULT_CLUSTER]: ns } : {});
 }
 
 function parseMap(raw: string): Record<string, unknown> {

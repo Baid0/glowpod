@@ -1,0 +1,155 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 1400px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-6);
+}
+
+.search {
+  height: var(--control-height);
+  width: min(360px, 100%);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-control);
+  background: var(--canvas);
+  color: var(--ink);
+  font: var(--text-body-sm);
+}
+
+.search::placeholder {
+  color: var(--muted);
+}
+
+.note {
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.skeleton {
+  height: 240px;
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+}
+
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.scroller {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font: var(--text-body-sm);
+}
+
+.table th {
+  height: 40px;
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+  color: var(--muted);
+  font: var(--text-caption-upper);
+  letter-spacing: var(--tracking-caption-upper);
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table th.gaugeHead {
+  text-align: center;
+}
+
+.table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+  color: var(--body);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.row {
+  cursor: pointer;
+}
+
+.row:hover td {
+  background: color-mix(in srgb, var(--surface-elevated) 50%, transparent);
+}
+
+.nameCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  color: var(--ink);
+  font: 500 14px / 20px var(--font-mono);
+  text-decoration: none;
+}
+
+.name:hover {
+  text-decoration: underline;
+}
+
+.server {
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.current {
+  color: var(--body);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.gaugeCell {
+  text-align: center;
+}
+
+.mini {
+  display: inline-flex;
+  justify-content: center;
+}
+
+.problems {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+}
+
+.problemDot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--state-critical);
+}
+
+.empty {
+  padding: var(--space-6);
+  color: var(--muted);
+  text-align: center;
+}

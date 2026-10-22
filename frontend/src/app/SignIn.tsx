@@ -1,7 +1,7 @@
 import { IconKey, IconLogin2 } from "@tabler/icons-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 
 import { Button } from "../components/Button";
 import { api, ApiError } from "../lib/api";
@@ -9,6 +9,7 @@ import type { AuthMethod } from "../lib/types";
 import { Logo } from "./Logo";
 import { safeReturn } from "./returnPath";
 import styles from "./SignIn.module.css";
+import { useNavigate } from "../lib/clusterPaths";
 
 /** Messages for ?error= codes from the SSO redirect; nothing else is shown. */
 const ERRORS: Record<string, string> = {

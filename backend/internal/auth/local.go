@@ -65,18 +65,25 @@ func NewLocalDisabled() *Local {
 	return &Local{disabled: true, csrf: csrf}
 }
 
-// LaunchURL is the link to print and open. It signs the browser in.
-func (l *Local) LaunchURL(base string) string {
+// LaunchURL is the link to print and open. It signs the browser in and
+// then opens home, a path on this site ("/c/kind-lab/").
+func (l *Local) LaunchURL(base, home string) string {
+	home = localPath(home)
 	if l.disabled {
-		return base
+		return base + home
 	}
-	return base + LoginPath + "?token=" + url.QueryEscape(l.token)
+	link := base + LoginPath + "?token=" + url.QueryEscape(l.token)
+	if home != "/" {
+		link += "&return=" + url.QueryEscape(home)
+	}
+	return link
 }
 
 // HandleLogin exchanges the launch token for a session cookie.
 func (l *Local) HandleLogin(w http.ResponseWriter, r *http.Request) {
+	home := localPath(r.URL.Query().Get("return"))
 	if l.disabled || l.validSession(r) {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, home, http.StatusSeeOther) //nolint:gosec // localPath keeps it a path on this site
 		return
 	}
 	if !equal(r.URL.Query().Get("token"), l.token) {
@@ -96,7 +103,7 @@ func (l *Local) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 	})
 	// Redirect so the token leaves the address bar and history.
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, home, http.StatusSeeOther) //nolint:gosec // localPath keeps it a path on this site
 }
 
 // MountRoot implements Authenticator: the launch link.

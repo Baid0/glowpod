@@ -1,5 +1,5 @@
 import { IconChevronLeft } from "@tabler/icons-react";
-import { NavLink, useLocation } from "react-router";
+import { useLocation } from "react-router";
 
 import { cx } from "../lib/cx";
 import { usePreferences } from "../lib/preferences";
@@ -12,12 +12,14 @@ import { countFor } from "./counts";
 import { usePanel } from "./panel";
 import { sectionFor, sectionsFor } from "./navigation";
 import styles from "./SectionPanel.module.css";
+import { NavLink } from "../lib/clusterLinks";
+import { pathInCluster } from "../lib/clusterPaths";
 
 export function SectionPanel() {
   const { mode } = usePreferences();
   const panel = usePanel();
   const { pathname } = useLocation();
-  const section = sectionFor(pathname, mode) ?? sectionsFor(mode)[0];
+  const section = sectionFor(pathInCluster(pathname), mode) ?? sectionsFor(mode)[0];
   const overview = useOverview().data;
   const events = useEvents().data;
   const now = useNow(60_000);

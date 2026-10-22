@@ -20,7 +20,7 @@ describe("events page", () => {
     expect(rows[0]).toHaveTextContent("Back-off restarting failed container app");
     expect(within(second).getByRole("link", { name: "deploy/checkout-web" })).toHaveAttribute(
       "href",
-      "/workloads/deployments/checkout/checkout-web",
+      "/c/default/workloads/deployments/checkout/checkout-web",
     );
     expect(fetched("/events").some((u) => u.includes("limit=200"))).toBe(true);
   });

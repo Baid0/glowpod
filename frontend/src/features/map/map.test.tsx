@@ -145,6 +145,6 @@ describe("map page", () => {
     );
 
     await userEvent.keyboard("{Enter}");
-    expect(router.state.location.pathname).toBe("/workloads/deployments/shop/web");
+    expect(router.state.location.pathname).toBe("/c/default/workloads/deployments/shop/web");
   });
 });

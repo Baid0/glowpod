@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	authnv1 "k8s.io/api/authentication/v1"
@@ -30,10 +31,14 @@ const (
 
 type clientsKey struct{}
 
-// requireCluster checks the {cluster} id and attaches the identity's clients.
+type clusterKey struct{}
+
+// requireCluster finds the {cluster} and attaches it and the identity's
+// clients for it.
 func (s *server) requireCluster(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if chi.URLParam(r, "cluster") != s.opts.Provider.Info().ID {
+		provider, ok := s.opts.Clusters.Get(chi.URLParam(r, "cluster"))
+		if !ok {
 			writeError(w, http.StatusNotFound, "unknown_cluster", "Glowpod isn't connected to that cluster.")
 			return
 		}
@@ -42,17 +47,25 @@ func (s *server) requireCluster(next http.Handler) http.Handler {
 			writeError(w, http.StatusUnauthorized, "unauthenticated", "Sign in again.")
 			return
 		}
-		clients, err := s.opts.Provider.ClientsFor(r.Context(), id)
+		clients, err := provider.ClientsFor(r.Context(), id)
 		if err != nil {
 			s.clusterError(w, err)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), clientsKey{}, clients)))
+		ctx := context.WithValue(r.Context(), clientsKey{}, clients)
+		ctx = context.WithValue(ctx, clusterKey{}, provider.Info())
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func clientsFrom(r *http.Request) *cluster.Clients {
 	c, _ := r.Context().Value(clientsKey{}).(*cluster.Clients)
+	return c
+}
+
+// clusterFrom is the request's cluster.
+func clusterFrom(r *http.Request) cluster.Info {
+	c, _ := r.Context().Value(clusterKey{}).(cluster.Info)
 	return c
 }
 
@@ -104,9 +117,8 @@ type sessionResponse struct {
 	Mode    string `json:"mode"`
 	Method  string `json:"method"`
 	// CSRFToken goes in the X-CSRF-Token header of every write.
-	CSRFToken string         `json:"csrfToken"`
-	User      sessionUser    `json:"user"`
-	Clusters  []cluster.Info `json:"clusters"`
+	CSRFToken string      `json:"csrfToken"`
+	User      sessionUser `json:"user"`
 }
 
 type sessionUser struct {
@@ -122,12 +134,11 @@ func (s *server) session(w http.ResponseWriter, r *http.Request) {
 		Method:    info.Method,
 		CSRFToken: auth.CSRFTokenFrom(r.Context()),
 		User:      sessionUser{Username: info.User, Groups: info.Groups},
-		Clusters:  []cluster.Info{s.opts.Provider.Info()},
 	}
-	// Local mode doesn't know the kubeconfig user's name; ask the cluster.
-	if resp.User.Username == "" {
+	// Local mode doesn't know the kubeconfig user's name; ask the current cluster.
+	if current := s.opts.Clusters.Current(); resp.User.Username == "" && current != nil {
 		id, _ := auth.IdentityFrom(r.Context())
-		if clients, err := s.opts.Provider.ClientsFor(r.Context(), id); err == nil {
+		if clients, err := current.ClientsFor(r.Context(), id); err == nil {
 			review, err := clients.Kube.AuthenticationV1().SelfSubjectReviews().Create(r.Context(), &authnv1.SelfSubjectReview{}, metav1.CreateOptions{})
 			if err == nil {
 				resp.User.Username = review.Status.UserInfo.Username
@@ -137,17 +148,29 @@ func (s *server) session(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func (s *server) overview(w http.ResponseWriter, r *http.Request) {
+// clustersResponse is GET /api/v1/clusters.
+type clustersResponse struct {
+	Clusters []cluster.Info `json:"clusters"`
+}
+
+func (s *server) clusters(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, clustersResponse{Clusters: s.opts.Clusters.List()})
+}
+
+// overviewDeps are the request's clients for an Overview. Prometheus
+// lookups are cached per cluster and identity.
+func (s *server) overviewDeps(r *http.Request) overview.Deps {
 	clients := clientsFrom(r)
+	info := clusterFrom(r)
 	id, _ := auth.IdentityFrom(r.Context())
-	deps := overview.Deps{
+	return overview.Deps{
 		Kube:    clients.Kube,
 		Metrics: s.opts.Metrics(clients.Kube),
 		Prometheus: func(ctx context.Context) (metrics.Prometheus, error) {
-			if s.opts.PrometheusURL != "" {
+			if s.opts.PrometheusURL != "" && info.ID == s.opts.Clusters.Current().Info().ID {
 				return &metrics.URL{Base: s.opts.PrometheusURL}, nil
 			}
-			return s.proms.Get(ctx, id.Key, func(ctx context.Context) (metrics.Prometheus, error) {
+			return s.proms.Get(ctx, info.ID+"|"+id.Key, func(ctx context.Context) (metrics.Prometheus, error) {
 				t, err := metrics.Discover(ctx, clients.Kube)
 				if err != nil || t == nil {
 					return nil, err
@@ -156,12 +179,80 @@ func (s *server) overview(w http.ResponseWriter, r *http.Request) {
 			})
 		},
 	}
-	resp, err := s.opts.Overview.Build(r.Context(), id, s.opts.Provider.Info(), deps, namespacesFrom(r))
+}
+
+func (s *server) overview(w http.ResponseWriter, r *http.Request) {
+	id, _ := auth.IdentityFrom(r.Context())
+	resp, err := s.opts.Overview.Build(r.Context(), id, clusterFrom(r), s.overviewDeps(r), namespacesFrom(r))
 	if err != nil {
 		s.clusterError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// summaryTimeout bounds one cluster's row on the Clusters page, so a
+// cluster that doesn't answer shows as unreachable instead of loading forever.
+// A variable for tests.
+var summaryTimeout = 10 * time.Second
+
+// clusterSummary is GET /api/v1/clusters/{cluster}/summary: one row of the
+// Clusters page, the same numbers as the cluster's Overview.
+type clusterSummary struct {
+	Cluster      overview.ClusterInfo `json:"cluster"`
+	Gauges       summaryGauges        `json:"gauges"`
+	Health       overview.Health      `json:"health"`
+	ProblemCount int                  `json:"problemCount"`
+	Thresholds   [2]float64           `json:"thresholds"`
+	GeneratedAt  time.Time            `json:"generatedAt"`
+}
+
+type summaryGauges struct {
+	CPU    metrics.Gauge `json:"cpu"`
+	Memory metrics.Gauge `json:"memory"`
+	Pods   metrics.Gauge `json:"pods"`
+}
+
+func (s *server) summary(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), summaryTimeout)
+	defer cancel()
+	id, _ := auth.IdentityFrom(r.Context())
+	deps := s.overviewDeps(r)
+	// The row has no network gauge; don't look for Prometheus.
+	deps.Prometheus = func(context.Context) (metrics.Prometheus, error) { return nil, nil }
+	// Some calls (the server version) can't be cancelled, so don't wait on
+	// Build past the deadline; it finishes on its own when the dial gives up.
+	type built struct {
+		resp *overview.Response
+		err  error
+	}
+	done := make(chan built, 1)
+	go func() {
+		resp, err := s.opts.Overview.Build(ctx, id, clusterFrom(r), deps, nil)
+		done <- built{resp, err}
+	}()
+	var resp *overview.Response
+	select {
+	case b := <-done:
+		if b.err != nil && ctx.Err() == nil {
+			s.clusterError(w, b.err)
+			return
+		}
+		resp = b.resp
+	case <-ctx.Done():
+	}
+	if resp == nil {
+		writeError(w, http.StatusGatewayTimeout, "cluster_timeout", "The cluster didn't answer within 10 seconds.")
+		return
+	}
+	writeJSON(w, http.StatusOK, clusterSummary{
+		Cluster:      resp.Cluster,
+		Gauges:       summaryGauges{CPU: resp.Gauges.CPU, Memory: resp.Gauges.Memory, Pods: resp.Gauges.Pods},
+		Health:       resp.Health,
+		ProblemCount: resp.ProblemCount,
+		Thresholds:   resp.Thresholds,
+		GeneratedAt:  resp.GeneratedAt,
+	})
 }
 
 type namespacesResponse struct {

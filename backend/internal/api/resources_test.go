@@ -64,13 +64,13 @@ func resourceRouter(t *testing.T) (http.Handler, *http.Cookie, *[]string) {
 		t.Fatal(err)
 	}
 	router := NewRouter(Options{
-		Provider: cluster.NewLocalWithClients(cluster.Info{ID: cluster.DefaultID}, &cluster.Clients{
+		Clusters: cluster.Single(cluster.NewLocalWithClients(cluster.Info{ID: cluster.DefaultID}, &cluster.Clients{
 			Kube: kube, Dynamic: dyn, Discovery: memory.NewMemCacheClient(kube.Discovery()),
-		}),
+		})),
 		Auth:        authn,
 		TableClient: func(*cluster.Clients) rest.Interface { return tableKube.CoreV1().RESTClient() },
 	})
-	launch, _ := url.Parse(authn.LaunchURL("http://x"))
+	launch, _ := url.Parse(authn.LaunchURL("http://x", "/"))
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, launch.RequestURI(), nil))
 	return router, rec.Result().Cookies()[0], &seen
