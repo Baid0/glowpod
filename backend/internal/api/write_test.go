@@ -162,6 +162,7 @@ func TestWriteAPI(t *testing.T) {
 				}
 			},
 		},
+		{name: "delete in two namespaces", method: http.MethodDelete, path: base + "/resources/apps/v1/deployments/web?namespace=shop,prod", wantStatus: 400, wantCode: "one_namespace"},
 		{name: "delete needs namespace", method: http.MethodDelete, path: base + "/resources/apps/v1/deployments/web", wantStatus: 400, wantCode: "namespace_required"},
 		{name: "delete missing", method: http.MethodDelete, path: base + "/resources/apps/v1/deployments/gone?namespace=shop", wantStatus: 404, wantCode: "not_found"},
 		{name: "delete not allowed by the API", method: http.MethodDelete, path: base + "/resources/core/v1/nodes/w1", wantStatus: 400, wantCode: "not_deletable"},

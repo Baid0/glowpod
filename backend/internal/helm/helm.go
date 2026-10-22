@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"glowpod/internal/paging"
+	"glowpod/internal/scope"
 )
 
 const (
@@ -91,11 +92,13 @@ type stored struct {
 // ErrNotFound means no Secret holds a release by that name.
 var ErrNotFound = errors.New("helm release not found")
 
-// List returns the latest revision of every release in namespace ("" for all).
-func List(ctx context.Context, kube kubernetes.Interface, namespace string) ([]Release, error) {
-	secrets, err := releaseSecrets(ctx, kube, namespace, "")
+// List returns the latest revision of every release in the namespaces of
+// ns (none = all). Namespaces whose Secrets the user can't list are left out
+// when others can be read.
+func List(ctx context.Context, kube kubernetes.Interface, ns scope.Namespaces) ([]Release, error) {
+	secrets, _, err := paging.Across(ctx, ns.Targets(), secretLister(kube, ""))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list helm releases: %w", err)
 	}
 	latest := map[string]Release{}
 	for i := range secrets {
@@ -162,11 +165,24 @@ func Get(ctx context.Context, kube kubernetes.Interface, namespace, name string)
 }
 
 func releaseSecrets(ctx context.Context, kube kubernetes.Interface, namespace, name string) ([]corev1.Secret, error) {
+	list := secretLister(kube, name)
+	secrets, err := paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.Secret, string, error) {
+		return list(ctx, namespace, o)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return secrets, nil
+}
+
+// secretLister lists Helm's release Secrets in a namespace, for one release
+// when name is set.
+func secretLister(kube kubernetes.Interface, name string) func(context.Context, string, metav1.ListOptions) ([]corev1.Secret, string, error) {
 	selector := "owner=helm"
 	if name != "" {
 		selector += ",name=" + name
 	}
-	secrets, err := paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.Secret, string, error) {
+	return func(ctx context.Context, namespace string, o metav1.ListOptions) ([]corev1.Secret, string, error) {
 		o.LabelSelector = selector
 		o.FieldSelector = "type=" + secretType
 		list, err := kube.CoreV1().Secrets(namespace).List(ctx, o)
@@ -174,11 +190,7 @@ func releaseSecrets(ctx context.Context, kube kubernetes.Interface, namespace, n
 			return nil, "", fmt.Errorf("list helm releases: %w", err)
 		}
 		return list.Items, list.Continue, nil
-	})
-	if err != nil {
-		return nil, err
 	}
-	return secrets, nil
 }
 
 func fromLabels(s *corev1.Secret) (Release, bool) {

@@ -16,7 +16,7 @@ type appsResponse struct {
 
 // listApps returns the apps in ?namespace= (all namespaces when empty).
 func (s *server) listApps(w http.ResponseWriter, r *http.Request) {
-	list, err := apps.List(r.Context(), clientsFrom(r).Kube, r.URL.Query().Get("namespace"), s.opts.Now())
+	list, err := apps.List(r.Context(), clientsFrom(r).Kube, namespacesFrom(r), s.opts.Now())
 	if err != nil {
 		s.clusterError(w, err)
 		return

@@ -19,6 +19,7 @@ import (
 
 	"glowpod/internal/cluster"
 	"glowpod/internal/metrics"
+	"glowpod/internal/scope"
 )
 
 var now = time.Date(2026, 10, 22, 12, 0, 0, 0, time.UTC)
@@ -209,7 +210,7 @@ func newTestService() *Service {
 func build(t *testing.T, s *Service, kube *fake.Clientset, m *fakeMetrics, prom metrics.Prometheus, ns string) *Response {
 	t.Helper()
 	deps := Deps{Kube: kube, Metrics: m, Prometheus: func(context.Context) (metrics.Prometheus, error) { return prom, nil }}
-	resp, err := s.Build(context.Background(), cluster.Identity{Key: "test"}, cluster.Info{ID: "default", Name: "lab"}, deps, ns)
+	resp, err := s.Build(context.Background(), cluster.Identity{Key: "test"}, cluster.Info{ID: "default", Name: "lab"}, deps, scope.One(ns))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -370,7 +371,7 @@ func TestBuildTrendsAppearAfterFiveMinutes(t *testing.T) {
 
 	// Another identity has its own history.
 	deps := Deps{Kube: kube, Metrics: m}
-	other, err := s.Build(context.Background(), cluster.Identity{Key: "someone-else"}, cluster.Info{}, deps, "")
+	other, err := s.Build(context.Background(), cluster.Identity{Key: "someone-else"}, cluster.Info{}, deps, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -393,7 +394,7 @@ func TestBuildForNamespaceUser(t *testing.T) {
 		return false, nil, nil
 	})
 	deps := Deps{Kube: kube, Metrics: healthyMetrics()}
-	resp, err := newTestService().Build(context.Background(), cluster.Identity{Key: "t"}, cluster.Info{}, deps, "payments")
+	resp, err := newTestService().Build(context.Background(), cluster.Identity{Key: "t"}, cluster.Info{}, deps, scope.One("payments"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -405,7 +406,7 @@ func TestBuildForNamespaceUser(t *testing.T) {
 	if resp.Health.Running+resp.Health.Pending+resp.Health.Failing == 0 {
 		t.Fatal("the namespace's pods still count")
 	}
-	if _, err := newTestService().Build(context.Background(), cluster.Identity{Key: "t"}, cluster.Info{}, deps, ""); !apierrors.IsForbidden(err) {
+	if _, err := newTestService().Build(context.Background(), cluster.Identity{Key: "t"}, cluster.Info{}, deps, nil); !apierrors.IsForbidden(err) {
 		t.Fatalf("all namespaces without access = %v", err)
 	}
 }
@@ -431,7 +432,7 @@ func TestBuildFailures(t *testing.T) {
 			kube := fake.NewClientset(labCluster()...)
 			kube.PrependReactor("list", tt.resource, forbidden(tt.resource))
 			deps := Deps{Kube: kube, Metrics: healthyMetrics()}
-			resp, err := newTestService().Build(context.Background(), cluster.Identity{Key: "t"}, cluster.Info{}, deps, "")
+			resp, err := newTestService().Build(context.Background(), cluster.Identity{Key: "t"}, cluster.Info{}, deps, nil)
 			if tt.wantErr {
 				var req *RequiredError
 				if !errors.As(err, &req) || !apierrors.IsForbidden(err) {

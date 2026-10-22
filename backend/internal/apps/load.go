@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"glowpod/internal/paging"
+	"glowpod/internal/scope"
 	"glowpod/internal/summary"
 )
 
@@ -39,15 +40,15 @@ type Snapshot struct {
 
 // Load reads a Snapshot of namespace ("" = all namespaces).
 func Load(ctx context.Context, kube kubernetes.Interface, namespace string) (*Snapshot, error) {
-	return load(ctx, kube, namespace)
+	return load(ctx, kube, scope.One(namespace))
 }
 
-func load(ctx context.Context, kube kubernetes.Interface, namespace string) (*Snapshot, error) {
+func load(ctx context.Context, kube kubernetes.Interface, ns scope.Namespaces) (*Snapshot, error) {
 	var snap Snapshot
 	g, ctx := errgroup.WithContext(ctx)
 	apps := kube.AppsV1()
 	g.Go(func() (err error) {
-		snap.Workloads.Deployments, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.Deployment, string, error) {
+		snap.Workloads.Deployments, err = across(ctx, ns, func(ctx context.Context, namespace string, o metav1.ListOptions) ([]appsv1.Deployment, string, error) {
 			l, err := apps.Deployments(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -57,7 +58,7 @@ func load(ctx context.Context, kube kubernetes.Interface, namespace string) (*Sn
 		return err
 	})
 	g.Go(func() (err error) {
-		snap.Workloads.StatefulSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.StatefulSet, string, error) {
+		snap.Workloads.StatefulSets, err = across(ctx, ns, func(ctx context.Context, namespace string, o metav1.ListOptions) ([]appsv1.StatefulSet, string, error) {
 			l, err := apps.StatefulSets(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -67,7 +68,7 @@ func load(ctx context.Context, kube kubernetes.Interface, namespace string) (*Sn
 		return err
 	})
 	g.Go(func() (err error) {
-		snap.Workloads.DaemonSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.DaemonSet, string, error) {
+		snap.Workloads.DaemonSets, err = across(ctx, ns, func(ctx context.Context, namespace string, o metav1.ListOptions) ([]appsv1.DaemonSet, string, error) {
 			l, err := apps.DaemonSets(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -77,7 +78,7 @@ func load(ctx context.Context, kube kubernetes.Interface, namespace string) (*Sn
 		return err
 	})
 	g.Go(func() (err error) {
-		snap.ReplicaSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.ReplicaSet, string, error) {
+		snap.ReplicaSets, err = across(ctx, ns, func(ctx context.Context, namespace string, o metav1.ListOptions) ([]appsv1.ReplicaSet, string, error) {
 			l, err := apps.ReplicaSets(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -87,7 +88,7 @@ func load(ctx context.Context, kube kubernetes.Interface, namespace string) (*Sn
 		return err
 	})
 	g.Go(func() (err error) {
-		snap.Pods, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.Pod, string, error) {
+		snap.Pods, err = across(ctx, ns, func(ctx context.Context, namespace string, o metav1.ListOptions) ([]corev1.Pod, string, error) {
 			l, err := kube.CoreV1().Pods(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -102,9 +103,9 @@ func load(ctx context.Context, kube kubernetes.Interface, namespace string) (*Sn
 	return &snap, nil
 }
 
-// List returns the apps in namespace ("" = all namespaces).
-func List(ctx context.Context, kube kubernetes.Interface, namespace string, now time.Time) ([]App, error) {
-	snap, err := load(ctx, kube, namespace)
+// List returns the apps in the namespaces of ns (none = all namespaces).
+func List(ctx context.Context, kube kubernetes.Interface, ns scope.Namespaces, now time.Time) ([]App, error) {
+	snap, err := load(ctx, kube, ns)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +115,7 @@ func List(ctx context.Context, kube kubernetes.Interface, namespace string, now 
 
 // Get returns one app with its workloads, pods, problems and recent deploys.
 func Get(ctx context.Context, kube kubernetes.Interface, namespace, name string, now time.Time) (*Detail, error) {
-	snap, err := load(ctx, kube, namespace)
+	snap, err := load(ctx, kube, scope.One(namespace))
 	if err != nil {
 		return nil, err
 	}
@@ -175,4 +176,10 @@ func Get(ctx context.Context, kube kubernetes.Interface, namespace, name string,
 	}
 	d.Deploys = RecentDeploys(snap.ReplicaSets, 10, func(dep string) bool { return deployments[dep] })
 	return d, nil
+}
+
+// across reads a list in each namespace of ns (or all of them) and joins it.
+func across[T any](ctx context.Context, ns scope.Namespaces, list func(ctx context.Context, namespace string, o metav1.ListOptions) ([]T, string, error)) ([]T, error) {
+	items, _, err := paging.Across(ctx, ns.Targets(), list)
+	return items, err //nolint:wrapcheck // load wraps it
 }

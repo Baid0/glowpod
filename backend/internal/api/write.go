@@ -31,7 +31,10 @@ func (s *server) target(w http.ResponseWriter, r *http.Request) (resources.Type,
 	if !ok {
 		return t, "", false
 	}
-	ns := r.URL.Query().Get("namespace")
+	ns, ok := oneNamespace(w, r)
+	if !ok {
+		return t, "", false
+	}
 	if t.Namespaced && ns == "" {
 		writeError(w, http.StatusBadRequest, "namespace_required", "Say which namespace it's in.")
 		return t, "", false

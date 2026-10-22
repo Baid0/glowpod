@@ -62,6 +62,8 @@ type Table struct {
 	Continue           string   `json:"continue,omitempty"`
 	ResourceVersion    string   `json:"resourceVersion,omitempty"`
 	RemainingItemCount *int64   `json:"remainingItemCount,omitempty"`
+	// Skipped lists picked namespaces the user may not list, when others could be.
+	Skipped []string `json:"skipped,omitempty"`
 }
 
 // Path is the REST path for t, in a namespace when t is namespaced and ns is set.

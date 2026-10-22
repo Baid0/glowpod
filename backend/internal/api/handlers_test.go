@@ -262,6 +262,32 @@ func TestAPI(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "overview for two namespaces", path: "/api/v1/clusters/default/overview?namespace=zeta,alpha", wantStatus: 200,
+			check: func(t *testing.T, body []byte) {
+				var got struct{ Namespace string }
+				mustDecode(t, body, &got)
+				if got.Namespace != "alpha,zeta" {
+					t.Fatalf("namespace = %q", got.Namespace)
+				}
+			},
+		},
+		{
+			name: "events from two namespaces, merged newest first", path: "/api/v1/clusters/default/events?namespace=alpha,zeta", wantStatus: 200,
+			check: func(t *testing.T, body []byte) {
+				var got eventsResponse
+				mustDecode(t, body, &got)
+				var reasons []string
+				for _, e := range got.Events {
+					reasons = append(reasons, e.Reason)
+				}
+				if strings.Join(reasons, ",") != "BackOff,Scheduled,Pulled" {
+					t.Fatalf("events = %v", reasons)
+				}
+			},
+		},
+		{name: "a bad name in the list", path: "/api/v1/clusters/default/overview?namespace=alpha,Bad_One", wantStatus: 400, wantCode: "bad_namespace"},
+		{name: "map of two namespaces", path: "/api/v1/clusters/default/map?namespace=alpha,zeta", wantStatus: 400, wantCode: "namespace_required"},
 		{name: "map needs a namespace", path: "/api/v1/clusters/default/map", wantStatus: 400, wantCode: "namespace_required"},
 		{name: "map", path: "/api/v1/clusters/default/map?namespace=alpha", wantStatus: 200},
 		{name: "helm releases", path: "/api/v1/clusters/default/helm?namespace=alpha", wantStatus: 200},

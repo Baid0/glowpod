@@ -79,15 +79,14 @@ func (s *server) listResource(w http.ResponseWriter, r *http.Request) {
 		}
 		limit = n
 	}
-	table, err := resources.ListTable(r.Context(), s.opts.TableClient(clientsFrom(r)), t, resources.ListOptions{
-		Namespace:     q.Get("namespace"),
+	table, err := resources.ListTableIn(r.Context(), s.opts.TableClient(clientsFrom(r)), t, resources.ListOptions{
 		LabelSelector: label,
 		FieldSelector: field,
 		Continue:      q.Get("continue"),
 		Limit:         limit,
-	})
+	}, namespacesFrom(r).Targets())
 	if err != nil {
-		s.clusterError(w, err)
+		s.writeFailure(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, table)
@@ -102,7 +101,10 @@ func (s *server) getResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := r.URL.Query()
-	namespace := q.Get("namespace")
+	namespace, ok := oneNamespace(w, r)
+	if !ok {
+		return
+	}
 	if t.Namespaced && namespace == "" {
 		writeError(w, http.StatusBadRequest, "namespace_required", "Say which namespace it's in.")
 		return
@@ -130,6 +132,12 @@ func (s *server) watchResource(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	src := stream.ListSource(clientsFrom(r).Dynamic, t.GVR(), t.Namespaced, r.URL.Query().Get("namespace"), label, field)
-	stream.Serve(w, r, []stream.Source{src}, s.opts.StreamBackoff, s.opts.Logger)
+	var sources []stream.Source
+	for _, ns := range namespacesFrom(r).Targets() {
+		sources = append(sources, stream.ListSource(clientsFrom(r).Dynamic, t.GVR(), t.Namespaced, ns, label, field))
+		if !t.Namespaced {
+			break // one watch covers a cluster-scoped type
+		}
+	}
+	stream.Serve(w, r, sources, s.opts.StreamBackoff, s.opts.Logger)
 }

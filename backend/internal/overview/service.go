@@ -21,6 +21,7 @@ import (
 	"glowpod/internal/kerr"
 	"glowpod/internal/metrics"
 	"glowpod/internal/paging"
+	"glowpod/internal/scope"
 	"glowpod/internal/summary"
 )
 
@@ -113,10 +114,10 @@ type snapshot struct {
 	noNodes bool
 }
 
-// Build loads the cluster state and assembles the Overview for namespace
-// ("" = all namespaces).
-func (s *Service) Build(ctx context.Context, id cluster.Identity, info cluster.Info, deps Deps, namespace string) (*Response, error) {
-	snap, err := load(ctx, deps, namespace)
+// Build loads the cluster state and assembles the Overview for the
+// namespaces in ns (none = all namespaces).
+func (s *Service) Build(ctx context.Context, id cluster.Identity, info cluster.Info, deps Deps, ns scope.Namespaces) (*Response, error) {
+	snap, err := load(ctx, deps, ns)
 	if err != nil {
 		return nil, err
 	}
@@ -128,14 +129,14 @@ func (s *Service) Build(ctx context.Context, id cluster.Identity, info cluster.I
 			Nodes:      len(snap.nodes),
 			Namespaces: snap.namespaces,
 		},
-		Namespace:   namespace,
+		Namespace:   ns.String(),
 		GeneratedAt: now.UTC(),
 		Thresholds:  s.thresholds,
 	}
 
 	resp.Gauges = s.gauges(ctx, id, snap, now)
 
-	pods := inNamespace(snap.pods, namespace)
+	pods := inNamespaces(snap.pods, ns)
 	for i := range pods {
 		switch summary.HealthOf(&pods[i], now) {
 		case summary.Running:
@@ -150,7 +151,7 @@ func (s *Service) Build(ctx context.Context, id cluster.Identity, info cluster.I
 	ix := apps.NewIndex(snap.replicaSets)
 	failing := apps.Failing(pods, ix, now)
 	resp.Workloads = workloads(snap, failing, now)
-	resp.Problems, resp.ProblemCount = problems(snap, pods, namespace, now)
+	resp.Problems, resp.ProblemCount = problems(snap, pods, ns, now)
 	resp.Nodes = nodeLoad(snap, s.thresholds[1])
 	resp.TopConsumers = topConsumers(snap.podUsage)
 	resp.Apps = apps.Group(apps.Workloads{
@@ -217,7 +218,7 @@ func (s *Service) gauges(ctx context.Context, id cluster.Identity, snap *snapsho
 	return g
 }
 
-func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
+func load(ctx context.Context, deps Deps, ns scope.Namespaces) (*snapshot, error) {
 	snap := &snapshot{errs: map[string]error{}}
 	kube := deps.Kube
 	var (
@@ -276,7 +277,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 	})
 	optional("workloads", func() error {
 		var err error
-		snap.deployments, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.Deployment, string, error) {
+		snap.deployments, err = across(ctx, ns, func(ctx context.Context, namespace string, o metav1.ListOptions) ([]appsv1.Deployment, string, error) {
 			l, err := kube.AppsV1().Deployments(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -286,7 +287,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 		if err != nil {
 			return err
 		}
-		snap.statefulSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.StatefulSet, string, error) {
+		snap.statefulSets, err = across(ctx, ns, func(ctx context.Context, namespace string, o metav1.ListOptions) ([]appsv1.StatefulSet, string, error) {
 			l, err := kube.AppsV1().StatefulSets(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -296,7 +297,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 		if err != nil {
 			return err
 		}
-		snap.daemonSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.DaemonSet, string, error) {
+		snap.daemonSets, err = across(ctx, ns, func(ctx context.Context, namespace string, o metav1.ListOptions) ([]appsv1.DaemonSet, string, error) {
 			l, err := kube.AppsV1().DaemonSets(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -307,7 +308,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 	})
 	optional("replicaSets", func() error {
 		var err error
-		snap.replicaSets, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]appsv1.ReplicaSet, string, error) {
+		snap.replicaSets, err = across(ctx, ns, func(ctx context.Context, namespace string, o metav1.ListOptions) ([]appsv1.ReplicaSet, string, error) {
 			l, err := kube.AppsV1().ReplicaSets(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -318,7 +319,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 	})
 	optional("jobs", func() error {
 		var err error
-		snap.jobs, err = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]batchv1.Job, string, error) {
+		snap.jobs, err = across(ctx, ns, func(ctx context.Context, namespace string, o metav1.ListOptions) ([]batchv1.Job, string, error) {
 			l, err := kube.BatchV1().Jobs(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -339,7 +340,7 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 		return err
 	})
 	wg.Go(func() { snap.nodeUsage, snap.nodeUsageErr = deps.Metrics.NodeUsage(ctx) })
-	wg.Go(func() { snap.podUsage, snap.podUsageErr = deps.Metrics.PodUsage(ctx, namespace) })
+	wg.Go(func() { snap.podUsage, snap.podUsageErr = podUsage(ctx, deps.Metrics, ns) })
 	if deps.Prometheus != nil {
 		wg.Go(func() { snap.prom, snap.promErr = deps.Prometheus(ctx) })
 	}
@@ -350,8 +351,8 @@ func load(ctx context.Context, deps Deps, namespace string) (*snapshot, error) {
 	if apierrors.IsForbidden(nodeErr) {
 		snap.noNodes, nodeErr = true, nil
 	}
-	if apierrors.IsForbidden(podErr) && namespace != "" {
-		snap.pods, podErr = paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]corev1.Pod, string, error) {
+	if apierrors.IsForbidden(podErr) && !ns.All() {
+		snap.pods, podErr = across(ctx, ns, func(ctx context.Context, namespace string, o metav1.ListOptions) ([]corev1.Pod, string, error) {
 			l, err := kube.CoreV1().Pods(namespace).List(ctx, o)
 			if err != nil {
 				return nil, "", err
@@ -383,27 +384,27 @@ func hasBound(pvcs []corev1.PersistentVolumeClaim) bool {
 	})
 }
 
-func inNamespace(pods []corev1.Pod, namespace string) []corev1.Pod {
-	if namespace == "" {
+func inNamespaces(pods []corev1.Pod, ns scope.Namespaces) []corev1.Pod {
+	if ns.All() {
 		return pods
 	}
 	out := make([]corev1.Pod, 0, len(pods))
 	for i := range pods {
-		if pods[i].Namespace == namespace {
+		if ns.Contains(pods[i].Namespace) {
 			out = append(out, pods[i])
 		}
 	}
 	return out
 }
 
-func problems(snap *snapshot, pods []corev1.Pod, namespace string, now time.Time) ([]summary.Problem, int) {
+func problems(snap *snapshot, pods []corev1.Pod, ns scope.Namespaces, now time.Time) ([]summary.Problem, int) {
 	var out []summary.Problem
 	for i := range pods {
 		if p, ok := summary.PodProblem(&pods[i], now); ok {
 			out = append(out, p)
 		}
 	}
-	if namespace == "" {
+	if ns.All() {
 		for i := range snap.nodes {
 			out = append(out, summary.NodeProblems(&snap.nodes[i])...)
 		}
@@ -482,4 +483,23 @@ func describe(err error) string {
 		return "Install metrics-server to see usage."
 	}
 	return kerr.Classify(err).Message
+}
+
+// across reads a list in each namespace of ns (or all of them) and joins it.
+func across[T any](ctx context.Context, ns scope.Namespaces, list func(ctx context.Context, namespace string, o metav1.ListOptions) ([]T, string, error)) ([]T, error) {
+	items, _, err := paging.Across(ctx, ns.Targets(), list)
+	return items, err //nolint:wrapcheck // the section names what failed
+}
+
+// podUsage reads per-pod usage in each namespace of ns and joins it.
+func podUsage(ctx context.Context, m MetricsSource, ns scope.Namespaces) ([]metrics.PodUsage, error) {
+	var out []metrics.PodUsage
+	for _, namespace := range ns.Targets() {
+		u, err := m.PodUsage(ctx, namespace)
+		if err != nil {
+			return nil, err //nolint:wrapcheck // metrics errors are already plain
+		}
+		out = append(out, u...)
+	}
+	return out, nil
 }

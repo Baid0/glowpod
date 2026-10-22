@@ -29,7 +29,7 @@ func (s *server) helmError(w http.ResponseWriter, err error) {
 }
 
 func (s *server) helmReleases(w http.ResponseWriter, r *http.Request) {
-	list, err := helm.List(r.Context(), clientsFrom(r).Kube, r.URL.Query().Get("namespace"))
+	list, err := helm.List(r.Context(), clientsFrom(r).Kube, namespacesFrom(r))
 	if err != nil {
 		s.helmError(w, err)
 		return

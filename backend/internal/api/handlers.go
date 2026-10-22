@@ -14,13 +14,15 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/client-go/kubernetes"
 
 	"glowpod/internal/auth"
 	"glowpod/internal/cluster"
 	"glowpod/internal/kerr"
 	"glowpod/internal/metrics"
 	"glowpod/internal/overview"
+	"glowpod/internal/paging"
+	"glowpod/internal/scope"
 	"glowpod/internal/summary"
 )
 
@@ -60,16 +62,37 @@ func clientsFrom(r *http.Request) *cluster.Clients {
 	return c
 }
 
-// requireNamespace rejects ?namespace= values that aren't valid names.
-// Empty means all namespaces.
+type scopeKey struct{}
+
+// requireNamespace checks ?namespace=: empty for all namespaces, one name,
+// or a comma-separated list of up to scope.Max names.
 func requireNamespace(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if ns := r.URL.Query().Get("namespace"); ns != "" && len(validation.IsDNS1123Label(ns)) > 0 {
-			writeError(w, http.StatusBadRequest, "bad_namespace", "That isn't a valid namespace name.")
+		ns, err := scope.Parse(r.URL.Query().Get("namespace"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "bad_namespace", "That isn't a valid namespace name, or list of up to 20.")
 			return
 		}
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), scopeKey{}, ns)))
 	})
+}
+
+// namespacesFrom is the request's namespaces; none means all.
+func namespacesFrom(r *http.Request) scope.Namespaces {
+	ns, _ := r.Context().Value(scopeKey{}).(scope.Namespaces)
+	return ns
+}
+
+// oneNamespace is for requests about a single object or namespace: at most
+// one name in ?namespace=.
+func oneNamespace(w http.ResponseWriter, r *http.Request) (string, bool) {
+	ns := namespacesFrom(r)
+	if len(ns) > 1 {
+		writeError(w, http.StatusBadRequest, "one_namespace", "Say which one namespace it's in.")
+		return "", false
+	}
+	single, _ := ns.Single()
+	return single, true
 }
 
 // classify returns the HTTP status for a cluster error.
@@ -137,7 +160,7 @@ func (s *server) overview(w http.ResponseWriter, r *http.Request) {
 			})
 		},
 	}
-	resp, err := s.opts.Overview.Build(r.Context(), id, s.opts.Provider.Info(), deps, r.URL.Query().Get("namespace"))
+	resp, err := s.opts.Overview.Build(r.Context(), id, s.opts.Provider.Info(), deps, namespacesFrom(r))
 	if err != nil {
 		s.clusterError(w, err)
 		return
@@ -207,7 +230,6 @@ func (s *server) events(w http.ResponseWriter, r *http.Request) {
 	}
 
 	kube := clientsFrom(r).Kube
-	var all []corev1.Event
 	opts := metav1.ListOptions{Limit: listPage}
 	// ?kind=&name= narrows to one object's events.
 	if kind, name := r.URL.Query().Get("kind"), r.URL.Query().Get("name"); kind != "" || name != "" {
@@ -217,17 +239,13 @@ func (s *server) events(w http.ResponseWriter, r *http.Request) {
 		}
 		opts.FieldSelector = fields.Set{"involvedObject.kind": kind, "involvedObject.name": name}.AsSelector().String()
 	}
-	for range maxEventPages {
-		list, err := kube.CoreV1().Events(r.URL.Query().Get("namespace")).List(r.Context(), opts)
-		if err != nil {
-			s.clusterError(w, err)
-			return
-		}
-		all = append(all, list.Items...)
-		if list.Continue == "" {
-			break
-		}
-		opts.Continue = list.Continue
+	all, _, err := paging.Across(r.Context(), namespacesFrom(r).Targets(),
+		func(ctx context.Context, namespace string, _ metav1.ListOptions) ([]corev1.Event, string, error) {
+			return newestEvents(ctx, kube, namespace, opts)
+		})
+	if err != nil {
+		s.clusterError(w, err)
+		return
 	}
 
 	slices.SortFunc(all, func(a, b corev1.Event) int {
@@ -238,4 +256,23 @@ func (s *server) events(w http.ResponseWriter, r *http.Request) {
 		out = append(out, summary.EventOf(&all[i]))
 	}
 	writeJSON(w, http.StatusOK, eventsResponse{Events: out})
+}
+
+// newestEvents reads up to maxEventPages pages of a namespace's events.
+// (paging.Across calls it once per namespace; it pages on its own so the
+// cap applies per namespace.)
+func newestEvents(ctx context.Context, kube kubernetes.Interface, namespace string, opts metav1.ListOptions) ([]corev1.Event, string, error) {
+	var all []corev1.Event
+	for range maxEventPages {
+		list, err := kube.CoreV1().Events(namespace).List(ctx, opts)
+		if err != nil {
+			return nil, "", err
+		}
+		all = append(all, list.Items...)
+		if list.Continue == "" {
+			break
+		}
+		opts.Continue = list.Continue
+	}
+	return all, "", nil
 }

@@ -12,6 +12,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"glowpod/internal/scope"
 )
 
 var now = time.Date(2026, 10, 22, 12, 0, 0, 0, time.UTC)
@@ -112,7 +114,7 @@ func cluster() []runtime.Object {
 }
 
 func TestList(t *testing.T) {
-	got, err := List(context.Background(), fake.NewClientset(cluster()...), "argocd", now)
+	got, err := List(context.Background(), fake.NewClientset(cluster()...), scope.One("argocd"), now)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -13,6 +13,7 @@ import (
 
 	"glowpod/internal/auth"
 	"glowpod/internal/cluster"
+	"glowpod/internal/scope"
 )
 
 const (
@@ -44,15 +45,20 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no cluster client", http.StatusInternalServerError)
 		return
 	}
-	namespace := r.URL.Query().Get("namespace")
+	ns, err := scope.Parse(r.URL.Query().Get("namespace"))
+	if err != nil {
+		http.Error(w, "bad namespace", http.StatusBadRequest)
+		return
+	}
 	now := h.Now
 	if now == nil {
 		now = time.Now
 	}
-	Serve(w, r, []Source{
-		PodSource(clients.Kube, namespace, now),
-		EventSource(clients.Kube, namespace),
-	}, h.Backoff, h.Logger)
+	var sources []Source
+	for _, namespace := range ns.Targets() {
+		sources = append(sources, PodSource(clients.Kube, namespace, now), EventSource(clients.Kube, namespace))
+	}
+	Serve(w, r, sources, h.Backoff, h.Logger)
 }
 
 // Serve upgrades to a WebSocket and runs sources until the client leaves.

@@ -18,6 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
+
+	"glowpod/internal/scope"
 )
 
 const manifest = `---
@@ -79,7 +81,7 @@ func TestList(t *testing.T) {
 		release(t, "shop", "web", 2, "deployed", "1.1.0"),
 		release(t, "ops", "backup", 1, "failed", "0.3.0"),
 	)
-	list, err := List(context.Background(), kube, "")
+	list, err := List(context.Background(), kube, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +133,7 @@ func TestForbidden(t *testing.T) {
 	kube.PrependReactor("list", "secrets", func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, apierrors.NewForbidden(schema.GroupResource{Resource: "secrets"}, "", errors.New("rbac"))
 	})
-	if _, err := List(context.Background(), kube, "shop"); !apierrors.IsForbidden(err) {
+	if _, err := List(context.Background(), kube, scope.One("shop")); !apierrors.IsForbidden(err) {
 		t.Fatalf("err = %v", err)
 	}
 }
