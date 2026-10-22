@@ -44,30 +44,33 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no cluster client", http.StatusInternalServerError)
 		return
 	}
-	conn, err := websocket.Accept(w, r, nil)
-	if err != nil {
-		return // Accept already wrote the response
-	}
-	defer conn.CloseNow() //nolint:errcheck // best effort after a normal close
-
 	namespace := r.URL.Query().Get("namespace")
 	now := h.Now
 	if now == nil {
 		now = time.Now
 	}
-	backoff := h.Backoff
-	if backoff == nil {
-		backoff = DefaultBackoff
-	}
-	sources := []Source{
+	Serve(w, r, []Source{
 		PodSource(clients.Kube, namespace, now),
 		EventSource(clients.Kube, namespace),
+	}, h.Backoff, h.Logger)
+}
+
+// Serve upgrades to a WebSocket and runs sources until the client leaves.
+// Accept rejects cross-origin requests. backoff and logger may be nil.
+func Serve(w http.ResponseWriter, r *http.Request, sources []Source, backoff func() Backoff, logger *slog.Logger) {
+	conn, err := websocket.Accept(w, r, nil)
+	if err != nil {
+		return // Accept already wrote the response
+	}
+	defer conn.CloseNow() //nolint:errcheck // best effort after a normal close
+	if backoff == nil {
+		backoff = DefaultBackoff
 	}
 
 	ctx := conn.CloseRead(r.Context()) // we never read; this handles pings and close
 	status, reason := serve(ctx, conn, sources, backoff)
-	if err := conn.Close(status, reason); err != nil && !errors.Is(err, context.Canceled) && h.Logger != nil {
-		h.Logger.Debug("websocket close", "err", err)
+	if err := conn.Close(status, reason); err != nil && !errors.Is(err, context.Canceled) && logger != nil {
+		logger.Debug("websocket close", "err", err)
 	}
 }
 

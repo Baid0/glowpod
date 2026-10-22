@@ -15,14 +15,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 
 	"glowpod/internal/auth"
 	"glowpod/internal/cluster"
+	"glowpod/internal/summary"
 )
 
 var fastBackoff = func() Backoff { return Backoff{Initial: time.Millisecond, Max: 5 * time.Millisecond} }
@@ -258,4 +261,32 @@ func TestHandler(t *testing.T) {
 			t.Fatalf("status = %d", rec.Code)
 		}
 	})
+}
+
+func TestListSourceSaysWhatChanged(t *testing.T) {
+	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
+	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{gvr: "DeploymentList"})
+	fw := watch.NewFakeWithChanSize(10, false)
+	var selector string
+	client.PrependWatchReactor("deployments", func(a k8stesting.Action) (bool, watch.Interface, error) {
+		selector = a.(k8stesting.WatchActionImpl).WatchRestrictions.Labels.String()
+		return true, fw, nil
+	})
+	dep := &unstructured.Unstructured{Object: map[string]any{
+		"apiVersion": "apps/v1", "kind": "Deployment",
+		"metadata": map[string]any{"name": "web", "namespace": "shop", "resourceVersion": "9"},
+	}}
+	fw.Modify(dep)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	msgs := collect(ctx, t, ListSource(client, gvr, true, "shop", "app=web"), 1)
+	m := msgs[0]
+	if m.Type != "changed" || m.Op != "modified" || m.Ref == nil || *m.Ref != (summary.ObjectRef{Kind: "Deployment", Namespace: "shop", Name: "web"}) {
+		t.Fatalf("message = %+v ref %+v", m, m.Ref)
+	}
+	if selector != "app=web" {
+		t.Fatalf("watch selector = %q", selector)
+	}
 }

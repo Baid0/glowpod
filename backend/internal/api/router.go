@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"glowpod/internal/auth"
 	"glowpod/internal/cluster"
@@ -35,7 +36,11 @@ type Options struct {
 	PrometheusURL string
 	// Metrics builds the usage reader for a client; defaults to metrics.NewReader.
 	Metrics func(kube kubernetes.Interface) overview.MetricsSource
-	Logger  *slog.Logger
+	// TableClient is the REST client for Table output; defaults to the core client.
+	TableClient func(c *cluster.Clients) rest.Interface
+	// StreamBackoff paces watch retries; nil uses the default.
+	StreamBackoff func() stream.Backoff
+	Logger        *slog.Logger
 }
 
 // promDiscoveryTTL is how long a Prometheus lookup (or its absence) is reused.
@@ -53,6 +58,9 @@ func NewRouter(opts Options) http.Handler {
 	}
 	if opts.Overview == nil {
 		opts.Overview = overview.NewService()
+	}
+	if opts.TableClient == nil {
+		opts.TableClient = func(c *cluster.Clients) rest.Interface { return c.Kube.CoreV1().RESTClient() }
 	}
 	if opts.Metrics == nil {
 		opts.Metrics = func(kube kubernetes.Interface) overview.MetricsSource { return metrics.NewReader(kube) }
@@ -78,6 +86,10 @@ func NewRouter(opts Options) http.Handler {
 				r.Get("/namespaces", s.namespaces)
 				r.Get("/events", s.events)
 				r.Method(http.MethodGet, "/stream", &stream.Handler{Provider: opts.Provider, Logger: opts.Logger})
+				r.Get("/resources", s.resourceTypes)
+				r.Get("/resources/{group}/{version}/{resource}", s.listResource)
+				r.Get("/resources/{group}/{version}/{resource}/{name}", s.getResource)
+				r.Get("/watch/{group}/{version}/{resource}", s.watchResource)
 			})
 			r.NotFound(apiNotFound)
 			r.MethodNotAllowed(apiMethodNotAllowed)

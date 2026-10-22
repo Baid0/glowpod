@@ -11,6 +11,9 @@ import (
 	"fmt"
 	"net/url"
 
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -37,6 +40,10 @@ type Identity struct {
 // Clients are Kubernetes clients bound to one identity.
 type Clients struct {
 	Kube kubernetes.Interface
+	// Dynamic reaches any resource, CRDs included.
+	Dynamic dynamic.Interface
+	// Discovery caches the API's resource list for this identity.
+	Discovery discovery.CachedDiscoveryInterface
 }
 
 // Provider returns clients for an identity on a cluster.
@@ -105,7 +112,15 @@ func NewLocal(cfg *rest.Config, info Info) (*Local, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create kubernetes client: %w", err)
 	}
-	return &Local{info: info, clients: &Clients{Kube: kube}}, nil
+	dyn, err := dynamic.NewForConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("create dynamic client: %w", err)
+	}
+	return &Local{info: info, clients: &Clients{
+		Kube:      kube,
+		Dynamic:   dyn,
+		Discovery: memory.NewMemCacheClient(kube.Discovery()),
+	}}, nil
 }
 
 // NewLocalWithClients is for tests.

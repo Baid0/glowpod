@@ -21,7 +21,7 @@ import (
 
 // Message is one WebSocket frame, sent as JSON.
 type Message struct {
-	// Type is ready, pod, event, resync or error.
+	// Type is ready, pod, event, changed, resync or error.
 	Type string `json:"type"`
 	// Op is added, modified or deleted.
 	Op string `json:"op,omitempty"`
@@ -29,8 +29,10 @@ type Message struct {
 	Resource string         `json:"resource,omitempty"`
 	Pod      *summary.Pod   `json:"pod,omitempty"`
 	Event    *summary.Event `json:"event,omitempty"`
-	Code     string         `json:"code,omitempty"`
-	Message  string         `json:"message,omitempty"`
+	// Ref names the object a "changed" message is about.
+	Ref     *summary.ObjectRef `json:"ref,omitempty"`
+	Code    string             `json:"code,omitempty"`
+	Message string             `json:"message,omitempty"`
 }
 
 // Source is one resource to watch.
