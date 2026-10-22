@@ -103,6 +103,9 @@ func TestServerFlags(t *testing.T) {
 		{"no sign-in method", []string{"-mode", "server", "-auth-token=false"}},
 		{"sso without public url", []string{"-mode", "server", "-oidc-issuer", "https://sso.example.com", "-oidc-client-id", "x"}},
 		{"sso without client id", []string{"-mode", "server", "-public-url", "https://g.example.com", "-oidc-issuer", "https://sso.example.com"}},
+		{"sso issuer not a url", []string{"-mode", "server", "-public-url", "https://g.example.com", "-oidc-client-id", "x", "-oidc-issuer", "sso.example.com"}},
+		{"microsoft common", []string{"-mode", "server", "-public-url", "https://g.example.com", "-oidc-client-id", "x", "-oidc-issuer", "https://login.microsoftonline.com/common/v2.0"}},
+		{"microsoft organizations", []string{"-mode", "server", "-public-url", "https://g.example.com", "-oidc-client-id", "x", "-oidc-issuer", "https://login.microsoftonline.com/Organizations/v2.0"}},
 		{"plain http public url", []string{"-mode", "server", "-public-url", "http://g.example.com"}},
 		{"public url with a path", []string{"-mode", "server", "-public-url", "https://example.com/glowpod"}},
 		{"ldap without user base", []string{"-mode", "server", "-ldap-url", "ldaps://ldap.example.com"}},
@@ -114,6 +117,11 @@ func TestServerFlags(t *testing.T) {
 				t.Fatal("want an error")
 			}
 		})
+	}
+	tenant := []string{"-mode", "server", "-public-url", "https://g.example.com", "-oidc-client-id", "x",
+		"-oidc-issuer", "https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47/v2.0"}
+	if _, err := parseFlags(tenant, io.Discard); err != nil {
+		t.Fatalf("a Microsoft tenant issuer works: %v", err)
 	}
 	if _, err := parseFlags([]string{"-mode", "server", "-addr", "0.0.0.0:8080"}, io.Discard); err != nil {
 		t.Fatalf("server mode listens on any address: %v", err)

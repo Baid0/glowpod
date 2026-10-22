@@ -208,6 +208,9 @@ func (s *serverConfig) check() error {
 		if s.publicURL == "" || s.oidcClientID == "" {
 			return errors.New("SSO needs -public-url and -oidc-client-id")
 		}
+		if err := checkIssuer(s.oidcIssuer); err != nil {
+			return err
+		}
 	}
 	if s.ldapURL != "" && s.ldapUserBase == "" {
 		return errors.New("LDAP needs -ldap-user-base")
@@ -217,6 +220,24 @@ func (s *serverConfig) check() error {
 	}
 	if s.sessionTTL <= 0 || s.sessionIdle <= 0 {
 		return errors.New("-session-ttl and -session-idle must be positive")
+	}
+	return nil
+}
+
+// checkIssuer catches issuers that can't work. Microsoft's shared endpoints
+// (common, organizations, consumers) publish "{tenantid}" as their issuer,
+// so their tokens never match and sign-in fails at the first step.
+func checkIssuer(issuer string) error {
+	u, err := url.Parse(issuer)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return fmt.Errorf("-oidc-issuer %q must be an http(s) URL", issuer)
+	}
+	if strings.EqualFold(u.Hostname(), "login.microsoftonline.com") {
+		tenant, _, _ := strings.Cut(strings.TrimPrefix(u.Path, "/"), "/")
+		switch strings.ToLower(tenant) {
+		case "common", "organizations", "consumers":
+			return fmt.Errorf("-oidc-issuer: Microsoft's %q endpoint can't be used for sign-in; use https://login.microsoftonline.com/<tenant-id>/v2.0 with the Directory (tenant) ID from your app registration", tenant)
+		}
 	}
 	return nil
 }

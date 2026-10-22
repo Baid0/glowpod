@@ -52,7 +52,7 @@ SSO is on when `-oidc-issuer` is set (Helm: `auth.oidc.enabled`).
 
 | Flag | Default | Helm value | What it does |
 | --- | --- | --- | --- |
-| `-oidc-issuer` | | `auth.oidc.issuer` | Issuer URL |
+| `-oidc-issuer` | | `auth.oidc.issuer` | Issuer URL, exactly as the provider publishes it. For Microsoft, `https://login.microsoftonline.com/<tenant-id>/v2.0` |
 | `-oidc-client-id` | | `auth.oidc.clientID` | Client ID |
 | `-oidc-client-secret` | | `auth.oidc.existingSecret` + `existingSecretKey`, or `clientSecret` | Client secret |
 | `-oidc-scopes` | `openid,email,profile` | `auth.oidc.scopes` (list) | Scopes to request |

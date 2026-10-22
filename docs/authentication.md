@@ -185,6 +185,12 @@ auth:
     usernameClaim: preferred_username   # many tenants don't send email
 ```
 
+Use your **tenant ID** in the issuer: the *Directory (tenant) ID* on your app
+registration's overview page. Microsoft's shared addresses (`…/common/v2.0`,
+`…/organizations/v2.0`, `…/consumers/v2.0`) don't work: they publish
+`{tenantid}` as their issuer, which no token ever matches, so Glowpod refuses
+to start with them and says why. Register the app as *single tenant*.
+
 Register an app (*Web*, redirect URI as above), create a client secret, and
 in *Token configuration* add a **groups claim** (security groups). Entra
 sends group **object IDs**, so bind RBAC to them:
@@ -369,7 +375,7 @@ the `msg` values below).
 
 | Message on the sign-in page | Log | Usual cause |
 | --- | --- | --- |
-| Your sign-in provider can't be reached right now. | `SSO provider unavailable` | Glowpod's pod can't reach the issuer URL: DNS, egress NetworkPolicy, proxy, or a private CA |
+| Your sign-in provider can't be reached right now. | `SSO provider unavailable` | Glowpod's pod can't reach the issuer URL: DNS, egress NetworkPolicy, proxy, or a private CA. If the log says the issuer "did not match", `issuer` isn't exactly what the provider publishes (a trailing slash, or Microsoft's `common` address instead of your tenant ID) |
 | Sign-in was cancelled or refused by your provider. | `SSO refused` | The person isn't assigned to the app, or cancelled |
 | That sign-in took too long, or was finished in another browser. | — | More than 10 minutes on the provider's page, or cookies blocked |
 | Couldn't finish signing in with your provider. | `SSO code exchange failed` / `SSO ID token rejected` | Wrong client secret, redirect URI mismatch, or the issuer in the token differs from `issuer` (watch trailing slashes) |
