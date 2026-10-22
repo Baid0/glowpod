@@ -29,8 +29,6 @@ export type CountKey =
 export interface NavItem {
   label: string;
   path: string;
-  /** The phase that builds this page; pages not built yet show a placeholder. */
-  phase: number;
   /** The resource this page lists; such pages are live lists from day one. */
   resource?: ResourceRef;
   /** Shows the cluster's resource types instead of one list. */
@@ -45,11 +43,10 @@ export interface Section {
   items: NavItem[];
 }
 
-const overviewItem: NavItem = { label: "Overview", path: "/", phase: 1 };
+const overviewItem: NavItem = { label: "Overview", path: "/" };
 const eventsItem: NavItem = {
   label: "Events",
   path: "/events",
-  phase: 4,
   resource: { group: "", version: "v1", resource: "events" },
   count: "events",
 };
@@ -64,14 +61,12 @@ export const deepSections: Section[] = [
       {
         label: "Nodes",
         path: "/nodes",
-        phase: 4,
         resource: { group: "", version: "v1", resource: "nodes" },
         count: "nodes",
       },
       {
         label: "Namespaces",
         path: "/namespaces",
-        phase: 4,
         resource: { group: "", version: "v1", resource: "namespaces" },
         count: "namespaces",
       },
@@ -86,41 +81,35 @@ export const deepSections: Section[] = [
       {
         label: "Deployments",
         path: "/workloads/deployments",
-        phase: 2,
         resource: { group: "apps", version: "v1", resource: "deployments" },
         count: "deployments",
       },
       {
         label: "StatefulSets",
         path: "/workloads/statefulsets",
-        phase: 2,
         resource: { group: "apps", version: "v1", resource: "statefulsets" },
         count: "statefulSets",
       },
       {
         label: "DaemonSets",
         path: "/workloads/daemonsets",
-        phase: 2,
         resource: { group: "apps", version: "v1", resource: "daemonsets" },
         count: "daemonSets",
       },
       {
         label: "Jobs",
         path: "/workloads/jobs",
-        phase: 2,
         resource: { group: "batch", version: "v1", resource: "jobs" },
         count: "jobs",
       },
       {
         label: "CronJobs",
         path: "/workloads/cronjobs",
-        phase: 2,
         resource: { group: "batch", version: "v1", resource: "cronjobs" },
       },
       {
         label: "Pods",
         path: "/workloads/pods",
-        phase: 2,
         resource: { group: "", version: "v1", resource: "pods" },
         count: "pods",
       },
@@ -131,23 +120,20 @@ export const deepSections: Section[] = [
     label: "Network",
     icon: IconShare,
     items: [
-      { label: "Map", path: "/network/map", phase: 4 },
+      { label: "Map", path: "/network/map" },
       {
         label: "Services",
         path: "/network/services",
-        phase: 4,
         resource: { group: "", version: "v1", resource: "services" },
       },
       {
         label: "Ingresses",
         path: "/network/ingresses",
-        phase: 4,
         resource: { group: "networking.k8s.io", version: "v1", resource: "ingresses" },
       },
       {
         label: "Network policies",
         path: "/network/networkpolicies",
-        phase: 4,
         resource: { group: "networking.k8s.io", version: "v1", resource: "networkpolicies" },
       },
     ],
@@ -160,19 +146,16 @@ export const deepSections: Section[] = [
       {
         label: "Volume claims",
         path: "/storage/persistentvolumeclaims",
-        phase: 4,
         resource: { group: "", version: "v1", resource: "persistentvolumeclaims" },
       },
       {
         label: "Volumes",
         path: "/storage/persistentvolumes",
-        phase: 4,
         resource: { group: "", version: "v1", resource: "persistentvolumes" },
       },
       {
         label: "Storage classes",
         path: "/storage/storageclasses",
-        phase: 4,
         resource: { group: "storage.k8s.io", version: "v1", resource: "storageclasses" },
       },
     ],
@@ -185,13 +168,11 @@ export const deepSections: Section[] = [
       {
         label: "ConfigMaps",
         path: "/config/configmaps",
-        phase: 4,
         resource: { group: "", version: "v1", resource: "configmaps" },
       },
       {
         label: "Secrets",
         path: "/config/secrets",
-        phase: 4,
         resource: { group: "", version: "v1", resource: "secrets" },
       },
     ],
@@ -201,9 +182,9 @@ export const deepSections: Section[] = [
     label: "Extensions",
     icon: IconPuzzle,
     items: [
-      { label: "Custom resources", path: "/extensions/crds", phase: 4, types: "custom" },
-      { label: "Helm releases", path: "/extensions/helm", phase: 4 },
-      { label: "All resource types", path: "/resources", phase: 2, types: "all" },
+      { label: "Custom resources", path: "/extensions/crds", types: "custom" },
+      { label: "Helm releases", path: "/extensions/helm" },
+      { label: "All resource types", path: "/resources", types: "all" },
     ],
   },
 ];
@@ -214,13 +195,13 @@ export const glanceSections: Section[] = [
     id: "apps",
     label: "Apps",
     icon: IconApps,
-    items: [{ label: "Apps", path: "/apps", phase: 2 }],
+    items: [{ label: "Apps", path: "/apps" }],
   },
   {
     id: "logs",
     label: "Logs",
     icon: IconFileText,
-    items: [{ label: "Logs", path: "/logs", phase: 2 }],
+    items: [{ label: "Logs", path: "/logs" }],
   },
   { id: "events", label: "Events", icon: IconActivity, items: [eventsItem] },
 ];
@@ -229,7 +210,7 @@ export const settingsSection: Section = {
   id: "settings",
   label: "Settings",
   icon: IconSettings,
-  items: [{ label: "Settings", path: "/settings", phase: 6 }],
+  items: [{ label: "Settings", path: "/settings" }],
 };
 
 export function sectionsFor(mode: Mode): Section[] {

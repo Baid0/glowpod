@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import * as fx from "../test/fixtures";
 import { FakeWebSocket, renderApp } from "../test/renderApp";
+import { allPages } from "./navigation";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -287,5 +288,12 @@ describe("Sign-in and missing pages", () => {
     renderApp("/no/such/page");
     expect(screen.getByText("Nothing at this address")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Sections" })).toBeInTheDocument();
+  });
+});
+
+describe("every page in the navigation is built", () => {
+  it.each(allPages().filter((p) => p.path !== "/"))("$path", ({ path }) => {
+    renderApp(path);
+    expect(screen.queryByText("Nothing at this address")).not.toBeInTheDocument();
   });
 });

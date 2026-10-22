@@ -5,7 +5,7 @@ import { AppPage } from "../features/apps/AppPage";
 import { AppsPage, LogsPage } from "../features/apps/AppsPage";
 import { OverviewPage } from "../features/overview/OverviewPage";
 import { PodPage } from "../features/pod/PodPage";
-import { ComingSoon, NotFound } from "../features/placeholder/ComingSoon";
+import { NotFound } from "../features/placeholder/NotFound";
 import { EventsPage } from "../features/events/EventsPage";
 import { HelmReleasePage, HelmReleasesPage } from "../features/helm/HelmPages";
 import { MapPage } from "../features/map/MapPage";
@@ -37,7 +37,7 @@ function pageElement(p: NavItem) {
   if (p.resource) return <ResourceListPage key={p.path} resource={p.resource} />;
   if (p.types)
     return <ResourceTypesPage key={p.path} {...(p.types === "custom" ? { only: "custom" } : {})} />;
-  return <ComingSoon title={p.label} phase={p.phase} />;
+  return <NotFound />;
 }
 
 const pages: RouteObject[] = allPages()

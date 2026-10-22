@@ -1,6 +1,6 @@
 import { useParams } from "react-router";
 
-import { NotFound } from "../placeholder/ComingSoon";
+import { NotFound } from "../placeholder/NotFound";
 import { ResourceDetailPage } from "./ResourceDetailPage";
 
 /** /resources/:group/:version/:resource/:namespace/:name ("_" = no namespace). */

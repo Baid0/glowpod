@@ -61,3 +61,15 @@ shown in plain words, with the cluster's reason.
 `github.com/coreos/go-oidc/v3` (ID token verification, discovery) and
 `github.com/go-ldap/ldap/v3`. Both are security-sensitive protocol code
 that shouldn't be hand-written.
+
+## Preferences live in the browser (Phase 6)
+
+Theme, density, refresh interval, view mode and gauge thresholds are saved
+per browser (localStorage), and thresholds per cluster. CLAUDE.md asks for
+"saved per user"; in local mode the browser is the user, and in server mode
+it avoids storing state in the cluster. The server's thresholds stay the
+default; a person's own only change how their gauges are colored, not the
+"needs attention" list.
+
+The theme is applied before first paint by `public/theme.js`, a same-origin
+script, because the CSP blocks inline scripts.
