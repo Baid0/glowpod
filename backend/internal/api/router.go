@@ -126,6 +126,8 @@ func NewRouter(opts Options) http.Handler {
 						r.Get("/exec/{namespace}/{pod}", s.openTerminal)
 						r.Get("/resources", s.resourceTypes)
 						r.Get("/resources/{group}/{version}/{resource}", s.listResource)
+						r.Post("/resources/{group}/{version}/{resource}", s.createResource)
+						r.Post("/apply", s.applyManifest)
 						r.Get("/resources/{group}/{version}/{resource}/{name}", s.getResource)
 						r.Put("/resources/{group}/{version}/{resource}/{name}", s.updateResource)
 						r.Delete("/resources/{group}/{version}/{resource}/{name}", s.deleteResource)

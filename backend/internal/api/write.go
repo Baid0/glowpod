@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/restmapper"
 
 	"glowpod/internal/auth"
 	"glowpod/internal/resources"
@@ -86,6 +88,65 @@ func (s *server) updateResource(w http.ResponseWriter, r *http.Request) {
 	}
 	if !dryRun {
 		s.audit(r, "update", t, ns, name)
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+// createResource makes a new object of the URL's type from a manifest.
+// ?namespace= is where a namespaced object goes when its YAML doesn't say;
+// ?dryRun=true checks it with the API server and saves nothing.
+func (s *server) createResource(w http.ResponseWriter, r *http.Request) {
+	t, ok := s.resolveType(w, r)
+	if !ok {
+		return
+	}
+	ns, ok := oneNamespace(w, r)
+	if !ok {
+		return
+	}
+	var req updateRequest
+	if !readJSON(w, r, &req) {
+		return
+	}
+	dryRun := r.URL.Query().Get("dryRun") == "true"
+	res, err := resources.Create(r.Context(), clientsFrom(r).Dynamic, t, ns, req.YAML, dryRun)
+	if err != nil {
+		s.writeFailure(w, err)
+		return
+	}
+	if !dryRun {
+		made := unstructured.Unstructured{Object: res.Object.Object}
+		s.audit(r, "create", t, made.GetNamespace(), made.GetName())
+	}
+	writeJSON(w, http.StatusCreated, res)
+}
+
+// applyManifest creates or updates every object in a multi-document manifest
+// with server-side apply. Each object has its own result; the request only
+// fails when the manifest itself can't be read.
+func (s *server) applyManifest(w http.ResponseWriter, r *http.Request) {
+	ns, ok := oneNamespace(w, r)
+	if !ok {
+		return
+	}
+	var req updateRequest
+	if !readJSON(w, r, &req) {
+		return
+	}
+	dryRun := r.URL.Query().Get("dryRun") == "true"
+	clients := clientsFrom(r)
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(clients.Discovery)
+	res, err := resources.Apply(r.Context(), clients.Dynamic, mapper, ns, req.YAML, dryRun)
+	if err != nil {
+		s.writeFailure(w, err)
+		return
+	}
+	if !dryRun {
+		for _, it := range res.Items {
+			if it.Result != resources.Failed {
+				s.audit(r, "apply", resources.Type{Group: it.Group, Version: it.Version, Resource: it.Resource}, it.Namespace, it.Name)
+			}
+		}
 	}
 	writeJSON(w, http.StatusOK, res)
 }
