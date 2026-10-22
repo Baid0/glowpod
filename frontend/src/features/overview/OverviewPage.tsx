@@ -5,7 +5,7 @@ import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { HalfGauge } from "../../components/HalfGauge";
 import { usePreferences } from "../../lib/preferences";
-import { OVERVIEW_REFRESH_MS, useOverview } from "../../lib/queries";
+import { OVERVIEW_REFRESH_MS, useOverview, useThresholds } from "../../lib/queries";
 import { formatAge, useNow } from "../../lib/time";
 import type { Overview } from "../../lib/types";
 import { NeedsAttention } from "./Attention";
@@ -23,6 +23,7 @@ export function OverviewPage() {
   const { mode } = usePreferences();
   const query = useOverview();
   const { data, isPending, isError, refetch, dataUpdatedAt } = query;
+  const thresholds = useThresholds(data?.thresholds);
   const now = useNow();
   const stale = isError && data !== undefined;
   const updated = data ? `updated ${formatAge(now - dataUpdatedAt)} ago` : undefined;
@@ -64,7 +65,7 @@ export function OverviewPage() {
                 loading: isPending,
                 stale,
                 ...(updated ? { updated } : {}),
-                ...(data ? { thresholds: data.thresholds } : {}),
+                ...(thresholds ? { thresholds } : {}),
               })}
               onRetry={() => void refetch()}
             />

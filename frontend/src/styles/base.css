@@ -8,6 +8,17 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Table density (Settings). Compact fits more rows on a screen. */
+:root {
+  --row-height: 40px;
+  --row-pad-y: 10px;
+}
+
+:root[data-density="compact"] {
+  --row-height: 32px;
+  --row-pad-y: 6px;
+}
+
 body {
   margin: 0;
   min-height: 100vh;

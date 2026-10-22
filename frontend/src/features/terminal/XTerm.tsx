@@ -5,12 +5,24 @@ import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import { useEffect, useRef } from "react";
 
+import { usePreferences } from "../../lib/preferences";
 import { parseExecMessage, type TerminalStatus } from "./protocol";
 import { withStyleNonce } from "./styleNonce";
 import styles from "./Terminal.module.css";
 
 function cssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/** Terminal colors from the design tokens of the theme in effect. */
+function termTheme() {
+  return {
+    background: cssVar("--canvas"),
+    foreground: cssVar("--body"),
+    cursor: cssVar("--ink"),
+    cursorAccent: cssVar("--canvas"),
+    selectionBackground: cssVar("--surface-elevated"),
+  };
 }
 
 /**
@@ -29,6 +41,8 @@ export default function XTerm({
   onStatus: (status: TerminalStatus, message?: string) => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  const terminal = useRef<Terminal | null>(null);
+  const { resolvedTheme } = usePreferences();
   const report = useRef(onStatus);
   useEffect(() => {
     report.current = onStatus;
@@ -43,14 +57,9 @@ export default function XTerm({
       fontSize: 13,
       lineHeight: 1.25,
       scrollback: 5000,
-      theme: {
-        background: cssVar("--canvas"),
-        foreground: cssVar("--body"),
-        cursor: cssVar("--ink"),
-        cursorAccent: cssVar("--canvas"),
-        selectionBackground: cssVar("--surface-elevated"),
-      },
+      theme: termTheme(),
     });
+    terminal.current = term;
     const fit = new FitAddon();
     term.loadAddon(fit);
     withStyleNonce(() => {
@@ -125,8 +134,20 @@ export default function XTerm({
       resized.dispose();
       ws.close();
       term.dispose();
+      terminal.current = null;
     };
   }, [url, csrf, label]);
+
+  // Recolor in place when the theme changes; the shell keeps running. The
+  // page's tokens switch in the same commit, so read them a frame later.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      if (terminal.current) terminal.current.options.theme = termTheme();
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [resolvedTheme]);
 
   return <div ref={host} className={styles.screen} />;
 }

@@ -35,7 +35,8 @@ import { useResourceList } from "./useResourceList";
 const features = tableFeatures({ rowSortingFeature, sortedRowModel: createSortedRowModel() });
 const helper = createColumnHelper<typeof features, TableRow>();
 const noRows: TableRow[] = [];
-const ROW_HEIGHT = 40;
+/** Row heights for the density setting; base.css sets --row-height to match. */
+const ROW_HEIGHT = { comfortable: 40, compact: 32 } as const;
 
 /** Synthetic column: the API's Table omits the namespace across all namespaces. */
 const NAMESPACE_COLUMN: TableColumn = { name: "Namespace", type: "string", priority: 0 };
@@ -45,7 +46,7 @@ const NAMESPACE_COLUMN: TableColumn = { name: "Namespace", type: "string", prior
  * search over loaded rows, label selectors, paging and live refresh.
  */
 export function ResourceListPage({ resource }: { resource: ResourceRef }) {
-  const { mode, namespace } = usePreferences();
+  const { mode, namespace, density } = usePreferences();
   const [search, setSearch] = useState("");
   const [selectorDraft, setSelectorDraft] = useState("");
   const [selector, setSelector] = useState("");
@@ -117,7 +118,7 @@ export function ResourceListPage({ resource }: { resource: ResourceRef }) {
   const virtualizer = useVirtualizer({
     count: tableRows.length,
     getScrollElement: () => scroller.current,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => ROW_HEIGHT[density],
     overscan: 12,
     initialRect: { width: 1200, height: 800 },
   });

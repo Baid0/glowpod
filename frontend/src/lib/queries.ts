@@ -4,8 +4,16 @@ import { api, ApiError, DEFAULT_CLUSTER } from "./api";
 import { usePreferences } from "./preferences";
 import { queryKeys } from "./queryKeys";
 
-/** Gauges refresh every 15 s; TanStack pauses this while the tab is hidden. */
+/** The default gauge refresh; people can change it in Settings. TanStack
+ * pauses refreshes while the tab is hidden. */
 export const OVERVIEW_REFRESH_MS = 15_000;
+
+/** The thresholds in effect: this user's for the cluster, else the server's. */
+export function useThresholds(server: [number, number] | undefined): [number, number] | undefined {
+  const cluster = useClusterId();
+  const { thresholdsFor } = usePreferences();
+  return thresholdsFor(cluster) ?? server;
+}
 export const EVENTS_LIMIT = 20;
 
 export function createQueryClient() {
@@ -61,11 +69,11 @@ export function useNamespaces() {
 
 export function useOverview() {
   const cluster = useClusterId();
-  const { namespace } = usePreferences();
+  const { namespace, refreshMs } = usePreferences();
   return useQuery({
     queryKey: queryKeys.overview(cluster, namespace),
     queryFn: ({ signal }) => api.overview(cluster, namespace, signal),
-    refetchInterval: OVERVIEW_REFRESH_MS,
+    refetchInterval: refreshMs || false,
     refetchIntervalInBackground: false,
     placeholderData: (prev) => prev,
   });

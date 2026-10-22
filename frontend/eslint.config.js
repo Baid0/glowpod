@@ -9,6 +9,12 @@ import tseslint from "typescript-eslint";
 export default defineConfig([
   globalIgnores(["dist", "coverage"]),
   {
+    // Plain scripts served as-is, before the app loads.
+    files: ["public/**/*.js"],
+    extends: [js.configs.recommended],
+    languageOptions: { globals: globals.browser, sourceType: "script" },
+  },
+  {
     files: ["**/*.{ts,tsx}"],
     extends: [
       js.configs.recommended,

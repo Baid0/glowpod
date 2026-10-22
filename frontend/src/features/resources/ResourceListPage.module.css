@@ -206,7 +206,7 @@
 }
 
 .table td {
-  height: 40px;
+  height: var(--row-height);
   padding: 0 var(--space-4);
   border-bottom: 1px solid var(--hairline);
   color: var(--body);

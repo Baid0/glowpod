@@ -437,7 +437,7 @@
 }
 
 .table td {
-  padding: 10px var(--space-3) 10px 0;
+  padding: var(--row-pad-y) var(--space-3) var(--row-pad-y) 0;
   border-top: 1px solid var(--hairline);
   color: var(--body);
 }

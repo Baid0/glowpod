@@ -1,5 +1,5 @@
 import { HalfGauge, type GaugeState } from "../components/HalfGauge";
-import { useOverview } from "../lib/queries";
+import { useOverview, useThresholds } from "../lib/queries";
 import type { Gauge } from "../lib/types";
 import styles from "./ClusterHealthCard.module.css";
 
@@ -17,7 +17,7 @@ export function ClusterHealthCard() {
     { label: "Memory", gauge: data?.gauges.memory },
     { label: "Pods", gauge: data?.gauges.pods },
   ];
-  const thresholds = data?.thresholds;
+  const thresholds = useThresholds(data?.thresholds);
 
   return (
     <section className={styles.card} aria-labelledby="cluster-health-title">

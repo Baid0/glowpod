@@ -3,8 +3,10 @@ import {
   IconFolder,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
+  IconMoon,
   IconSearch,
   IconStack2,
+  IconSun,
 } from "@tabler/icons-react";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router";
@@ -18,7 +20,15 @@ import { allPages, deepSections, glanceSections, settingsSection } from "./navig
 
 function useCommands(): Command[] {
   const navigate = useNavigate();
-  const { mode, setMode, panelCollapsed, setPanelCollapsed, setNamespace } = usePreferences();
+  const {
+    mode,
+    setMode,
+    panelCollapsed,
+    setPanelCollapsed,
+    setNamespace,
+    resolvedTheme,
+    setTheme,
+  } = usePreferences();
   const { data: namespaceList } = useNamespaces();
   const namespaces = namespaceList?.namespaces;
 
@@ -62,6 +72,16 @@ function useCommands(): Command[] {
         },
       },
       {
+        id: "theme",
+        label: resolvedTheme === "dark" ? "Switch to the light theme" : "Switch to the dark theme",
+        group: "View",
+        icon: resolvedTheme === "dark" ? IconSun : IconMoon,
+        keywords: "theme appearance color",
+        run: () => {
+          setTheme(resolvedTheme === "dark" ? "light" : "dark");
+        },
+      },
+      {
         id: "ns:",
         label: "All namespaces",
         group: "Namespace",
@@ -81,7 +101,17 @@ function useCommands(): Command[] {
       },
     }));
     return [...pages, ...actions, ...ns];
-  }, [navigate, mode, setMode, panelCollapsed, setPanelCollapsed, setNamespace, namespaces]);
+  }, [
+    navigate,
+    mode,
+    setMode,
+    panelCollapsed,
+    setPanelCollapsed,
+    setNamespace,
+    namespaces,
+    resolvedTheme,
+    setTheme,
+  ]);
 }
 
 /** ⌘K palette: go to any page, switch mode, panel or namespace. */
