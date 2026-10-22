@@ -1,3 +1,5 @@
 dist
 pnpm-lock.yaml
 docs/*/
+# Written by helm repo index in the release workflow.
+public/charts/index.yaml
