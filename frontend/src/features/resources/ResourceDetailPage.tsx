@@ -5,7 +5,7 @@ import { formatAge, useNow } from "../../lib/time";
 import type { ResourceRef } from "../../lib/types";
 import { ResourceActions } from "../actions/ResourceActions";
 import { ObjectYaml } from "../yaml/ObjectYaml";
-import { useObject } from "../yaml/useObject";
+import { isSecret, useObject } from "../yaml/useObject";
 import styles from "./ResourceDetailPage.module.css";
 
 /**
@@ -23,6 +23,8 @@ export function ResourceDetailPage({
 }) {
   const { mode } = usePreferences();
   const [revealed, setRevealed] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const secret = isSecret(resource);
   const { data } = useObject(resource, namespace, name, revealed);
   const now = useNow(30_000);
   const meta = data?.object.metadata;
@@ -43,6 +45,16 @@ export function ResourceDetailPage({
               name={name}
               kind={data.object.kind}
               {...replicasOf(data.object)}
+              {...(editing
+                ? {}
+                : {
+                    onEdit: () => {
+                      // Editing a Secret shows its values: the click is the reveal.
+                      if (secret) setRevealed(true);
+                      setEditing(true);
+                    },
+                    editLabel: secret && !revealed ? "Reveal and edit" : "Edit YAML",
+                  })}
             />
           )}
         </div>
@@ -79,7 +91,12 @@ export function ResourceDetailPage({
         namespace={namespace}
         name={name}
         revealed={revealed}
-        onReveal={setRevealed}
+        onReveal={(r) => {
+          setRevealed(r);
+          if (!r) setEditing(false);
+        }}
+        editing={editing}
+        onEditingChange={setEditing}
       />
     </div>
   );

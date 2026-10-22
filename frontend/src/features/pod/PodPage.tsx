@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 
 import { Badge } from "../../components/Badge";
@@ -36,6 +36,7 @@ export function PodPage() {
     ? (params.get("tab") as TabId)
     : "overview";
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [editing, setEditing] = useState(false);
 
   const select = (id: TabId) => {
     setParams(id === "overview" ? {} : { tab: id }, { replace: true });
@@ -54,7 +55,19 @@ export function PodPage() {
 
   return (
     <div className={styles.page}>
-      <Header data={data} name={name} namespace={namespace} />
+      <Header
+        data={data}
+        name={name}
+        namespace={namespace}
+        {...(editing
+          ? {}
+          : {
+              onEdit: () => {
+                select("yaml");
+                setEditing(true);
+              },
+            })}
+      />
 
       <div className={styles.tabs} role="tablist" aria-label="Pod views">
         {TABS.map((t, i) => (
@@ -100,7 +113,13 @@ export function PodPage() {
         ) : tab === "logs" ? (
           <LogViewer namespace={namespace} pod={name} containers={data.containers} />
         ) : (
-          <ObjectYaml resource={PODS} namespace={namespace} name={name} />
+          <ObjectYaml
+            resource={PODS}
+            namespace={namespace}
+            name={name}
+            editing={editing}
+            onEditingChange={setEditing}
+          />
         )}
       </div>
     </div>
@@ -111,10 +130,12 @@ function Header({
   data,
   name,
   namespace,
+  onEdit,
 }: {
   data: PodDetail | undefined;
   name: string;
   namespace: string;
+  onEdit?: () => void;
 }) {
   const now = useNow(30_000);
   const pod = data?.pod;
@@ -137,6 +158,7 @@ function Header({
             name={name}
             kind="Pod"
             {...(owner ? { ownerKind: owner.kind } : {})}
+            {...(onEdit ? { onEdit } : {})}
           />
         </div>
       </div>

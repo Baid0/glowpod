@@ -1,0 +1,5 @@
+.editor {
+  height: calc(100vh - 64px - 320px);
+  min-height: 320px;
+  overflow: hidden;
+}

@@ -1,9 +1,11 @@
 import { IconEye, IconEyeOff, IconLock } from "@tabler/icons-react";
+import { useState } from "react";
 
 import { Button } from "../../components/Button";
 import { ApiError } from "../../lib/api";
 import type { ResourceRef } from "../../lib/types";
 import styles from "./ObjectYaml.module.css";
+import { EditYaml } from "./EditYaml";
 import { decodeSecretValue } from "./secret";
 import { isSecret, useObject } from "./useObject";
 import { YamlView } from "./YamlView";
@@ -18,15 +20,24 @@ export function ObjectYaml({
   name,
   revealed = false,
   onReveal,
+  editing = false,
+  onEditingChange,
 }: {
   resource: ResourceRef;
   namespace: string;
   name: string;
   revealed?: boolean;
   onReveal?: (reveal: boolean) => void;
+  /** Shows the editor instead of the read-only view. */
+  editing?: boolean;
+  onEditingChange?: (editing: boolean) => void;
 }) {
   const { data, error, isPending, refetch } = useObject(resource, namespace, name, revealed);
   const secret = isSecret(resource);
+  // Bumped to restart editing from a freshly loaded version.
+  const [generation, setGeneration] = useState(0);
+  // A hidden Secret can't be edited: saving would blank its values.
+  const canEdit = editing && (!secret || revealed);
 
   if (error) {
     const msg =
@@ -81,7 +92,7 @@ export function ObjectYaml({
           </Button>
         </div>
       )}
-      {secret && revealed && values.length > 0 && (
+      {secret && revealed && !canEdit && values.length > 0 && (
         <section className={styles.decoded} aria-label="Decoded values">
           <h3 className={styles.decodedTitle}>Decoded values</h3>
           <dl className={styles.pairs}>
@@ -97,7 +108,23 @@ export function ObjectYaml({
           </dl>
         </section>
       )}
-      <YamlView yaml={data.yaml} label={`YAML of ${name}`} />
+      {canEdit ? (
+        <EditYaml
+          key={generation}
+          resource={resource}
+          namespace={namespace}
+          name={name}
+          initial={data.yaml}
+          onDone={() => onEditingChange?.(false)}
+          onReload={() => {
+            void refetch().then(() => {
+              setGeneration((g) => g + 1);
+            });
+          }}
+        />
+      ) : (
+        <YamlView yaml={data.yaml} label={`YAML of ${name}`} />
+      )}
     </div>
   );
 }

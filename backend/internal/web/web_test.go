@@ -28,7 +28,7 @@ func TestHandler(t *testing.T) {
 		wantType     string
 		wantCacheHdr string
 	}{
-		{name: "root serves index", fsys: built, path: "/", wantStatus: 200, wantBody: "<title>Glowpod", wantType: "text/html", wantCacheHdr: "no-cache"},
+		{name: "root serves index", fsys: built, path: "/", wantStatus: 200, wantBody: "<title>Glowpod", wantType: "text/html", wantCacheHdr: "no-store"},
 		{name: "index.html directly", fsys: built, path: "/index.html", wantStatus: 200, wantBody: "<title>Glowpod"},
 		{name: "client route falls back to index", fsys: built, path: "/workloads/deployments", wantStatus: 200, wantBody: "<title>Glowpod"},
 		{name: "hashed asset is cached forever", fsys: built, path: "/assets/index-abc.js", wantStatus: 200, wantBody: "console.log", wantCacheHdr: "immutable"},
@@ -74,5 +74,28 @@ func TestDistIsEmbedded(t *testing.T) {
 	// The placeholder keeps `go build` working before the frontend is built.
 	if _, err := Dist().Open(".gitkeep"); err != nil {
 		t.Fatalf("embedded dist is missing its placeholder: %v", err)
+	}
+}
+
+func TestIndexNonce(t *testing.T) {
+	fsys := fstest.MapFS{"index.html": {Data: []byte(`<meta name="csp-nonce" content="` + NoncePlaceholder + `">`)}}
+	h := Handler(fsys)
+	nonceOf := func() (string, string) {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil))
+		body := rec.Body.String()
+		start := strings.Index(body, `content="`) + len(`content="`)
+		return body[start : start+strings.Index(body[start:], `"`)], rec.Header().Get("Content-Security-Policy")
+	}
+	n1, csp := nonceOf()
+	n2, _ := nonceOf()
+	if n1 == NoncePlaceholder || len(n1) < 20 || n1 == n2 {
+		t.Fatalf("nonces %q, %q: want fresh random values", n1, n2)
+	}
+	if !strings.Contains(csp, "style-src 'self' 'nonce-"+n1+"'") || !strings.Contains(csp, "script-src 'self';") {
+		t.Fatalf("csp = %q", csp)
+	}
+	if strings.Contains(ContentSecurityPolicy(""), "nonce") {
+		t.Fatal("no nonce without one")
 	}
 }

@@ -24,6 +24,7 @@ export function ResourceActions({
   replicas,
   ownerKind,
   onEdit,
+  editLabel = "Edit YAML",
 }: {
   resource: ResourceRef;
   namespace: string;
@@ -36,6 +37,8 @@ export function ResourceActions({
   ownerKind?: string;
   /** Opens the YAML editor; omitted where editing lives elsewhere. */
   onEdit?: () => void;
+  /** "Reveal and edit" for a hidden Secret. */
+  editLabel?: string;
 }) {
   const allowed = useAllowedActions(resource, namespace, name);
   const navigate = useNavigate();
@@ -50,7 +53,7 @@ export function ResourceActions({
     <div className={styles.bar} role="group" aria-label="Actions">
       {allowed.edit && onEdit && (
         <Button size="sm" icon={<IconPencil size={16} stroke={1.75} />} onClick={onEdit}>
-          Edit YAML
+          {editLabel}
         </Button>
       )}
       {allowed.scale && (

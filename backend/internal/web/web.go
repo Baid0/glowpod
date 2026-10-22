@@ -75,10 +75,17 @@ func serveIndex(w http.ResponseWriter, r *http.Request, fsys fs.FS) {
 		http.Error(w, "couldn't read index.html", http.StatusInternalServerError)
 		return
 	}
+	nonce, err := newNonce()
+	if err != nil {
+		http.Error(w, "couldn't create a nonce", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Security-Policy", ContentSecurityPolicy(nonce))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-cache")
+	// A fresh nonce per load, so the page is never reused from cache.
+	w.Header().Set("Cache-Control", "no-store")
 	if r.Method == http.MethodHead {
 		return
 	}
-	_, _ = w.Write(page)
+	_, _ = w.Write(withNonce(page, nonce))
 }
