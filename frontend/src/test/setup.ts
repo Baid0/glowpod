@@ -1,6 +1,10 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
+
+// Role queries walk the accessibility tree, which is slow on shared CI
+// runners; the 1 s default made findBy* time out there now and then.
+configure({ asyncUtilTimeout: 3000 });
 
 // jsdom has no <dialog> behaviour; enough of it for the command palette.
 if (typeof HTMLDialogElement !== "undefined" && !("showModal" in HTMLDialogElement.prototype)) {

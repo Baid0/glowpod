@@ -66,7 +66,8 @@ describe("settings", () => {
     );
 
     await router.navigate("/settings");
-    await userEvent.click(await screen.findByRole("button", { name: /Use the defaults/ }));
+    const again = await screen.findByRole("region", { name: /Gauge colors for/ });
+    await userEvent.click(within(again).getByRole("button", { name: /Use the defaults/ }));
     expect(localStorage.getItem("glowpod.thresholds")).toBe("{}");
   });
 
