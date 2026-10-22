@@ -14,6 +14,13 @@ helm install glowpod deploy/helm/glowpod -n glowpod --create-namespace \
 Serve it over HTTPS: the session cookie is `Secure`, so browsers only send it
 over HTTPS (and to `localhost`, which is enough for a port-forward test).
 
+Full guides: [install](../../../docs/install.md),
+[sign-in and access](../../../docs/authentication.md) (more provider
+examples, Active Directory, troubleshooting),
+[configuration](../../../docs/configuration.md) and
+[operations](../../../docs/operations.md). To try SSO and LDAP without a
+provider of your own, run the [SSO demo](../../examples/sso-demo/README.md).
+
 ## Sign-in methods
 
 Turn on any mix. The sign-in page shows the ones you enable.

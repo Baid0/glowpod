@@ -18,14 +18,24 @@ sign-in link. Everything runs as your kubeconfig's user.
 ## Install it in a cluster
 
 ```bash
-make image TAG=0.1.0          # or use a published image
+make image-push IMAGE=registry.example.com/you/glowpod VERSION=0.1.0
 helm install glowpod deploy/helm/glowpod -n glowpod --create-namespace \
-  --set publicURL=https://glowpod.example.com
+  --set image.repository=registry.example.com/you/glowpod --set image.tag=0.1.0 \
+  --set publicURL=https://glowpod.example.com \
+  --set ingress.enabled=true --set ingress.host=glowpod.example.com
 ```
 
 People sign in with **SSO (OpenID Connect)**, **LDAP / Active Directory** or a
-**service-account token**, and act as themselves. Setup for each is in
-[deploy/helm/glowpod/README.md](deploy/helm/glowpod/README.md).
+**service-account token**, and act as themselves: every Kubernetes call runs
+with their own RBAC.
+
+| Guide | |
+| --- | --- |
+| [Install](docs/install.md) | Image, Helm values, ingress and TLS, upgrade, uninstall |
+| [Sign-in and access](docs/authentication.md) | Tokens, SSO (Okta, Entra ID, Google, Keycloak, Dex, …), LDAP and Active Directory, RBAC for people |
+| [Configuration](docs/configuration.md) | Every flag, environment variable and Helm value |
+| [Running Glowpod](docs/operations.md) | Security model, logs, health, troubleshooting |
+| [SSO demo](deploy/examples/sso-demo/README.md) | Dex + LDAP in a throwaway namespace, to try it all in ten minutes |
 
 ## What it does
 
