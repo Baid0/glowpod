@@ -4,10 +4,11 @@ Glowpod is a web dashboard for Kubernetes. It serves two audiences through one U
 **app developers** (simple "Glance" mode) and **platform/DevOps teams** (full "Deep" mode).
 Nothing is ever locked away in Glance mode; it only simplifies what is shown.
 
-- v1 is **web first** and supports **one cluster**. Design every API and route so a cluster id can be added later (multi-cluster).
-- Two ways to run it from the same binary:
-  - **Local mode:** `glowpod` CLI reads the user's kubeconfig and opens the browser.
-  - **In-cluster mode:** installed with a Helm chart; users sign in.
+- **Web first, many clusters.** Every API route and page URL carries a cluster id (`/api/v1/clusters/{cluster}/…`, `/c/<cluster>/…`).
+- Three ways to run it from the same binary:
+  - **Local mode:** `glowpod` CLI reads the user's kubeconfig, lists every context as a cluster, and opens the browser.
+  - **In-cluster mode:** installed with a Helm chart; users sign in; one cluster.
+  - **Hub mode:** an in-cluster install that also takes `glowpod agent` connections from other clusters (Rancher-style, free/MIT). Design: `docs/design/multi-cluster.md`.
 - Sign-in methods: **OIDC SSO**, **service-account token**, **kubeconfig** (local mode only).
 - Theme: **dark by default**, light mode available.
 
@@ -167,6 +168,14 @@ Refresh every 15 s; pause while the browser tab is hidden.
 4. **More sections:** Nodes (cordon, drain), Network, Storage, Config, Events page, generic CRD views, resource map.
 5. **In-cluster mode:** OIDC and token sign-in, Helm chart, RBAC-aware UI everywhere.
 6. **Polish:** light theme, settings (thresholds, density, refresh), empty and error states, responsive layouts.
+
+Then Glowpod Hub (`docs/design/multi-cluster.md`):
+
+7. **Many clusters in local mode:** cluster registry, Clusters page, real cluster picker, every kubeconfig context.
+8. **Hub and agent:** outbound agent tunnel, registration, impersonation guards, visibility from RBAC subjects.
+9. **Cluster shell and kubeconfig download.**
+10. **Access:** Members page, hub settings.
+11. **Across clusters:** search and "Needs attention" over all clusters.
 
 Finish and test each phase before starting the next.
 
