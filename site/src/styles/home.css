@@ -1,0 +1,562 @@
+/* Hero */
+
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 64px 56px;
+  padding-block: 96px 72px;
+}
+
+.hero-copy {
+  flex: 7 1 480px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.glow {
+  color: var(--accent-text);
+}
+
+/* On white, lime can't be text: the word sits on a lime sticker instead. */
+:root[data-theme="light"] .glow {
+  padding: 0 0.12em;
+  border: 1.5px solid var(--bio-black);
+  border-radius: 12px;
+  background: var(--lime);
+}
+
+.command-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 600px;
+  padding: 16px 16px 16px 20px;
+  background: var(--surface-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+}
+
+.command-card .command-lines {
+  flex: 1;
+}
+
+.hero-visual {
+  position: relative;
+  flex: 5 1 420px;
+  min-width: 0;
+  padding-top: 64px;
+}
+
+.hero-pip {
+  position: absolute;
+  top: 0;
+  right: 40px;
+  width: 104px;
+  height: auto;
+}
+
+/* The product mock: a small, static Overview screen */
+
+.mock {
+  position: relative;
+  background: var(--surface-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.mock-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.mock-titlebar > span:not(.mock-title) {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--hairline-strong);
+}
+
+.mock-title {
+  flex: 1;
+  text-align: center;
+  font: 400 12px var(--font-mono);
+  color: var(--muted);
+}
+
+.mock-body {
+  display: flex;
+  background: var(--canvas);
+}
+
+.mock-rail {
+  flex: 0 0 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 0;
+  border-right: 1px solid var(--hairline);
+}
+
+.mock-rail span {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-segment);
+  background: var(--surface-card);
+}
+
+.mock-rail .is-active {
+  background: var(--lime);
+  border: 1.5px solid var(--lime-outline);
+}
+
+.mock-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.mock-heading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.mock-page {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--ink);
+}
+
+.mock-updated {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.mock-updated .dot {
+  width: 5px;
+  height: 5px;
+}
+
+.mock-gauges {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mock-tile,
+.mock-card {
+  background: var(--surface-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+}
+
+.mock-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px;
+  font-size: 12px;
+}
+
+.mock-tile .gauge {
+  max-width: 120px;
+}
+
+.mock-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.mock-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.mock-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--hairline);
+}
+
+.mock-row .dot {
+  width: 5px;
+  height: 5px;
+}
+
+.mono-truncate {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 11px var(--font-mono);
+}
+
+/* Highlights */
+
+.highlights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 24px;
+  padding-bottom: var(--section-gap);
+}
+
+.highlight {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 32px;
+  border-top: 1px solid var(--hairline);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* One rule across the row on wide screens, one per item when they stack. */
+@media (min-width: 1000px) {
+  .highlights {
+    column-gap: 0;
+  }
+
+  .highlight {
+    padding-right: 24px;
+  }
+}
+
+.highlight-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Modes */
+
+.modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+  gap: 24px;
+}
+
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+}
+
+.mode-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mode-copy h3 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.app-list {
+  list-style: none;
+  padding: 6px 16px;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+}
+
+.app-list li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 12px 0;
+}
+
+.app-list li + li {
+  border-top: 1px solid var(--hairline);
+}
+
+.app-name {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.app-status {
+  font-size: 13px;
+}
+
+.table-inset {
+  background: var(--canvas);
+  border-radius: var(--radius-control);
+}
+
+.pod-table {
+  font-size: 13px;
+}
+
+.pod-table th {
+  padding: 10px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.pod-table td {
+  padding: 10px 8px;
+  color: var(--ink);
+}
+
+.pod-table :is(th, td):first-child {
+  padding-left: 16px;
+}
+
+.pod-table :is(th, td):last-child {
+  padding-right: 16px;
+  text-align: right;
+}
+
+.pod-table td:last-child {
+  color: var(--muted);
+}
+
+.pod-table .mono {
+  font-size: 12px;
+}
+
+/* Gauges band */
+
+.gauges-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 40px 56px;
+  padding: 56px;
+}
+
+.gauges-copy {
+  flex: 1 1 380px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 17px;
+}
+
+.band-gauges {
+  flex: 1 1 420px;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.band-gauges figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.band-gauges figcaption {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Features */
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: 24px;
+}
+
+.feature {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 32px;
+  font-size: 15px;
+}
+
+.feature h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Install */
+
+.install {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 40px 56px;
+}
+
+.install-copy {
+  flex: 1 1 340px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tabs {
+  flex: 1.4 1 480px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.tab-list {
+  display: flex;
+  gap: 4px;
+  padding: 8px 8px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.tab {
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--accent-line);
+}
+
+.tab:focus-visible {
+  outline-offset: -2px;
+}
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 150px;
+  padding: 24px;
+}
+
+/* Until the script runs, every panel shows; after, only the selected one. */
+.tab-panel[hidden] {
+  display: none;
+}
+
+.tab-panel:focus-visible {
+  outline-offset: -4px;
+}
+
+.command-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.command-block .command-lines {
+  flex: 1;
+}
+
+.note {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* Call to action */
+
+.cta-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 32px 48px;
+  padding: 56px 64px;
+}
+
+.cta-pip {
+  flex: 0 0 150px;
+  width: 150px;
+  height: auto;
+}
+
+.cta-copy {
+  flex: 1 1 360px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 17px;
+}
+
+/* 404 */
+
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  padding-block: 96px;
+}
+
+@media (max-width: 767px) {
+  .hero {
+    padding-block: 48px var(--section-gap);
+    gap: 48px;
+  }
+
+  .hero-pip {
+    right: 16px;
+  }
+
+  .mode-card,
+  .feature {
+    padding: 24px;
+  }
+
+  .gauges-band,
+  .cta-band {
+    padding: 32px 24px;
+  }
+
+  .cta-pip {
+    flex-basis: 110px;
+    width: 110px;
+  }
+
+  .tab-panel {
+    padding: 20px;
+  }
+
+  .command-card {
+    padding: 12px 12px 12px 16px;
+  }
+}

@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- @include head.html -->
+    <title>Glowpod · Kubernetes dashboard</title>
+    <meta
+      name="description"
+      content="Glowpod is a friendly, open-source web dashboard for Kubernetes. Glance mode for developers, Deep mode for platform teams."
+    />
+  </head>
+  <body>
+    <!-- @include header.html -->
+    <main id="main">
+      <section class="container hero">
+        <div class="hero-copy">
+          <span class="pill"
+            ><span class="dot dot-ok" aria-hidden="true"></span>Open-source Kubernetes
+            dashboard</span
+          >
+          <h1 class="display">See your cluster <span class="glow">glow.</span></h1>
+          <p class="lead">
+            Glowpod is a friendly web dashboard for Kubernetes. Developers get plain answers in
+            Glance mode. Platform teams get every resource, log and YAML field in Deep mode. Same
+            app, one click apart.
+          </p>
+          <div class="button-row">
+            <a class="button button-primary button-lg" href="/docs/">
+              Get started
+              <svg
+                class="icon icon-bold"
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14M13 18l6 -6M13 6l6 6" />
+              </svg>
+            </a>
+            <a class="button button-secondary button-lg" href="https://github.com/Baid0/glowpod"
+              >View on GitHub</a
+            >
+          </div>
+          <div class="command-card">
+            <code class="command-lines">
+              <span
+                ><span class="prompt" aria-hidden="true">$ </span>helm install glowpod
+                oci://ghcr.io/baid0/charts/glowpod</span
+              >
+            </code>
+            <button
+              class="icon-button copy-button"
+              type="button"
+              data-copy="helm install glowpod oci://ghcr.io/baid0/charts/glowpod"
+              aria-label="Copy install command"
+            >
+              <!-- @include copy-icons.html -->
+            </button>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <img class="hero-pip" src="/brand/pip-happy.svg" alt="" width="124" height="145" />
+          <div
+            class="mock"
+            role="img"
+            aria-label="Glowpod overview screen with CPU, memory and pod gauges and a list of problems"
+          >
+            <div class="mock-titlebar">
+              <span></span><span></span><span></span>
+              <span class="mock-title">glowpod · prod-eu-1</span>
+            </div>
+            <div class="mock-body">
+              <div class="mock-rail">
+                <span class="is-active"></span><span></span><span></span><span></span><span></span>
+              </div>
+              <div class="mock-main">
+                <div class="mock-heading">
+                  <span class="mock-page">Overview</span>
+                  <span class="mock-updated"><span class="dot dot-ok"></span>updated 12 s ago</span>
+                </div>
+                <div class="mock-gauges">
+                  <div class="mock-tile">
+                    <svg class="gauge" viewBox="0 0 200 112">
+                      <path class="gauge-track" d="M20 100A80 80 0 0 1 180 100" />
+                      <path
+                        class="gauge-value-outline"
+                        d="M20 100A80 80 0 0 1 180 100"
+                        pathLength="100"
+                        stroke-dasharray="62 200"
+                      />
+                      <path
+                        class="gauge-value is-ok"
+                        d="M20 100A80 80 0 0 1 180 100"
+                        pathLength="100"
+                        stroke-dasharray="62 200"
+                      />
+                      <circle class="gauge-knob is-ok" cx="129.4" cy="25.6" r="10.5" />
+                      <text class="gauge-number" x="100" y="92">62%</text>
+                    </svg>
+                    <span>CPU</span>
+                  </div>
+                  <div class="mock-tile">
+                    <svg class="gauge" viewBox="0 0 200 112">
+                      <path class="gauge-track" d="M20 100A80 80 0 0 1 180 100" />
+                      <path
+                        class="gauge-value is-high"
+                        d="M20 100A80 80 0 0 1 180 100"
+                        pathLength="100"
+                        stroke-dasharray="78 200"
+                      />
+                      <circle class="gauge-knob is-high" cx="161.6" cy="49" r="10.5" />
+                      <text class="gauge-number" x="100" y="92">78%</text>
+                    </svg>
+                    <span>Memory</span>
+                  </div>
+                  <div class="mock-tile">
+                    <svg class="gauge" viewBox="0 0 200 112">
+                      <path class="gauge-track" d="M20 100A80 80 0 0 1 180 100" />
+                      <path
+                        class="gauge-value-outline"
+                        d="M20 100A80 80 0 0 1 180 100"
+                        pathLength="100"
+                        stroke-dasharray="45 200"
+                      />
+                      <path
+                        class="gauge-value is-ok"
+                        d="M20 100A80 80 0 0 1 180 100"
+                        pathLength="100"
+                        stroke-dasharray="45 200"
+                      />
+                      <circle class="gauge-knob is-ok" cx="87.5" cy="21" r="10.5" />
+                      <text class="gauge-number" x="100" y="92">45%</text>
+                    </svg>
+                    <span>Pods</span>
+                  </div>
+                </div>
+                <div class="mock-card">
+                  <span class="mock-card-title">Needs attention</span>
+                  <div class="mock-row">
+                    <span class="status-pill"
+                      ><span class="dot dot-critical"></span>CrashLoopBackOff</span
+                    >
+                    <span class="mono-truncate">payments-api-7d9f6b</span>
+                  </div>
+                  <div class="mock-row">
+                    <span class="status-pill"><span class="dot dot-high"></span>Pending</span>
+                    <span class="mono-truncate">search-indexer-0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container highlights" aria-label="Highlights">
+        <div class="highlight">
+          <h2 class="highlight-title">One small binary</h2>
+          <p>Run it on your laptop or install it in the cluster with Helm.</p>
+        </div>
+        <div class="highlight">
+          <h2 class="highlight-title">Every CRD on day one</h2>
+          <p>Custom resources get lists and detail views automatically.</p>
+        </div>
+        <div class="highlight">
+          <h2 class="highlight-title">Runs as you</h2>
+          <p>Every request uses your own Kubernetes permissions.</p>
+        </div>
+        <div class="highlight">
+          <h2 class="highlight-title">Open source</h2>
+          <p>Free to use, read and extend. MIT licensed.</p>
+        </div>
+      </section>
+
+      <section class="container section" id="modes" aria-labelledby="modes-h">
+        <div class="section-head">
+          <span class="eyebrow">Two modes, one dashboard</span>
+          <h2 id="modes-h" class="section-title">
+            Simple when you want answers. Deep when you need everything.
+          </h2>
+        </div>
+        <div class="modes">
+          <div class="card mode-card">
+            <div class="mode-copy">
+              <span class="tag tag-lime">Glance</span>
+              <h3>For developers who ship apps</h3>
+              <p>
+                Your apps, their health and what to do next, in plain language. No ReplicaSets
+                required.
+              </p>
+            </div>
+            <ul class="app-list" aria-label="Example apps in Glance mode">
+              <li>
+                <span class="dot dot-lg dot-critical" aria-hidden="true"></span>
+                <span class="app-name">payments</span>
+                <span class="app-status">2 of 6 pods keep restarting</span>
+              </li>
+              <li>
+                <span class="dot dot-lg dot-high" aria-hidden="true"></span>
+                <span class="app-name">search</span>
+                <span class="app-status">Waiting for free memory</span>
+              </li>
+              <li>
+                <span class="dot dot-lg dot-ok" aria-hidden="true"></span>
+                <span class="app-name">checkout</span>
+                <span class="app-status">All 4 pods running</span>
+              </li>
+            </ul>
+          </div>
+          <div class="card mode-card">
+            <div class="mode-copy">
+              <span class="tag">Deep</span>
+              <h3>For platform and DevOps teams</h3>
+              <p>
+                Every resource, every field, node pressure, events and YAML with a diff before
+                apply.
+              </p>
+            </div>
+            <div class="table-wrap table-inset">
+              <table class="pod-table">
+                <caption class="visually-hidden">
+                  Example pods in Deep mode
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Ready</th>
+                    <th scope="col">Restarts</th>
+                    <th scope="col">Age</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="mono">payments-api-x2kq9</td>
+                    <td>0/1</td>
+                    <td>14</td>
+                    <td>23m</td>
+                  </tr>
+                  <tr>
+                    <td class="mono">payments-api-k4j2n</td>
+                    <td>1/1</td>
+                    <td>0</td>
+                    <td>2d</td>
+                  </tr>
+                  <tr>
+                    <td class="mono">search-indexer-0</td>
+                    <td>0/1</td>
+                    <td>0</td>
+                    <td>6m</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container section" aria-labelledby="gauges-h">
+        <div class="lime-band gauges-band">
+          <div class="gauges-copy">
+            <span class="eyebrow">The overview</span>
+            <h2 id="gauges-h" class="band-title">Know if your cluster is okay in two seconds.</h2>
+            <p>
+              Half-round gauges show real usage, and a thin inner arc shows what pods have reserved.
+              You see the squeeze before new pods stop scheduling.
+            </p>
+          </div>
+          <div class="band-gauges">
+            <figure>
+              <svg
+                class="gauge gauge-on-lime"
+                viewBox="0 0 200 112"
+                role="img"
+                aria-label="CPU 62 percent, 75 percent requested"
+              >
+                <path class="gauge-track" d="M20 100A80 80 0 0 1 180 100" />
+                <path
+                  class="gauge-value"
+                  d="M20 100A80 80 0 0 1 180 100"
+                  pathLength="100"
+                  stroke-dasharray="62 200"
+                />
+                <path
+                  class="gauge-requested"
+                  d="M36 100A64 64 0 0 1 164 100"
+                  pathLength="100"
+                  stroke-dasharray="75 200"
+                />
+                <text class="gauge-number" x="100" y="92">62%</text>
+              </svg>
+              <figcaption>CPU</figcaption>
+            </figure>
+            <figure>
+              <svg
+                class="gauge gauge-on-lime"
+                viewBox="0 0 200 112"
+                role="img"
+                aria-label="Memory 78 percent, 70 percent requested"
+              >
+                <path class="gauge-track" d="M20 100A80 80 0 0 1 180 100" />
+                <path
+                  class="gauge-value"
+                  d="M20 100A80 80 0 0 1 180 100"
+                  pathLength="100"
+                  stroke-dasharray="78 200"
+                />
+                <path
+                  class="gauge-requested"
+                  d="M36 100A64 64 0 0 1 164 100"
+                  pathLength="100"
+                  stroke-dasharray="70 200"
+                />
+                <text class="gauge-number" x="100" y="92">78%</text>
+              </svg>
+              <figcaption>Memory</figcaption>
+            </figure>
+            <figure>
+              <svg
+                class="gauge gauge-on-lime"
+                viewBox="0 0 200 112"
+                role="img"
+                aria-label="Pods 45 percent of capacity"
+              >
+                <path class="gauge-track" d="M20 100A80 80 0 0 1 180 100" />
+                <path
+                  class="gauge-value"
+                  d="M20 100A80 80 0 0 1 180 100"
+                  pathLength="100"
+                  stroke-dasharray="45 200"
+                />
+                <text class="gauge-number" x="100" y="92">45%</text>
+              </svg>
+              <figcaption>Pods</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="container section" id="features" aria-labelledby="features-h">
+        <div class="section-head">
+          <span class="eyebrow">Features</span>
+          <h2 id="features-h" class="section-title">
+            Everything kubectl knows, without the typing.
+          </h2>
+        </div>
+        <div class="feature-grid">
+          <div class="card feature">
+            <span class="icon-tile"
+              ><svg class="icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path d="M3 12h4l3 8l4 -16l3 8h4" /></svg
+            ></span>
+            <h3>Live by default</h3>
+            <p>
+              Lists and events update the moment the cluster changes. Gauges refresh every 15
+              seconds. No refresh button.
+            </p>
+          </div>
+          <div class="card feature">
+            <span class="icon-tile"
+              ><svg class="icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path d="M8 9l3 3l-3 3M13 15h3" />
+                <rect x="3" y="4" width="18" height="16" rx="2" /></svg
+            ></span>
+            <h3>Logs and terminal</h3>
+            <p>Follow live logs and open a terminal in any container, right from the browser.</p>
+          </div>
+          <div class="card feature">
+            <span class="icon-tile"
+              ><svg class="icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                <path d="M10 13l-1 2l1 2M14 13l1 2l-1 2" /></svg
+            ></span>
+            <h3>Safe YAML edits</h3>
+            <p>
+              Edit the real object, see the diff, and dry-run it on the server before anything
+              changes.
+            </p>
+          </div>
+          <div class="card feature">
+            <span class="icon-tile"
+              ><svg class="icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path
+                  d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3"
+                />
+                <circle cx="12" cy="11" r="1" />
+                <path d="M12 12v2.5" /></svg
+            ></span>
+            <h3>Your permissions, respected</h3>
+            <p>Sign in with SSO, LDAP or a token. Buttons appear only for what your RBAC allows.</p>
+          </div>
+          <div class="card feature">
+            <span class="icon-tile"
+              ><svg class="icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path d="M5 8h3a2 2 0 1 1 4 0h3v3a2 2 0 1 1 0 4v3H5z" /></svg
+            ></span>
+            <h3>Custom resources and Helm</h3>
+            <p>
+              Any CRD works out of the box. Helm releases and a resource map per namespace are built
+              in.
+            </p>
+          </div>
+          <div class="card feature">
+            <span class="icon-tile"
+              ><svg class="icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path
+                  d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"
+                /></svg
+            ></span>
+            <h3>Dark first, light too</h3>
+            <p>
+              Easy on the eyes at 3am, readable in a bright meeting room. Fully keyboard friendly.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="container section install" id="install" aria-labelledby="install-h">
+        <div class="install-copy">
+          <span class="eyebrow">Install</span>
+          <h2 id="install-h" class="section-title">Running in a minute.</h2>
+          <p class="section-lead">
+            Start on your laptop with your kubeconfig, then move it into the cluster when your team
+            wants it.
+          </p>
+          <a class="arrow-link" href="/docs/">
+            Read the quick start
+            <svg
+              class="icon icon-bold"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14M13 18l6 -6M13 6l6 6" />
+            </svg>
+          </a>
+        </div>
+        <div class="card tabs" data-tabs>
+          <div class="tab-list" role="tablist" aria-label="Install method">
+            <button
+              class="tab"
+              type="button"
+              role="tab"
+              id="tab-local"
+              aria-controls="panel-local"
+              aria-selected="true"
+            >
+              Local
+            </button>
+            <button
+              class="tab"
+              type="button"
+              role="tab"
+              id="tab-helm"
+              aria-controls="panel-helm"
+              aria-selected="false"
+              tabindex="-1"
+            >
+              Helm
+            </button>
+            <button
+              class="tab"
+              type="button"
+              role="tab"
+              id="tab-source"
+              aria-controls="panel-source"
+              aria-selected="false"
+              tabindex="-1"
+            >
+              Source
+            </button>
+          </div>
+          <div
+            class="tab-panel"
+            role="tabpanel"
+            id="panel-local"
+            aria-labelledby="tab-local"
+            tabindex="0"
+          >
+            <div class="command-block">
+              <code class="command-lines">
+                <span
+                  ><span class="prompt" aria-hidden="true">$ </span>tar -xzf
+                  glowpod_*_darwin_arm64.tar.gz &amp;&amp; cd glowpod_*_darwin_arm64</span
+                >
+                <span><span class="prompt" aria-hidden="true">$ </span>./glowpod</span>
+              </code>
+              <button
+                class="icon-button copy-button"
+                type="button"
+                aria-label="Copy commands"
+                data-copy="tar -xzf glowpod_*_darwin_arm64.tar.gz &amp;&amp; cd glowpod_*_darwin_arm64&#10;./glowpod"
+              >
+                <!-- @include copy-icons.html -->
+              </button>
+            </div>
+            <p class="note">
+              <a href="https://github.com/Baid0/glowpod/releases/latest">Download glowpod</a> for
+              macOS, Linux or Windows (shown: a Mac with Apple silicon). It uses your kubeconfig's
+              current context, listens on 127.0.0.1 only and opens your browser.
+            </p>
+          </div>
+          <div
+            class="tab-panel"
+            role="tabpanel"
+            id="panel-helm"
+            aria-labelledby="tab-helm"
+            tabindex="0"
+          >
+            <div class="command-block">
+              <code class="command-lines">
+                <span
+                  ><span class="prompt" aria-hidden="true">$ </span>helm install glowpod
+                  oci://ghcr.io/baid0/charts/glowpod \</span
+                >
+                <span class="indent">-n glowpod --create-namespace</span>
+              </code>
+              <button
+                class="icon-button copy-button"
+                type="button"
+                aria-label="Copy command"
+                data-copy="helm install glowpod oci://ghcr.io/baid0/charts/glowpod -n glowpod --create-namespace"
+              >
+                <!-- @include copy-icons.html -->
+              </button>
+            </div>
+            <p class="note">
+              Your team signs in with SSO (OpenID Connect), LDAP or a service-account token. Set up
+              the address and ingress with the
+              <a href="/docs/install/">install guide</a>.
+            </p>
+          </div>
+          <div
+            class="tab-panel"
+            role="tabpanel"
+            id="panel-source"
+            aria-labelledby="tab-source"
+            tabindex="0"
+          >
+            <div class="command-block">
+              <code class="command-lines">
+                <span
+                  ><span class="prompt" aria-hidden="true">$ </span>git clone
+                  https://github.com/Baid0/glowpod</span
+                >
+                <span
+                  ><span class="prompt" aria-hidden="true">$ </span>cd glowpod &amp;&amp; make
+                  build</span
+                >
+                <span><span class="prompt" aria-hidden="true">$ </span>./bin/glowpod</span>
+              </code>
+              <button
+                class="icon-button copy-button"
+                type="button"
+                aria-label="Copy commands"
+                data-copy="git clone https://github.com/Baid0/glowpod&#10;cd glowpod &amp;&amp; make build&#10;./bin/glowpod"
+              >
+                <!-- @include copy-icons.html -->
+              </button>
+            </div>
+            <p class="note">
+              Needs Go and pnpm. The binary embeds the web app, so there is nothing else to run.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="container section" aria-labelledby="cta-h">
+        <div class="lime-band cta-band">
+          <img
+            class="cta-pip"
+            src="/brand/pip-wink.svg"
+            alt="Pip, the Glowpod mascot, winking"
+            width="124"
+            height="145"
+          />
+          <div class="cta-copy">
+            <h2 id="cta-h" class="band-title">Your cluster is ready to glow.</h2>
+            <p>Install Glowpod in your cluster in a minute, or try it on your laptop first.</p>
+          </div>
+          <div class="button-row">
+            <a class="button button-dark button-lg" href="/docs/">Get started</a>
+            <a
+              class="button button-outline-dark button-lg"
+              href="https://github.com/Baid0/glowpod/releases/latest"
+              >Download</a
+            >
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- @include footer.html -->
+  </body>
+</html>

@@ -1,0 +1,78 @@
+# Builds glowpod.dev (site/) and deploys it to Cloudflare Pages: pushes to
+# main go live, pull requests get their own preview URL.
+#
+# One-time setup: the Pages project "glowpod"
+# (npx wrangler pages project create glowpod --production-branch main) and
+# two repository secrets, CLOUDFLARE_API_TOKEN (permission: Account →
+# Cloudflare Pages → Edit) and CLOUDFLARE_ACCOUNT_ID. Without them, and for
+# forks and Dependabot, which get no secrets, the site is only built.
+name: Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - site/**
+      - docs/** # the guides are rendered into the site
+      - deploy/examples/sso-demo/README.md
+      - Makefile
+      - .github/workflows/site.yml
+  pull_request:
+    paths:
+      - site/**
+      - docs/**
+      - deploy/examples/sso-demo/README.md
+      - Makefile
+      - .github/workflows/site.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: site/pnpm-lock.yaml
+      # Format check, build, and the CSP and link checks.
+      - run: make site
+      - name: Cloudflare credentials present?
+        id: cf
+        run: echo "ready=${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}" >> "$GITHUB_OUTPUT"
+      # The token is only given to this step, not to the build above.
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        if: steps.cf.outputs.ready == 'true'
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: 4.151.3
+          command: >-
+            pages deploy site/dist --project-name=glowpod
+            --branch=${{ github.head_ref || github.ref_name }}
+            --commit-hash=${{ github.event.pull_request.head.sha || github.sha }}
+            --commit-dirty=true
+      - name: Summary
+        env:
+          READY: ${{ steps.cf.outputs.ready }}
+          URL: ${{ steps.deploy.outputs.deployment-url }}
+          ALIAS: ${{ steps.deploy.outputs.pages-deployment-alias-url }}
+        run: |
+          if [ "$READY" != true ]; then
+            echo "Built only: the Cloudflare secrets aren't available to this run." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Deployed: ${URL}${ALIAS:+ (also ${ALIAS})}" >> "$GITHUB_STEP_SUMMARY"
+          fi
