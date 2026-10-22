@@ -1,0 +1,195 @@
+.picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The trigger stays plain text: the top bar has no boxed controls. */
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 240px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: var(--text-body-sm-strong);
+  cursor: pointer;
+}
+
+.value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  flex: none;
+  color: var(--muted);
+  transition: transform var(--duration-press) var(--ease-out);
+}
+
+.trigger[aria-expanded="true"] .chevron {
+  transform: rotate(180deg);
+}
+
+.trigger:hover .chevron {
+  color: var(--ink);
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  width: min(300px, calc(100vw - 32px));
+  max-height: min(420px, calc(100vh - 120px));
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+  overflow: hidden;
+}
+
+.popover[data-align="right"] {
+  right: 0;
+  left: auto;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--hairline);
+  color: var(--muted);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: var(--text-body-sm);
+}
+
+.input::placeholder {
+  color: var(--muted);
+}
+
+.input:focus-visible {
+  outline: none;
+}
+
+.search:focus-within {
+  color: var(--ink);
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: var(--space-1);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-control);
+  color: var(--body);
+  cursor: pointer;
+}
+
+.active {
+  background: var(--surface-elevated);
+  color: var(--ink);
+}
+
+.option[aria-selected="true"] {
+  color: var(--ink);
+}
+
+.check {
+  display: inline-flex;
+  flex: none;
+  justify-content: center;
+  width: 20px;
+  color: var(--ink);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--text-body-sm-strong);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.match {
+  background: transparent;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: var(--accent-line);
+  text-underline-offset: 3px;
+}
+
+.empty {
+  padding: var(--space-3) var(--space-4);
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-top: 1px solid var(--hairline);
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.footer > span:first-child {
+  min-width: 0;
+}
+
+.keys {
+  flex: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .trigger {
+    max-width: 140px;
+  }
+
+  .keys {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+}

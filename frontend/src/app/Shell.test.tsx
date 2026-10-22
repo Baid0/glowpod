@@ -130,14 +130,17 @@ describe("Glance / Deep toggle", () => {
 });
 
 describe("Namespace picker", () => {
+  const trigger = () => screen.getByRole("button", { name: /^Namespace:/ });
+
   it("reloads the Overview for the chosen namespace and remembers it", async () => {
     const user = userEvent.setup();
     const { fetched } = renderApp("/");
-    const picker = screen.getByRole("combobox", { name: "Namespace" });
-    await screen.findByRole("option", { name: "payments" });
+    expect(trigger()).toHaveAccessibleName("Namespace: All namespaces");
 
-    await user.selectOptions(picker, "payments");
+    await user.click(trigger());
+    await user.click(await screen.findByRole("option", { name: "payments" }));
 
+    expect(trigger()).toHaveAccessibleName("Namespace: payments");
     await waitFor(() => {
       expect(fetched("/overview?namespace=payments")).toHaveLength(1);
     });
@@ -145,6 +148,44 @@ describe("Namespace picker", () => {
     await waitFor(() => {
       expect(FakeWebSocket.latest().url).toContain("/stream?namespace=payments");
     });
+  });
+
+  it("searches, moves with the keyboard and picks with Enter", async () => {
+    const user = userEvent.setup();
+    renderApp("/");
+    await user.click(trigger());
+    const search = screen.getByRole("combobox", { name: "Search namespaces" });
+    expect(search).toHaveFocus();
+    expect(await screen.findByRole("option", { name: "All namespaces" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    await user.type(search, "ch");
+    const options = within(screen.getByRole("listbox", { name: "Namespaces" })).getAllByRole(
+      "option",
+    );
+    // "checkout" starts with "ch"; "search" only contains it, so it comes second.
+    // Both exist, so there's no "Use ch" to offer.
+    expect(options.map((o) => o.textContent)).toEqual(["checkout", "search"]);
+    await user.keyboard("{ArrowDown}{Enter}");
+    expect(trigger()).toHaveAccessibleName("Namespace: search");
+    expect(trigger()).toHaveFocus();
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
+  it("offers a typed name it doesn't know, and closes on Escape", async () => {
+    const user = userEvent.setup();
+    renderApp("/");
+    await user.click(trigger());
+    await user.type(screen.getByRole("combobox", { name: "Search namespaces" }), "zzz");
+    expect(screen.getByRole("option", { name: "Use zzz" })).toBeInTheDocument();
+    await user.type(screen.getByRole("combobox", { name: "Search namespaces" }), "_X");
+    expect(screen.getByText(/lowercase letters, digits and dashes/)).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(trigger()).toHaveAccessibleName("Namespace: All namespaces");
   });
 });
 
@@ -167,8 +208,10 @@ describe("Command palette", () => {
 
   it("switches mode and namespace from the keyboard", async () => {
     const user = userEvent.setup();
-    renderApp("/");
-    await screen.findByRole("option", { name: "search" }); // namespaces loaded
+    const { fetched } = renderApp("/");
+    await waitFor(() => {
+      expect(fetched("/namespaces").length).toBeGreaterThan(0);
+    });
 
     await user.click(screen.getByRole("button", { name: "Search and commands" }));
     await user.type(screen.getByRole("combobox", { name: "Search pages and commands" }), "glance");
@@ -181,7 +224,9 @@ describe("Command palette", () => {
       "namespace sea",
     );
     await user.keyboard("{ArrowDown}{ArrowUp}{Enter}");
-    expect(screen.getByRole("combobox", { name: "Namespace" })).toHaveValue("search");
+    expect(screen.getByRole("button", { name: /^Namespace:/ })).toHaveAccessibleName(
+      "Namespace: search",
+    );
   });
 
   it("says when nothing matches", async () => {

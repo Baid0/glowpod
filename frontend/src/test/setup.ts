@@ -32,6 +32,11 @@ Object.defineProperties(Element.prototype, {
   clientWidth: { configurable: true, get: () => 1200 },
 });
 
+// jsdom doesn't scroll.
+Element.prototype.scrollIntoView = function scrollIntoView() {
+  // nothing to do without layout
+};
+
 afterEach(() => {
   cleanup();
   try {

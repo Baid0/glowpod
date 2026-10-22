@@ -182,19 +182,17 @@ describe("namespace picker for people who can't list namespaces", () => {
     await userEvent.type(await screen.findByLabelText("Service account token"), "t");
     await userEvent.click(screen.getByRole("button", { name: "Sign in with token" }));
 
-    const picker = await screen.findByRole("combobox", { name: "Namespace" });
+    const picker = () => screen.getByRole("button", { name: /^Namespace:/ });
     // The list arrives, then the picker moves to the namespace they can use.
     await waitFor(() => {
-      expect(picker).toHaveValue("team-a");
+      expect(picker()).toHaveAccessibleName("Namespace: team-a");
     });
-    expect(
-      within(picker).queryByRole("option", { name: "All namespaces" }),
-    ).not.toBeInTheDocument();
 
-    await userEvent.selectOptions(picker, "Other namespace…");
-    const input = screen.getByRole("textbox", { name: "Namespace" });
-    await userEvent.type(input, "team-b{Enter}");
-    expect(await screen.findByRole("combobox", { name: "Namespace" })).toHaveValue("team-b");
+    await userEvent.click(picker());
+    expect(screen.queryByRole("option", { name: "All namespaces" })).not.toBeInTheDocument();
+    await userEvent.type(screen.getByRole("combobox", { name: "Search namespaces" }), "team-b");
+    await userEvent.click(screen.getByRole("option", { name: "Use team-b" }));
+    expect(picker()).toHaveAccessibleName("Namespace: team-b");
     expect(posted.length).toBeGreaterThan(0);
   });
 });

@@ -1,4 +1,4 @@
-import { IconChevronDown, IconLogout, IconSearch } from "@tabler/icons-react";
+import { IconLogout, IconSearch } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
@@ -7,9 +7,10 @@ import { api } from "../lib/api";
 import { initials } from "../lib/format";
 import { useLive } from "../lib/live";
 import { usePreferences, type Mode } from "../lib/preferences";
-import { useNamespaces, useOverview, useSession } from "../lib/queries";
+import { useOverview, useSession } from "../lib/queries";
 import { formatAge, useNow } from "../lib/time";
 import type { SignInMethod } from "../lib/types";
+import { NamespacePicker } from "./NamespacePicker";
 import styles from "./TopBar.module.css";
 
 /** How old data may get before the live dot goes grey. */
@@ -68,85 +69,6 @@ function Updated() {
       <span className={styles.dot} data-tone={fresh ? "live" : "stale"} aria-hidden="true" />
       {status === "reconnecting" ? "Reconnecting… " : ""}updated {formatAge(age)} ago
     </span>
-  );
-}
-
-const OTHER = "\u0000other";
-const DNS_LABEL = /^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/;
-
-function NamespacePicker() {
-  const { namespace, setNamespace } = usePreferences();
-  const { data } = useNamespaces();
-  const names = data?.namespaces ?? [];
-  const restricted = data?.restricted ?? false;
-  const [typing, setTyping] = useState(false);
-  // Keep a saved namespace selectable even if it's gone or not loaded yet.
-  const options = namespace && !names.includes(namespace) ? [namespace, ...names] : names;
-
-  // Someone who may not list namespaces can't see "all" either: start them
-  // in one they can.
-  const first = names[0];
-  useEffect(() => {
-    if (restricted && namespace === "" && first) setNamespace(first);
-  }, [restricted, namespace, first, setNamespace]);
-
-  if (typing) {
-    return (
-      <form
-        className={styles.namespace}
-        onSubmit={(e) => {
-          e.preventDefault();
-          const value = new FormData(e.currentTarget).get("ns");
-          const ns = typeof value === "string" ? value.trim() : "";
-          if (DNS_LABEL.test(ns)) {
-            setNamespace(ns);
-            setTyping(false);
-          }
-        }}
-      >
-        <label className="visually-hidden" htmlFor="namespace-input">
-          Namespace
-        </label>
-        <input
-          id="namespace-input"
-          name="ns"
-          className={styles.nsInput}
-          placeholder="Type a namespace, then Enter"
-          pattern="[a-z0-9]([\-a-z0-9]*[a-z0-9])?"
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setTyping(false);
-          }}
-          onBlur={() => {
-            setTyping(false);
-          }}
-        />
-      </form>
-    );
-  }
-
-  return (
-    <label className={styles.namespace}>
-      <span className="visually-hidden">Namespace</span>
-      <select
-        className={styles.select}
-        value={namespace}
-        onChange={(e) => {
-          if (e.target.value === OTHER) setTyping(true);
-          else setNamespace(e.target.value);
-        }}
-      >
-        {!restricted && <option value="">All namespaces</option>}
-        {restricted && namespace === "" && <option value="">Pick a namespace</option>}
-        {options.map((ns) => (
-          <option key={ns} value={ns}>
-            {ns}
-          </option>
-        ))}
-        {restricted && <option value={OTHER}>Other namespace…</option>}
-      </select>
-      <IconChevronDown className={styles.chevron} size={16} stroke={1.75} aria-hidden="true" />
-    </label>
   );
 }
 

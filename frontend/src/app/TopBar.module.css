@@ -73,48 +73,6 @@
   background: var(--hairline);
 }
 
-/* Namespace picker: a native select dressed as plain text. */
-.namespace {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.select {
-  appearance: none;
-  max-width: 220px;
-  padding: 6px 22px 6px 0;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  font: var(--text-body-sm-strong);
-  text-overflow: ellipsis;
-  cursor: pointer;
-}
-
-.nsInput {
-  width: 220px;
-  height: 32px;
-  padding: 0 var(--space-2);
-  border: 1px solid var(--hairline-strong);
-  border-radius: var(--radius-segment);
-  background: var(--canvas);
-  color: var(--ink);
-  font: var(--text-body-sm);
-}
-
-.select option {
-  background: var(--surface-card);
-  color: var(--ink);
-}
-
-.chevron {
-  position: absolute;
-  right: 0;
-  pointer-events: none;
-  color: var(--muted);
-}
-
 /* Glance / Deep: text tabs, active = ink + 2px underline at the bar's edge. */
 .modes {
   display: flex;
@@ -269,10 +227,6 @@
   .right {
     gap: var(--space-3);
   }
-
-  .select {
-    max-width: 150px;
-  }
 }
 
 /* Phones: title and account on top, the controls on a second row. */
@@ -307,10 +261,6 @@
 
   .right {
     gap: var(--space-2);
-  }
-
-  .select {
-    max-width: 120px;
   }
 
   .title {
