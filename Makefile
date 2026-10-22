@@ -4,6 +4,7 @@ SHELL := /bin/bash
 BIN      := bin/glowpod
 WEB_DIST := backend/internal/web/dist
 NODE_MODULES := frontend/node_modules/.modules.yaml
+SITE_MODULES := site/node_modules/.modules.yaml
 # The version stamped into the binary and image: the git tag, else the chart's appVersion.
 VERSION  ?= $(shell git describe --tags --always --dirty 2>/dev/null | sed 's/^v//' || echo dev)
 IMAGE    ?= glowpod
@@ -11,7 +12,7 @@ LDFLAGS  := -s -w -X main.version=$(VERSION)
 # Platforms `make dist` builds the glowpod download for.
 PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64
 
-.PHONY: help deps dev web build dist test test-backend test-frontend e2e lint lint-backend lint-frontend fmt clean image image-push chart
+.PHONY: help deps dev web build dist test test-backend test-frontend e2e lint lint-backend lint-frontend fmt clean image image-push chart site site-dev
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-15s %s\n", $$1, $$2}'
@@ -62,6 +63,16 @@ test-frontend: $(NODE_MODULES)
 e2e: $(NODE_MODULES) ## Run Playwright smoke tests (needs: pnpm exec playwright install chromium)
 	cd frontend && pnpm e2e
 
+$(SITE_MODULES): site/package.json site/pnpm-lock.yaml
+	cd site && pnpm install --frozen-lockfile
+	@touch $@
+
+site: $(SITE_MODULES) ## Build the glowpod.dev website into site/dist and check it against its CSP
+	cd site && pnpm format:check && pnpm build
+
+site-dev: $(SITE_MODULES) ## Run the website's dev server (open http://localhost:5180)
+	cd site && pnpm dev
+
 image: ## Build the container image for this machine (needs Docker): make image IMAGE=registry/glowpod
 	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE):$(VERSION) .
 
@@ -90,5 +101,5 @@ fmt: $(NODE_MODULES) ## Format Go and frontend code
 	cd frontend && pnpm format
 
 clean: ## Remove build output
-	rm -rf bin dist frontend/dist
+	rm -rf bin dist frontend/dist site/dist
 	find $(WEB_DIST) -mindepth 1 ! -name .gitkeep -delete

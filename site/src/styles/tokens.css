@@ -1,0 +1,85 @@
+/*
+ * Glowpod design tokens, as in the app (frontend/src/styles/tokens.css). Source of truth:
+ * CLAUDE.md → Design tokens. Dark is the default; light applies with <html data-theme="light">.
+ */
+
+:root {
+  /* Brand */
+  --lime: #c8ff00;
+  --bio-black: #06110d;
+  --rose: #ef4444;
+
+  /* Color — dark (default) */
+  --primary: var(--lime);
+  --on-primary: var(--bio-black);
+  --canvas: #06110d;
+  --surface-card: #1a1a1a;
+  --surface-elevated: #242424;
+  --hairline: #2a2a2a;
+  --hairline-strong: #3a3a3a;
+  --ink: #ffffff;
+  --body: #cccccc;
+  --muted: #888888;
+  --muted-soft: #5a5a5a;
+  --state-ok: var(--lime);
+  --state-high: #ffffff;
+  --state-critical: var(--rose);
+
+  /* Outline around lime fills: none on dark, Bio Black on light. */
+  --lime-outline: transparent;
+  /* Links, the active tab underline and lime accents that are text or lines. */
+  --accent-line: var(--lime);
+  --accent-text: var(--lime);
+  --link: var(--lime);
+  --focus-ring: var(--lime);
+
+  /* Type */
+  --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Radius */
+  --radius-badge-accent: 4px;
+  --radius-segment: 6px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-full: 9999px;
+
+  /* Layout */
+  --page-max: 1280px;
+  --gutter: 24px;
+  --section-gap: 96px;
+
+  /* Motion */
+  --duration-press: 150ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --canvas: #ffffff;
+  --surface-card: #f5f5f5;
+  --surface-elevated: #ebebeb;
+  --hairline: #e0e0e0;
+  --hairline-strong: #cccccc;
+  --ink: #06110d;
+  --body: #333333;
+  --muted: #666666;
+  --muted-soft: #999999;
+  --state-high: #06110d;
+
+  --lime-outline: var(--bio-black);
+  --accent-line: var(--bio-black);
+  --accent-text: var(--bio-black);
+  --link: var(--bio-black);
+  --focus-ring: var(--bio-black);
+
+  color-scheme: light;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --gutter: 16px;
+    --section-gap: 64px;
+  }
+}

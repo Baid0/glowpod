@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -3 124 145" width="124" height="145">
+  <title>Pip, the Glowpod mascot, asleep</title>
+  <path d="M60 34C60 24 64 18 70 15" fill="none" stroke="#06110D" stroke-width="10" stroke-linecap="round"/><path d="M60 34C60 24 64 18 70 15" fill="none" stroke="#C8FF00" stroke-width="5" stroke-linecap="round"/><circle cx="73" cy="14" r="7" fill="#C8FF00" stroke="#06110D" stroke-width="4"/>
+  <ellipse cx="44" cy="127" rx="12" ry="7" fill="#C8FF00" stroke="#06110D" stroke-width="4"/><ellipse cx="76" cy="127" rx="12" ry="7" fill="#C8FF00" stroke="#06110D" stroke-width="4"/>
+  <path d="M60 32C90 32 104 58 104 86C104 112 86 124 60 124C34 124 16 112 16 86C16 58 30 32 60 32Z" fill="#C8FF00" stroke="#06110D" stroke-width="5"/>
+  <path d="M36 80Q45 87 54 80" fill="none" stroke="#06110D" stroke-width="4.5" stroke-linecap="round"/><path d="M66 80Q75 87 84 80" fill="none" stroke="#06110D" stroke-width="4.5" stroke-linecap="round"/><path d="M54 102Q60 106 66 102" fill="none" stroke="#06110D" stroke-width="4.5" stroke-linecap="round"/><path d="M88 8h9l-9 11h9M102 0h7l-7 8h7" fill="none" stroke="#06110D" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M88 8h9l-9 11h9M102 0h7l-7 8h7" fill="none" stroke="#C8FF00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

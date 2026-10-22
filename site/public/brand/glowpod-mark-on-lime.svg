@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 32" width="56" height="64">
+  <title>Glowpod mark, for lime backgrounds</title>
+  <path d="M14 9C14 6 15.5 3.5 18 2.5" fill="none" stroke="#06110D" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="19" cy="2.6" r="2.2" fill="#06110D"/>
+  <ellipse cx="14" cy="20" rx="11" ry="11.5" fill="#06110D"/>
+</svg>
