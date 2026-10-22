@@ -483,24 +483,29 @@
             <div class="command-block">
               <code class="command-lines">
                 <span
-                  ><span class="prompt" aria-hidden="true">$ </span>tar -xzf
-                  glowpod_*_darwin_arm64.tar.gz &amp;&amp; cd glowpod_*_darwin_arm64</span
+                  ><span class="prompt" aria-hidden="true">$ </span>brew install
+                  glowpod-dev/tap/glowpod</span
                 >
-                <span><span class="prompt" aria-hidden="true">$ </span>./glowpod</span>
+                <span><span class="prompt" aria-hidden="true">$ </span>glowpod</span>
               </code>
               <button
                 class="icon-button copy-button"
                 type="button"
                 aria-label="Copy commands"
-                data-copy="tar -xzf glowpod_*_darwin_arm64.tar.gz &amp;&amp; cd glowpod_*_darwin_arm64&#10;./glowpod"
+                data-copy="brew install glowpod-dev/tap/glowpod&#10;glowpod"
               >
                 <!-- @include copy-icons.html -->
               </button>
             </div>
             <p class="note">
-              <a href="https://github.com/glowpod-dev/glowpod/releases/latest">Download glowpod</a>
-              for macOS, Linux or Windows (shown: a Mac with Apple silicon). It uses your
-              kubeconfig's current context, listens on 127.0.0.1 only and opens your browser.
+              Homebrew on macOS and Linux. On Windows,
+              <code class="inline-code">scoop install glowpod</code> after
+              <code class="inline-code"
+                >scoop bucket add glowpod https://github.com/glowpod-dev/scoop-bucket</code
+              >, or
+              <a href="https://github.com/glowpod-dev/glowpod/releases/latest">download glowpod</a>.
+              It uses your kubeconfig's current context, listens on 127.0.0.1 only and opens your
+              browser. <code class="inline-code">glowpod term</code> opens it in the terminal.
             </p>
           </div>
           <div

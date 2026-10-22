@@ -25,27 +25,39 @@ browser. Nothing to install.
 
 ## Run it on your machine
 
-Download `glowpod` for your system from the
-[latest release](https://github.com/glowpod-dev/glowpod/releases/latest), unpack it
-and run it:
+Install `glowpod` with Homebrew on macOS and Linux:
 
 ```bash
-tar -xzf glowpod_*_darwin_arm64.tar.gz && cd glowpod_*_darwin_arm64
-./glowpod                     # uses your kubeconfig's current context
-./glowpod -context lab        # or pick one
+brew install glowpod-dev/tap/glowpod
+```
+
+or with [Scoop](https://scoop.sh) on Windows:
+
+```powershell
+scoop bucket add glowpod https://github.com/glowpod-dev/scoop-bucket
+scoop install glowpod
+```
+
+or download it for your system from the
+[latest release](https://github.com/glowpod-dev/glowpod/releases/latest)
+(Linux, macOS and Windows, Intel and ARM). Then run it:
+
+```bash
+glowpod                       # uses your kubeconfig's current context
+glowpod -context lab          # or pick one
 ```
 
 Glowpod listens on `127.0.0.1` only and opens your browser with a one-time
 sign-in link. Everything runs as your kubeconfig's user. On macOS, if the
-system blocks a downloaded program, allow it once with
-`xattr -d com.apple.quarantine ./glowpod`. Or build it yourself with
-`make build` (the binary lands in `bin/glowpod`).
+system blocks a program you downloaded by hand, allow it once with
+`xattr -d com.apple.quarantine ./glowpod` (Homebrew doesn't need this). Or
+build it yourself with `make build` (the binary lands in `bin/glowpod`).
 
 ### In the terminal
 
 ```bash
-./glowpod term                # Glance: gauges, what needs attention, recent events
-./glowpod term -n team deploy # start on a table, in a namespace
+glowpod term                  # Glance: gauges, what needs attention, recent events
+glowpod term -n team deploy   # start on a table, in a namespace
 ```
 
 `Tab` switches Glance and Deep, `:` opens the command palette (`:pods`,

@@ -41,12 +41,11 @@
           </dl>
 
           <h2 class="step" id="download">
-            <span class="step-number" aria-hidden="true">1</span>Download Glowpod
+            <span class="step-number" aria-hidden="true">1</span>Install Glowpod
           </h2>
           <p>
-            Get the file for your system and chip from the
-            <a href="https://github.com/glowpod-dev/glowpod/releases/latest">latest release</a> and
-            unpack it. Each one holds a single <code class="inline-code">glowpod</code> program.
+            One command installs the <code class="inline-code">glowpod</code> program: Homebrew on
+            macOS and Linux, Scoop on Windows.
           </p>
           <div class="card terminal">
             <div class="terminal-bar">
@@ -54,27 +53,31 @@
               <button
                 class="button button-small copy-button"
                 type="button"
-                data-copy="tar -xzf glowpod_*_linux_amd64.tar.gz &amp;&amp; cd glowpod_*_linux_amd64"
-                aria-label="Copy the macOS and Linux command"
+                data-copy="brew install glowpod-dev/tap/glowpod"
+                aria-label="Copy the Homebrew command"
               >
                 <!-- @include copy-icons.html -->
                 Copy
               </button>
             </div>
             <code class="command-lines terminal-body">
-              <span class="comment"># macOS and Linux (here: Linux on Intel or AMD)</span>
+              <span class="comment"># macOS and Linux</span>
               <span
-                ><span class="prompt" aria-hidden="true">$ </span>tar -xzf
-                glowpod_*_linux_amd64.tar.gz &amp;&amp; cd glowpod_*_linux_amd64</span
+                ><span class="prompt" aria-hidden="true">$ </span>brew install
+                glowpod-dev/tap/glowpod</span
               >
-              <span class="comment gap"
-                ># Windows: unzip glowpod_*_windows_amd64.zip, then in that folder</span
+              <span class="comment gap"># Windows (PowerShell)</span>
+              <span
+                ><span class="prompt" aria-hidden="true">&gt; </span>scoop bucket add glowpod
+                https://github.com/glowpod-dev/scoop-bucket</span
               >
-              <span><span class="prompt" aria-hidden="true">&gt; </span>.\glowpod.exe</span>
+              <span><span class="prompt" aria-hidden="true">&gt; </span>scoop install glowpod</span>
             </code>
           </div>
           <p>
-            If macOS blocks a downloaded program, allow it once with
+            Or get the file for your system and chip from the
+            <a href="https://github.com/glowpod-dev/glowpod/releases/latest">latest release</a> and
+            unpack it. If macOS blocks a program you downloaded that way, allow it once with
             <code class="inline-code">xattr -d com.apple.quarantine ./glowpod</code>.
           </p>
 
@@ -87,7 +90,7 @@
           </p>
           <div class="card terminal">
             <code class="command-lines terminal-body">
-              <span><span class="prompt" aria-hidden="true">$ </span>./glowpod</span>
+              <span><span class="prompt" aria-hidden="true">$ </span>glowpod</span>
               <span class="comment">Glowpod is running. Open:</span>
               <span class="comment"><span class="term-accent">http://127.0.0.1:7171/…</span></span>
             </code>

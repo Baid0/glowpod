@@ -13,6 +13,13 @@ All notable changes to Glowpod. The format follows
   API server's columns for any resource or CRD, `/` filter, namespace switching, live updates
   and a `:` command palette. Pods open to live logs (warnings orange, errors red), events and
   YAML. Scale, restart, delete (type the name) and shell show only when RBAC allows them.
+- Install with one command: `brew install glowpod-dev/tap/glowpod` on macOS and Linux, and
+  `scoop install glowpod` (after `scoop bucket add glowpod
+  https://github.com/glowpod-dev/scoop-bucket`) on Windows. Every release updates both.
+
+### Changed
+
+- `glowpod -version` prints to stdout instead of stderr, so scripts can read it.
 
 ## [0.2.0] - 2026-10-22
 
