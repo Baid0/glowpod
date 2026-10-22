@@ -9,6 +9,7 @@ import { ComingSoon, NotFound } from "../features/placeholder/ComingSoon";
 import { EventsPage } from "../features/events/EventsPage";
 import { HelmReleasePage, HelmReleasesPage } from "../features/helm/HelmPages";
 import { MapPage } from "../features/map/MapPage";
+import { SettingsPage } from "../features/settings/SettingsPage";
 import { NodePage } from "../features/nodes/NodePage";
 import { GenericDetail, WorkloadDetail } from "../features/resources/DetailRoutes";
 import { GenericList } from "../features/resources/GenericList";
@@ -29,6 +30,7 @@ function pageElement(p: NavItem) {
   if (p.path === "/apps") return <AppsPage />;
   if (p.path === "/events") return <EventsPage />;
   if (p.path === "/network/map") return <MapPage />;
+  if (p.path === "/settings") return <SettingsPage />;
   if (p.path === "/extensions/helm") return <HelmReleasesPage />;
   if (p.path === "/logs") return <LogsPage />;
   // key: a fresh page (search, sort) per resource.
