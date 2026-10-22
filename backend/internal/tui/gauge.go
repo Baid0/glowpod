@@ -315,7 +315,8 @@ func gaugeCard(v gaugeView, thresholds [2]float64, width int) string {
 func gaugeLine(v gaugeView, width int) string {
 	name := sTitle.Render(fmt.Sprintf("%-8s", v.name))
 	pct := sInk.Render(fmt.Sprintf("%4s", v.center))
-	st := status(v.tone, v.word)
+	// The status column is as wide as its longest word, so bars line up.
+	st := pad(status(v.tone, v.word), len("● No metrics"))
 	barW := max(4, width-lipgloss.Width(name)-lipgloss.Width(pct)-lipgloss.Width(st)-3)
 	if !v.hasData {
 		return name + sSoft.Render(strings.Repeat("·", barW)) + " " + pct + " " + st

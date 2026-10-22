@@ -544,6 +544,10 @@ func (m *Model) header(w int) string {
 		deep = sTabOn.Render("Deep")
 	}
 	right := sBody.Render(ns) + sMuted.Render(" ▾") + "    " + glance + "  " + deep + "    " + hint("?", "help")
+	if lipgloss.Width(left)+lipgloss.Width(right)+2 > w {
+		// Narrow: the context name goes first.
+		left = sLime.Render("◉") + " " + sTitle.Render("glowpod")
+	}
 	return spread(left, right, w)
 }
 

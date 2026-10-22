@@ -369,3 +369,19 @@ func TestPad(t *testing.T) {
 		t.Errorf("spread = %q", got)
 	}
 }
+
+func TestGaugeLinesLineUp(t *testing.T) {
+	th := [2]float64{0.7, 0.85}
+	gauges := []metrics.Gauge{
+		{State: metrics.Live, Value: 1, Max: 10, Unit: "cores"},
+		{State: metrics.Live, Value: 9.5, Max: 10, Unit: "cores"},
+		{State: metrics.NoMetrics},
+	}
+	var widths []int
+	for _, g := range gauges {
+		widths = append(widths, lipgloss.Width(gaugeLine(describeGauge("CPU", g, th), 70)))
+	}
+	if widths[0] != widths[1] || widths[1] != widths[2] {
+		t.Errorf("gauge lines are %v wide, want all the same", widths)
+	}
+}
