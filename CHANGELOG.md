@@ -6,6 +6,32 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Many clusters in local mode. Every context in your kubeconfig is a cluster: `glowpod` opens
+  your current context (or the one given with `-context`), and a new **Clusters** page lists
+  them all with their state (connected, unreachable, credentials refused), Kubernetes version,
+  ready nodes, CPU, memory and pod gauges, and what needs attention. The cluster picker
+  switches between them and keeps you on the same kind of page; ⌘K lists them too. Picked
+  namespaces are remembered per cluster.
+- Page addresses carry the cluster: `/c/<cluster>/workloads/pods`. Links from before (such as
+  `/workloads/pods`) open on the current cluster.
+- API: `GET /api/v1/clusters` lists the clusters; `GET /api/v1/clusters/{cluster}/summary` is
+  one row of the Clusters page.
+
+### Changed
+
+- A cluster that doesn't answer shows an error within about 10 seconds instead of loading for a
+  minute: connecting gives up after 10 seconds, the Overview stops as soon as nodes or pods
+  fail, and the browser doesn't retry a cluster that timed out.
+- `GET /api/v1/session` no longer lists clusters; use `GET /api/v1/clusters`.
+
+### Fixed
+
+- A local launch link (`glowpod -no-browser`) opens the cluster it was started for.
+- In-cluster Glowpod refuses Microsoft's shared sign-in addresses (`common`, `organizations`,
+  `consumers`) at startup and says to use the tenant ID.
+
 ## [0.3.0] - 2026-10-22
 
 ### Added

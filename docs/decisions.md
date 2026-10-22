@@ -118,3 +118,37 @@ doesn't count.
 - **Not yet:** revealing Secret values, editing YAML, port-forward and the
   light theme; signing in to an in-cluster Glowpod.
 
+## Many clusters in local mode (Hub phase 1)
+
+- **One cluster per kubeconfig context.** Local mode lists every context
+  (all files in `KUBECONFIG`), each with its own clients built from that
+  context, so each acts as the user it names. A context whose config won't
+  build (a missing certificate file) is still listed and says why.
+- **Ids from context names.** `/c/<id>/` uses the context name in lowercase
+  letters, digits and dashes. Names that collide, come out empty or are
+  longer than 40 characters get a short hash of the full name, so ids are
+  unique and stable across restarts. An in-cluster Glowpod keeps the id
+  `default`, so its bookmarks stay the same shape.
+- **Opening a cluster.** `glowpod` opens the current context (or `-context`),
+  not the Clusters page: that's what `kubectl` users expect. `/` shows the
+  Clusters page when there's more than one cluster, and goes straight into
+  the only one otherwise. Old addresses without `/c/` open on the current
+  cluster.
+- **Links.** Pages link with plain paths (`/workloads/pods`).
+  `lib/clusterLinks.tsx` (`Link`, `NavLink`, `Navigate`) and
+  `lib/clusterPaths.ts` (`useNavigate`) add the cluster the page is on, so
+  no page builds `/c/…` itself.
+- **Per cluster in the browser:** picked namespaces (`glowpod.namespaces`,
+  one entry per cluster; the old single value moves to the in-cluster one),
+  gauge thresholds, and the live stream (one WebSocket for the cluster on
+  screen).
+- **Unreachable clusters fail fast.** Connecting to a kubeconfig's API
+  server gives up after 10 seconds. The Overview stops every other call as
+  soon as nodes or pods fail for a reason other than RBAC, and a Clusters
+  row answers at 10 seconds even if a call (the server version) can't be
+  cancelled. The browser doesn't retry `cluster_timeout` or
+  `cluster_unreachable`.
+- **Not yet:** re-reading the kubeconfig while Glowpod runs; the terminal
+  app still opens one context (`:ctx` is planned); the live dot can say Live
+  for a cluster whose watches are failing, because the stream reports ready
+  before its first list.

@@ -53,12 +53,13 @@ or download it for your system from the
 (Linux, macOS and Windows, Intel and ARM). Then run it:
 
 ```bash
-glowpod                       # uses your kubeconfig's current context
-glowpod -context lab          # or pick one
+glowpod                       # opens your kubeconfig's current context
+glowpod -context lab          # or opens lab first
 ```
 
 Glowpod listens on `127.0.0.1` only and opens your browser with a one-time
-sign-in link. Everything runs as your kubeconfig's user. On macOS, if the
+sign-in link. Every context in your kubeconfig shows up on the **Clusters**
+page, and each one runs as the user its context names. On macOS, if the
 system blocks a program you downloaded by hand, allow it once with
 `xattr -d com.apple.quarantine ./glowpod` (Homebrew doesn't need this). Or
 build it yourself with `make build` (the binary lands in `bin/glowpod`).

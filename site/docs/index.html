@@ -140,9 +140,10 @@
             </code>
           </div>
           <p>
-            Want a different cluster? Add
-            <code class="inline-code">-context staging</code>. Every request runs as your
-            kubeconfig's user, so you see exactly what you can see with kubectl.
+            Every context in your kubeconfig is listed on the Clusters page; switch from the cluster
+            picker, or start with <code class="inline-code">-context staging</code> to open that one
+            first. Every request runs as the context's user, so you see exactly what you can see
+            with kubectl.
           </p>
 
           <div class="card callout" role="note">

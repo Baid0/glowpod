@@ -21,7 +21,7 @@ glowpod -version
 | `-mode` | `local` | always `server` | `local`: your kubeconfig, on your machine. `server`: in the cluster, people sign in |
 | `-addr` | local `127.0.0.1:7171`, server `:8080` | fixed `:8080` | Address to listen on. Local mode only accepts loopback addresses |
 | `-kubeconfig` | `$KUBECONFIG` or `~/.kube/config` | — | Local mode: which kubeconfig. Server mode: use it instead of the in-cluster config (for testing server mode on a laptop) |
-| `-context` | current context | — | Kubeconfig context |
+| `-context` | current context | — | Kubeconfig context to open first; every context is listed on the Clusters page |
 | `-no-browser` | `false` | — | Local mode: don't open the browser |
 | `-prometheus-url` | discover | `prometheusURL` | Prometheus base URL for the network gauge. Without it Glowpod looks for a Prometheus Service in the cluster, and hides the gauge if there is none |
 | `-log-format` | `text` | `logs.format` (`json`) | `text` or `json` |
@@ -134,7 +134,27 @@ Local mode takes no sign-in settings: it uses your kubeconfig's user, listens
 on `127.0.0.1:7171` only, and opens the browser with a one-time sign-in link.
 
 ```bash
-glowpod                      # current context
-glowpod -context staging     # another context
+glowpod                      # opens your current context
+glowpod -context staging     # opens staging first
 glowpod -no-browser -addr 127.0.0.1:9000
 ```
+
+Every context in your kubeconfig (all files in `KUBECONFIG`) is a cluster.
+The **Clusters** page (the house icon in the rail, or **All clusters** in
+the cluster picker) shows them all: whether each one answers, its Kubernetes
+version, ready nodes, CPU, memory and pods, and what needs attention. Each
+cluster acts as the user its context names, exactly as `kubectl --context`
+would.
+
+| State | What it means |
+| --- | --- |
+| Connected | The cluster answered as that context's user |
+| Unreachable | It didn't answer within 10 seconds (the cluster is off, or the network or VPN is down) |
+| Credentials refused | The cluster rejected the context's credentials (an expired token or cloud login) |
+| No access | The user can't list nodes or pods |
+
+Addresses carry the cluster, so you can bookmark or share a page of one
+cluster: `http://127.0.0.1:7171/c/<cluster>/workloads/pods`. The id is the
+context name in lowercase letters, digits and dashes (`kind-lab`,
+`gke-shop-europe-west1-prod`). Glowpod reads the kubeconfig when it starts;
+restart it to see a context you just added.
