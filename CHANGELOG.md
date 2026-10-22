@@ -6,6 +6,8 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-22
+
 ### Added
 
 - `glowpod term`: Glowpod in the terminal. It starts on Glance (half-gauges drawn in the
@@ -127,7 +129,8 @@ First release.
   restricted security context; multi-arch image (amd64, arm64).
 - Light and dark themes, settings for thresholds, density and refresh.
 
-[Unreleased]: https://github.com/glowpod-dev/glowpod/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/glowpod-dev/glowpod/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/glowpod-dev/glowpod/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/glowpod-dev/glowpod/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/glowpod-dev/glowpod/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/glowpod-dev/glowpod/compare/v0.1.2...v0.1.3
