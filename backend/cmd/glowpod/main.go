@@ -40,13 +40,15 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := run(ctx, os.Args[1:], os.Stderr); err != nil {
+	if err := run(ctx, os.Args[1:], os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintln(os.Stderr, "glowpod:", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, args []string, stderr io.Writer) error {
+// run is glowpod's main. Answers (the version) go to stdout; logs, help and
+// errors go to stderr.
+func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	if len(args) > 0 && args[0] == "term" {
 		return runTerm(ctx, args[1:], stderr)
 	}
@@ -59,7 +61,7 @@ func run(ctx context.Context, args []string, stderr io.Writer) error {
 	}
 
 	if cfg.version {
-		fmt.Fprintln(stderr, "glowpod", version)
+		fmt.Fprintln(stdout, "glowpod", version)
 		return nil
 	}
 	logger := newLogger(cfg, stderr)

@@ -147,11 +147,12 @@ func TestOperationalFlags(t *testing.T) {
 }
 
 func TestVersionFlag(t *testing.T) {
-	var out strings.Builder
-	if err := run(t.Context(), []string{"-version"}, &out); err != nil {
+	var out, errs strings.Builder
+	if err := run(t.Context(), []string{"-version"}, &out, &errs); err != nil {
 		t.Fatal(err)
 	}
-	if out.String() != "glowpod dev\n" {
-		t.Fatalf("output = %q", out.String())
+	// On stdout, so scripts and `brew test` can read it.
+	if out.String() != "glowpod dev\n" || errs.String() != "" {
+		t.Fatalf("stdout = %q, stderr = %q", out.String(), errs.String())
 	}
 }

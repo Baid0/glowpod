@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -61,7 +62,7 @@ func TestRunServesAndSignsIn(t *testing.T) {
 	done := make(chan error, 1)
 	var stderr syncBuffer
 	go func() {
-		done <- run(ctx, []string{"-addr", "127.0.0.1:0", "-no-browser", "-kubeconfig", kubeconfigFile(t)}, &stderr)
+		done <- run(ctx, []string{"-addr", "127.0.0.1:0", "-no-browser", "-kubeconfig", kubeconfigFile(t)}, io.Discard, &stderr)
 	}()
 
 	var link string
@@ -134,7 +135,7 @@ func TestRunErrors(t *testing.T) {
 					args[i] = kubeconfigFile(t)
 				}
 			}
-			err := run(t.Context(), args, &bytes.Buffer{})
+			err := run(t.Context(), args, io.Discard, &bytes.Buffer{})
 			if err == nil || !strings.Contains(err.Error(), tt.want) {
 				t.Fatalf("err = %v, want it to mention %s", err, tt.want)
 			}
