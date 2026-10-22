@@ -8,6 +8,7 @@ import { usePreferences } from "../../lib/preferences";
 import { formatAge, useNow } from "../../lib/time";
 import type { PodDetail } from "../../lib/types";
 import { statusTone } from "../resources/cells";
+import { LogViewer } from "../logs/LogViewer";
 import { Containers, Facts } from "./Containers";
 import { PodEvents } from "./PodEvents";
 import styles from "./PodPage.module.css";
@@ -92,10 +93,10 @@ export function PodPage() {
           <Overview data={data} />
         ) : tab === "events" ? (
           <PodEvents events={data.events} />
+        ) : tab === "logs" ? (
+          <LogViewer namespace={namespace} pod={name} containers={data.containers} />
         ) : (
-          <p className={styles.soon}>
-            {tab === "logs" ? "Live logs" : "The YAML view"} arrives in the next build step.
-          </p>
+          <p className={styles.soon}>The YAML view arrives in the next build step.</p>
         )}
       </div>
     </div>

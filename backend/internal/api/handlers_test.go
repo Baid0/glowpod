@@ -192,6 +192,16 @@ func TestAPI(t *testing.T) {
 			},
 		},
 		{name: "missing pod", path: "/api/v1/clusters/default/pods/alpha/nope", wantStatus: 404, wantCode: "not_found"},
+		{
+			name: "log download", path: "/api/v1/clusters/default/logs/alpha/api-1/download?container=app", wantStatus: 200,
+			check: func(t *testing.T, body []byte) {
+				if string(body) != "fake logs" {
+					t.Fatalf("body = %q", body)
+				}
+			},
+		},
+		{name: "bad container name", path: "/api/v1/clusters/default/logs/alpha/api-1?container=Bad_Name", wantStatus: 400, wantCode: "bad_container"},
+		{name: "bad tail", path: "/api/v1/clusters/default/logs/alpha/api-1?tailLines=0", wantStatus: 400, wantCode: "bad_tail"},
 		{name: "pod in a bad namespace", path: "/api/v1/clusters/default/pods/Not_Valid/x", wantStatus: 400, wantCode: "bad_namespace"},
 		{name: "unknown api path", path: "/api/v1/nope", wantStatus: 404, wantCode: "not_found"},
 		{name: "wrong method", method: http.MethodPost, path: "/api/v1/clusters/default/overview", wantStatus: 405, wantCode: "method_not_allowed"},

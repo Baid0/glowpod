@@ -1,9 +1,12 @@
 import { IconBulb } from "@tabler/icons-react";
+import { Link } from "react-router";
 
 import { Card } from "../../components/Card";
 import { formatAge, useNow } from "../../lib/time";
 import type { PodDetail } from "../../lib/types";
 import styles from "./PodPage.module.css";
+
+const CRASH_REASONS = new Set(["CrashLoopBackOff", "OOMKilled", "Error"]);
 
 const TONE_WORDS = { ok: "Good", info: "Info", high: "Warning", critical: "Problem" } as const;
 
@@ -11,6 +14,11 @@ const TONE_WORDS = { ok: "Good", info: "Info", high: "Warning", critical: "Probl
 export function Story({ data }: { data: PodDetail }) {
   const now = useNow(30_000);
   const problem = data.pod.problem;
+  // A container that crashed has a previous run whose log usually says why.
+  const crashed =
+    problem && CRASH_REASONS.has(problem.reason)
+      ? data.containers.find((c) => c.lastTermination && c.restarts > 0)?.name
+      : undefined;
   return (
     <Card title="What happened" className={styles.story}>
       {problem && (
@@ -23,6 +31,14 @@ export function Story({ data }: { data: PodDetail }) {
             <IconBulb size={16} stroke={1.75} aria-hidden="true" />
             <span>
               <strong>Suggested fix:</strong> {problem.hint}
+              {crashed && (
+                <>
+                  {" "}
+                  <Link to={`?tab=logs&container=${encodeURIComponent(crashed)}&previous=1`}>
+                    Open the last crash&apos;s log
+                  </Link>
+                </>
+              )}
             </span>
           </p>
         </div>

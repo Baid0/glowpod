@@ -69,6 +69,9 @@ func requireNamespace(next http.Handler) http.Handler {
 	})
 }
 
+// classify returns the HTTP status for a cluster error.
+func (s *server) classify(err error) int { return kerr.Classify(err).Status }
+
 func (s *server) clusterError(w http.ResponseWriter, err error) {
 	c := kerr.Classify(err)
 	s.opts.Logger.Warn("cluster request failed", "code", c.Code, "err", err)

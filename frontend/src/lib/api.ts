@@ -99,6 +99,10 @@ export const api = {
         fieldSelector: opts.fieldSelector,
       }),
     ),
+  logsURL: (cluster: string, namespace: string, pod: string, opts: LogOptions) =>
+    wsURL(logsPath(cluster, namespace, pod, "", opts)),
+  logsDownloadURL: (cluster: string, namespace: string, pod: string, opts: LogOptions) =>
+    logsPath(cluster, namespace, pod, "/download", opts),
   pod: (cluster: string, namespace: string, name: string, signal?: AbortSignal) =>
     apiGet<PodDetail>(
       clusterPath(cluster, `pods/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`, {}),
@@ -112,6 +116,30 @@ export interface ListOptions {
   fieldSelector?: string;
   continue?: string;
   limit?: number;
+}
+
+export interface LogOptions {
+  container?: string;
+  previous?: boolean;
+  tailLines?: number;
+}
+
+function logsPath(
+  cluster: string,
+  namespace: string,
+  pod: string,
+  suffix: string,
+  opts: LogOptions,
+) {
+  return clusterPath(
+    cluster,
+    `logs/${encodeURIComponent(namespace)}/${encodeURIComponent(pod)}${suffix}`,
+    {
+      container: opts.container,
+      previous: opts.previous ? "true" : undefined,
+      tailLines: opts.tailLines ? String(opts.tailLines) : undefined,
+    },
+  );
 }
 
 function refPath(ref: ResourceRef): string {
