@@ -24,6 +24,10 @@
   --state-ok: var(--lime);
   --state-high: #ffffff;
   --state-critical: var(--rose);
+  /* Log lines only: orange warnings, red errors (text needs AA contrast;
+     see docs/decisions.md). */
+  --log-warn: #fb923c;
+  --log-error: var(--rose);
 
   /* Outline around lime fills: none on dark, Bio Black on light. */
   --lime-outline: transparent;
@@ -92,6 +96,9 @@
   --state-ok: var(--lime);
   --state-high: #06110d;
   --state-critical: var(--rose);
+  /* Darker on white: rose text is only 3.8:1 there. */
+  --log-warn: #c2410c;
+  --log-error: #b91c1c;
 
   --lime-outline: var(--bio-black);
   --accent-line: var(--bio-black);

@@ -177,13 +177,16 @@
   background: var(--surface-card);
 }
 
+/* Errors and critical lines in red, warnings in orange: the marker and the
+   text. The time stays muted so the level reads first. */
 .line[data-level="error"] {
   border-left-color: var(--state-critical);
-  color: var(--ink);
+  color: var(--log-error);
 }
 
 .line[data-level="warn"] {
-  border-left-color: var(--state-high);
+  border-left-color: var(--log-warn);
+  color: var(--log-warn);
 }
 
 .time {

@@ -73,3 +73,22 @@ default; a person's own only change how their gauges are colored, not the
 
 The theme is applied before first paint by `public/theme.js`, a same-origin
 script, because the CSP blocks inline scripts.
+
+## Log lines: orange warnings, red errors
+
+CLAUDE.md allows one extra hue, Rose, and only for critical states. In the
+log viewer, warnings are orange and errors (error, fatal, panic, critical)
+are red, as asked for: long logs are scanned by color first. The colored
+margin marker and text come with the level word in the line itself, so
+color is never the only signal. Orange stays in the log viewer
+(`--log-warn`, `--log-error`); everywhere else "high" is still white or Bio
+Black.
+
+Text needs AA contrast, so light mode uses darker shades: orange `#C2410C`
+and red `#B91C1C`, since Rose text on white is only 3.8:1. Dark mode uses
+`#FB923C` and Rose.
+
+A line's own level decides its color: a JSON or logfmt `level` /
+`severity` field, or Kubernetes' klog prefix (`E1022 …`, `W1022 …`). Only
+lines without one are judged by words such as ERROR, and a key named `err`
+doesn't count.

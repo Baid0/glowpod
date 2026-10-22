@@ -13,16 +13,47 @@ export interface LogLine {
 // Terminal escape sequences (colors, cursor moves) that some apps log.
 // eslint-disable-next-line no-control-regex
 const ANSI = /\u001b\[[0-9;?]*[ -/]*[@-~]/g;
-const ERROR =
-  /\b(ERROR|ERR|FATAL|PANIC|CRITICAL|EXCEPTION|Traceback)\b|level=(error|fatal|panic)|"level":"(error|fatal|panic)"/i;
-const WARN = /\b(WARN|WARNING)\b|level=warn|"level":"warn/i;
+// A level the line states itself: JSON ("level":"warn") or logfmt (level=warn).
+const FIELD =
+  /"(?:level|lvl|severity|loglevel)"\s*:\s*"([a-z]+)"|\b(?:level|lvl|severity)=["']?([a-z]+)/i;
+// Kubernetes' own klog format: E1022 10:00:00.123456 ... (I, W, E, F).
+const KLOG = /^([IWEF])\d{4} \d{2}:\d{2}:\d{2}/;
+// Otherwise, a level word, but not as a key ("err": or err=), which only
+// names a field and says nothing about how bad the line is.
+const ERROR = /\b(ERROR|ERR|FATAL|PANIC|CRITICAL|CRIT|EMERG|EXCEPTION|Traceback)\b(?!"\s*:|=)/i;
+const WARN = /\b(WARN|WARNING)\b(?!"\s*:|=)/i;
+
+const LEVELS: Record<string, LogLine["level"]> = {
+  error: "error",
+  err: "error",
+  fatal: "error",
+  panic: "error",
+  dpanic: "error",
+  critical: "error",
+  crit: "error",
+  alert: "error",
+  emerg: "error",
+  emergency: "error",
+  warn: "warn",
+  warning: "warn",
+  w: "warn",
+  e: "error",
+  f: "error",
+};
 
 export function stripAnsi(s: string): string {
   return s.replace(ANSI, "");
 }
 
-/** Marks lines that look like errors or warnings, for a margin marker. */
+/**
+ * How bad a line is, for its color: the level it states (JSON, logfmt or
+ * klog) wins; only lines without one are judged by their words. Info,
+ * debug and the like are plain.
+ */
 export function levelOf(text: string): LogLine["level"] {
+  const field = FIELD.exec(text);
+  const stated = field ? (field[1] ?? field[2]) : KLOG.exec(text)?.[1];
+  if (stated) return LEVELS[stated.toLowerCase()];
   if (ERROR.test(text)) return "error";
   if (WARN.test(text)) return "warn";
   return undefined;
