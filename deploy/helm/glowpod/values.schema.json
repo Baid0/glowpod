@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Glowpod Helm values",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "global": { "type": "object" },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "tag": { "type": "string" },
+        "digest": { "type": "string", "pattern": "^(|sha256:[a-f0-9]{64})$" },
+        "pullPolicy": { "enum": ["Always", "IfNotPresent", "Never"] }
+      }
+    },
+    "imagePullSecrets": { "type": "array" },
+    "replicaCount": { "type": "integer", "minimum": 0 },
+    "allowManyReplicas": { "type": "boolean" },
+    "publicURL": { "type": "string", "pattern": "^(|https?://[^/]+/?)$" },
+    "clusterName": { "type": "string" },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "token": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "enabled": { "type": "boolean" } }
+        },
+        "oidc": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "name": { "type": "string" },
+            "issuer": { "type": "string" },
+            "clientID": { "type": "string" },
+            "clientSecret": { "type": "string" },
+            "existingSecret": { "type": "string" },
+            "existingSecretKey": { "type": "string" },
+            "scopes": { "type": "array", "items": { "type": "string" } },
+            "usernameClaim": { "type": "string" },
+            "groupsClaim": { "type": "string" },
+            "usernamePrefix": { "type": "string" },
+            "groupsPrefix": { "type": "string" },
+            "passToken": { "type": "boolean" }
+          }
+        },
+        "ldap": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "url": { "type": "string", "pattern": "^(|ldaps?://.+)$" },
+            "bindDN": { "type": "string" },
+            "bindPassword": { "type": "string" },
+            "existingSecret": { "type": "string" },
+            "existingSecretKey": { "type": "string" },
+            "userBase": { "type": "string" },
+            "userFilter": { "type": "string" },
+            "usernameAttribute": { "type": "string" },
+            "groupBase": { "type": "string" },
+            "groupFilter": { "type": "string" },
+            "groupAttribute": { "type": "string" },
+            "groupsPrefix": { "type": "string" },
+            "startTLS": { "type": "boolean" },
+            "caSecret": { "type": "string" },
+            "insecureSkipVerify": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "session": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ttl": { "type": "string", "pattern": "^[0-9]+(h|m|s)([0-9]+(m|s))*$" },
+        "idle": { "type": "string", "pattern": "^[0-9]+(h|m|s)([0-9]+(m|s))*$" }
+      }
+    },
+    "prometheusURL": { "type": "string" },
+    "logs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": { "enum": ["json", "text"] },
+        "level": { "enum": ["debug", "info", "warn", "error"] }
+      }
+    },
+    "trustedProxies": { "type": "array", "items": { "type": "string" } },
+    "rbac": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "create": { "type": "boolean" } }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create": { "type": "boolean" },
+        "name": { "type": "string" },
+        "annotations": { "type": "object" }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["ClusterIP", "NodePort", "LoadBalancer"] },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "className": { "type": "string" },
+        "annotations": { "type": "object" },
+        "host": { "type": "string" },
+        "tls": { "type": "array" }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "from": { "type": "array" }
+      }
+    },
+    "resources": { "type": "object" },
+    "podSecurityContext": { "type": "object" },
+    "securityContext": { "type": "object" },
+    "podAnnotations": { "type": "object" },
+    "podLabels": { "type": "object" },
+    "priorityClassName": { "type": "string" },
+    "nodeSelector": { "type": "object" },
+    "tolerations": { "type": "array" },
+    "affinity": { "type": "object" },
+    "topologySpreadConstraints": { "type": "array" },
+    "extraEnv": { "type": "array" },
+    "extraArgs": { "type": "array", "items": { "type": "string" } },
+    "command": { "type": "array", "items": { "type": "string" } },
+    "extraVolumes": { "type": "array" },
+    "extraVolumeMounts": { "type": "array" },
+    "extraInitContainers": { "type": "array" },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "image": { "type": "string" } }
+    }
+  }
+}

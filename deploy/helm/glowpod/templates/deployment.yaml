@@ -31,10 +31,25 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      {{- with .Values.extraInitContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: glowpod
+          {{- if .Values.image.digest }}
+          image: "{{ .Values.image.repository }}@{{ .Values.image.digest }}"
+          {{- else }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           args:
             - -mode=server
             {{- with .Values.extraArgs }}
@@ -53,6 +68,14 @@ spec:
               value: {{ .Values.session.ttl | quote }}
             - name: GLOWPOD_SESSION_IDLE
               value: {{ .Values.session.idle | quote }}
+            - name: GLOWPOD_LOG_FORMAT
+              value: {{ .Values.logs.format | quote }}
+            - name: GLOWPOD_LOG_LEVEL
+              value: {{ .Values.logs.level | quote }}
+            {{- with .Values.trustedProxies }}
+            - name: GLOWPOD_TRUSTED_PROXIES
+              value: {{ join "," . | quote }}
+            {{- end }}
             {{- with .Values.prometheusURL }}
             - name: GLOWPOD_PROMETHEUS_URL
               value: {{ . | quote }}
@@ -145,20 +168,31 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          {{- if and .Values.auth.ldap.enabled .Values.auth.ldap.caSecret }}
+          {{- $ldapCA := and .Values.auth.ldap.enabled .Values.auth.ldap.caSecret }}
+          {{- if or $ldapCA .Values.extraVolumeMounts }}
           volumeMounts:
+            {{- if $ldapCA }}
             - name: ldap-ca
               mountPath: /etc/glowpod/ldap
               readOnly: true
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           {{- end }}
-      {{- if and .Values.auth.ldap.enabled .Values.auth.ldap.caSecret }}
+      {{- if or $ldapCA .Values.extraVolumes }}
       volumes:
+        {{- if $ldapCA }}
         - name: ldap-ca
           secret:
             secretName: {{ .Values.auth.ldap.caSecret }}
             items:
               - key: ca.crt
                 path: ca.crt
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
@@ -170,5 +204,9 @@ spec:
       {{- end }}
       {{- with .Values.tolerations }}
       tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}

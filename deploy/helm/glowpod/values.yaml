@@ -3,9 +3,12 @@
 # changes anything on its own behalf.
 
 image:
+  # Where you pushed the image (make image-push IMAGE=...).
   repository: ghcr.io/glowpod/glowpod
   # Defaults to the chart's appVersion.
   tag: ""
+  # Pin an exact image: sha256:... (wins over tag).
+  digest: ""
   pullPolicy: IfNotPresent
 imagePullSecrets: []
 
@@ -75,6 +78,17 @@ session:
 # Prometheus base URL for the network gauge; empty = find it in the cluster.
 prometheusURL: ""
 
+logs:
+  # json for log collectors (Loki, Elasticsearch, Cloud Logging); text to read.
+  format: json
+  level: info
+
+# The ingress controller's addresses (CIDRs). Glowpod then takes the client's
+# address from X-Forwarded-For for sign-in rate limits and logs. Leave empty
+# when nothing sits in front of Glowpod.
+trustedProxies: []
+#  - 10.0.0.0/8
+
 rbac:
   # A ClusterRole whose only right is to impersonate users and groups, bound
   # to Glowpod's service account. Only created when SSO (impersonating) or
@@ -131,10 +145,21 @@ securityContext:
 
 podAnnotations: {}
 podLabels: {}
+priorityClassName: ""
 nodeSelector: {}
 tolerations: []
 affinity: {}
+topologySpreadConstraints: []
 
 # More GLOWPOD_* settings or flags, e.g. [{name: GLOWPOD_OIDC_USERNAME_CLAIM, value: preferred_username}].
 extraEnv: []
 extraArgs: []
+# Replaces the image's entrypoint (rarely needed).
+command: []
+extraVolumes: []
+extraVolumeMounts: []
+extraInitContainers: []
+
+# `helm test` runs a pod that checks Glowpod answers on its Service.
+tests:
+  image: busybox:1.37
