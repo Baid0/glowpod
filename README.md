@@ -1,4 +1,20 @@
-# Glowpod
+<p align="center">
+  <a href="https://glowpod.dev">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="site/public/brand/glowpod-mark-on-dark.svg">
+      <img src="site/public/brand/glowpod-mark-on-light.svg" alt="Glowpod logo" width="84" height="96">
+    </picture>
+  </a>
+</p>
+
+<h1 align="center">Glowpod</h1>
+
+<p align="center">
+  <a href="https://github.com/glowpod-dev/glowpod/actions/workflows/ci.yml"><img src="https://github.com/glowpod-dev/glowpod/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://github.com/glowpod-dev/glowpod/releases/latest"><img src="https://img.shields.io/github/v/release/glowpod-dev/glowpod" alt="Latest release"></a>
+  <a href="https://artifacthub.io/packages/helm/glowpod/glowpod"><img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/glowpod" alt="Artifact Hub"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
+</p>
 
 A web dashboard for Kubernetes with two views of the same cluster: **Glance**
 for app developers and **Deep** for platform teams. Nothing is hidden in
