@@ -6,8 +6,20 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-22
+
 ### Added
 
+- Create resources. **New <Kind>** on every resource list opens a template for that kind (a
+  useful one for common kinds, a skeleton for any other kind, CRDs included) in the picked
+  namespace; **Check** runs a server-side dry run and **Create** unlocks only for text that
+  passed. It appears only when RBAC allows creating that kind there.
+- **Apply YAML** (Deep mode): any number of objects of any kind, like `kubectl apply
+  --server-side`. Check shows what would happen to each object; Apply unlocks when all pass and
+  links each result. Fields set another way are overwritten only when you choose to, like
+  `--force-conflicts`.
+- API: `POST .../resources/{group}/{version}/{resource}` and `POST .../apply`, both with
+  `?dryRun=true`, running as the signed-in person and logged as changes.
 - A live demo at https://glowpod.dev/demo/: the real app on a sample cluster that runs in the
   browser, with a crash-looping pod, a pod that doesn't fit and a node short of memory to look
   into. Scaling, restarting, deleting, editing YAML, the terminal and Secret reveal all work on
@@ -100,7 +112,8 @@ First release.
   restricted security context; multi-arch image (amd64, arm64).
 - Light and dark themes, settings for thresholds, density and refresh.
 
-[Unreleased]: https://github.com/glowpod-dev/glowpod/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/glowpod-dev/glowpod/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/glowpod-dev/glowpod/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/glowpod-dev/glowpod/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/glowpod-dev/glowpod/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/glowpod-dev/glowpod/compare/v0.1.1...v0.1.2
