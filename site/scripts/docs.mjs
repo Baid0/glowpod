@@ -11,6 +11,7 @@ const GITHUB = "https://github.com/glowpod-dev/glowpod/blob/main/";
 
 // In reading order; the quick start (docs/index.html) comes first and is written by hand.
 export const DOC_PAGES = [
+  { slug: "terminal", source: "docs/terminal.md", nav: "Glowpod in the terminal" },
   { slug: "install", source: "docs/install.md", nav: "Install in a cluster" },
   { slug: "authentication", source: "docs/authentication.md", nav: "Sign-in and access" },
   { slug: "sso-demo", source: "deploy/examples/sso-demo/README.md", nav: "Try SSO in ten minutes" },
@@ -49,6 +50,33 @@ function slugger() {
   };
 }
 
+// An image in a guide lives in site/public/, so the same relative path works on GitHub; the site
+// serves it from its own root. Width and height come from the file, so the page doesn't jump.
+function resolveImage(page, href) {
+  const target = posix.normalize(posix.join(posix.dirname(page.source), href));
+  if (!target.startsWith("site/public/")) {
+    throw new Error(`${page.source}: images must live in site/public/, not ${target}`);
+  }
+  const { width, height } = imageSize(join(repo, target));
+  return { src: "/" + target.slice("site/public/".length), width, height };
+}
+
+// The pixel size of a PNG or WebP (lossy, lossless or extended).
+function imageSize(path) {
+  const b = readFileSync(path);
+  if (b.toString("ascii", 1, 4) === "PNG")
+    return { width: b.readUInt32BE(16), height: b.readUInt32BE(20) };
+  const chunk = b.toString("ascii", 12, 16);
+  if (chunk === "VP8 ")
+    return { width: b.readUInt16LE(26) & 0x3fff, height: b.readUInt16LE(28) & 0x3fff };
+  if (chunk === "VP8L") {
+    const bits = b.readUInt32LE(21);
+    return { width: (bits & 0x3fff) + 1, height: ((bits >> 14) & 0x3fff) + 1 };
+  }
+  if (chunk === "VP8X") return { width: b.readUIntLE(24, 3) + 1, height: b.readUIntLE(27, 3) + 1 };
+  throw new Error(`${path}: not a PNG or WebP`);
+}
+
 // A link in a guide: another guide becomes its site page, any other repository file its GitHub
 // page, and outside links stay as they are.
 function resolveLink(page, href) {
@@ -61,7 +89,7 @@ function resolveLink(page, href) {
 }
 
 const COPY_ICONS = readFileSync(join(site, "partials", "copy-icons.html"), "utf8").trim();
-const LANGUAGES = { bash: "Terminal", yaml: "YAML" };
+const LANGUAGES = { bash: "Terminal", powershell: "PowerShell", yaml: "YAML" };
 
 function render(page, markdown) {
   const slug = slugger();
@@ -89,9 +117,13 @@ function render(page, markdown) {
         const code = `<pre class="code-body" tabindex="0"><code>${escapeHtml(text)}</code></pre>`;
         if (!LANGUAGES[lang]) return `<div class="card code-block">${code}</div>\n`;
         return `<div class="card code-block terminal">
-  <div class="terminal-bar"><span>${LANGUAGES[lang]}</span><button class="button button-small copy-button" type="button" data-copy="${escapeHtml(text)}" aria-label="Copy this ${LANGUAGES[lang] === "Terminal" ? "command" : "YAML"}">${COPY_ICONS} Copy</button></div>
+  <div class="terminal-bar"><span>${LANGUAGES[lang]}</span><button class="button button-small copy-button" type="button" data-copy="${escapeHtml(text)}" aria-label="Copy this ${lang === "yaml" ? "YAML" : "command"}">${COPY_ICONS} Copy</button></div>
   ${code}
 </div>\n`;
+      },
+      image({ href, text }) {
+        const img = resolveImage(page, href);
+        return `<img class="docs-image" src="${escapeHtml(img.src)}" alt="${escapeHtml(text)}" width="${img.width}" height="${img.height}" loading="lazy" decoding="async" />`;
       },
       codespan({ text }) {
         return `<code class="inline-code">${escapeHtml(text)}</code>`;
