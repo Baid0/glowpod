@@ -44,6 +44,10 @@ export function NamespacePicker() {
   // Open toward whichever side has room: the picker sits near the right edge
   // on wide screens and at the left on phones.
   const [align, setAlign] = useState<"left" | "right">("left");
+  // The trigger's text while the list is open. Changing it would resize the
+  // trigger, shifting the top bar and the list under the pointer; it catches
+  // up on close.
+  const [shownLabel, setShownLabel] = useState<string | null>(null);
   const box = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLUListElement>(null);
@@ -53,6 +57,7 @@ export function NamespacePicker() {
   // in one they can.
   const first = names[0];
   const none = picked.length === 0;
+  const label = triggerLabel(picked, restricted);
   useEffect(() => {
     if (restricted && none && first) setNamespaces([first]);
   }, [restricted, none, first, setNamespaces]);
@@ -75,6 +80,7 @@ export function NamespacePicker() {
 
   const close = (refocus: boolean) => {
     setOpen(false);
+    setShownLabel(null);
     setQuery("");
     if (refocus) trigger.current?.focus();
   };
@@ -85,6 +91,7 @@ export function NamespacePicker() {
     setActive(Math.max(0, current));
     const rect = trigger.current?.getBoundingClientRect();
     setAlign(rect && rect.left + POPOVER_WIDTH > window.innerWidth - 16 ? "right" : "left");
+    setShownLabel(label);
     setOpen(true);
   };
   /** Only this namespace (or all), and close. */
@@ -172,7 +179,6 @@ export function NamespacePicker() {
     }
   };
 
-  const label = triggerLabel(picked, restricted);
   const current = options[Math.min(active, options.length - 1)];
   const count = names.length;
 
@@ -196,7 +202,7 @@ export function NamespacePicker() {
           }
         }}
       >
-        <span className={styles.value}>{label}</span>
+        <span className={styles.value}>{shownLabel ?? label}</span>
         <IconChevronDown size={16} stroke={1.75} aria-hidden="true" className={styles.chevron} />
       </button>
 

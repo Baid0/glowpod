@@ -22,6 +22,9 @@ describe("picking several namespaces", () => {
     if (!box) throw new Error("no checkbox");
     await user.click(box);
     expect(option("checkout")).toHaveAttribute("aria-selected", "true");
+    // The trigger's text holds still while the list is open, so nothing
+    // shifts under the pointer; it updates on close.
+    expect(trigger()).toHaveTextContent("All namespaces");
     expect(option("All namespaces")).toHaveAttribute("aria-selected", "false");
 
     // Space adds the active one and clears the search for the next name.
