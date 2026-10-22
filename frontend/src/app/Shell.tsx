@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Outlet, useMatches } from "react-router";
+import { Outlet, useMatches, type Params } from "react-router";
 
 import { ApiError } from "../lib/api";
 import { usePreferences } from "../lib/preferences";
@@ -12,14 +12,17 @@ import styles from "./Shell.module.css";
 import { TopBar } from "./TopBar";
 
 export interface RouteHandle {
-  title: string;
+  /** A fixed title, or one built from the route's params. */
+  title: string | ((params: Params) => string);
 }
 
 function usePageTitle(): string {
   const matches = useMatches();
   for (let i = matches.length - 1; i >= 0; i--) {
-    const handle = matches[i]?.handle as RouteHandle | undefined;
-    if (handle?.title) return handle.title;
+    const match = matches[i];
+    const handle = match?.handle as RouteHandle | undefined;
+    if (handle?.title)
+      return typeof handle.title === "function" ? handle.title(match?.params ?? {}) : handle.title;
   }
   return "Glowpod";
 }

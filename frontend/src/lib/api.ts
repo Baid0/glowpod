@@ -1,4 +1,11 @@
-import type { KubeEvent, Overview, Session } from "./types";
+import type {
+  KubeEvent,
+  Overview,
+  ResourceRef,
+  ResourceTable,
+  ResourceType,
+  Session,
+} from "./types";
 
 /** The only cluster in v1. Routes already carry the id for multi-cluster later. */
 export const DEFAULT_CLUSTER = "default";
@@ -63,8 +70,47 @@ export const api = {
       clusterPath(cluster, "events", { namespace, limit: String(limit) }),
       signal,
     ).then((r) => r.events),
-  streamURL: (cluster: string, namespace: string) => {
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return proto + "//" + window.location.host + clusterPath(cluster, "stream", { namespace });
-  },
+  streamURL: (cluster: string, namespace: string) =>
+    wsURL(clusterPath(cluster, "stream", { namespace })),
+  resourceTypes: (cluster: string, signal?: AbortSignal) =>
+    apiGet<{ types: ResourceType[] }>(clusterPath(cluster, "resources", {}), signal).then(
+      (r) => r.types,
+    ),
+  listResource: (cluster: string, ref: ResourceRef, opts: ListOptions, signal?: AbortSignal) =>
+    apiGet<ResourceTable>(
+      clusterPath(cluster, `resources/${refPath(ref)}`, {
+        namespace: opts.namespace,
+        labelSelector: opts.labelSelector,
+        continue: opts.continue,
+        limit: opts.limit ? String(opts.limit) : undefined,
+      }),
+      signal,
+    ),
+  watchURL: (
+    cluster: string,
+    ref: ResourceRef,
+    opts: Pick<ListOptions, "namespace" | "labelSelector">,
+  ) =>
+    wsURL(
+      clusterPath(cluster, `watch/${refPath(ref)}`, {
+        namespace: opts.namespace,
+        labelSelector: opts.labelSelector,
+      }),
+    ),
 };
+
+export interface ListOptions {
+  namespace?: string;
+  labelSelector?: string;
+  continue?: string;
+  limit?: number;
+}
+
+function refPath(ref: ResourceRef): string {
+  return [ref.group || "core", ref.version, ref.resource].map(encodeURIComponent).join("/");
+}
+
+function wsURL(path: string): string {
+  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return proto + "//" + window.location.host + path;
+}

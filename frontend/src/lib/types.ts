@@ -116,3 +116,59 @@ export type StreamMessage =
   | { type: "event"; op: "added" | "modified"; event: KubeEvent }
   | { type: "resync"; resource: "pods" | "events" }
   | { type: "error"; resource: "pods" | "events"; code: string; message: string };
+
+/** A resource type from discovery. group "" is the core group. */
+export interface ResourceType {
+  group: string;
+  version: string;
+  resource: string;
+  kind: string;
+  namespaced: boolean;
+  verbs: string[];
+  shortNames?: string[];
+  categories?: string[];
+}
+
+export interface TableColumn {
+  name: string;
+  type: string;
+  format?: string;
+  description?: string;
+  /** 0 = what `kubectl get` shows; higher = `-o wide` extras. */
+  priority: number;
+}
+
+export interface TableRow {
+  cells: unknown[];
+  object: {
+    name: string;
+    namespace?: string;
+    uid: string;
+    creationTimestamp?: string;
+    labels?: Record<string, string>;
+  };
+}
+
+export interface ResourceTable {
+  type: ResourceType;
+  columns: TableColumn[];
+  rows: TableRow[];
+  continue?: string;
+  resourceVersion?: string;
+  remainingItemCount?: number;
+}
+
+/** Group/version/resource as they appear in URLs ("core" for the core group). */
+export interface ResourceRef {
+  group: string;
+  version: string;
+  resource: string;
+}
+
+export interface WatchMessage {
+  type: "ready" | "changed" | "resync" | "error";
+  op?: "added" | "modified" | "deleted";
+  ref?: { kind: string; namespace?: string; name: string };
+  code?: string;
+  message?: string;
+}

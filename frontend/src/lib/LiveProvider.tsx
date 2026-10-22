@@ -2,10 +2,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { api } from "./api";
-import { applyMessage, BACKOFF_MS, LiveContext, POD_REFRESH_DEBOUNCE_MS, type Live } from "./live";
+import { applyMessage, LiveContext, POD_REFRESH_DEBOUNCE_MS, type Live } from "./live";
 import { usePreferences } from "./preferences";
 import { useClusterId } from "./queries";
 import { queryKeys } from "./queryKeys";
+import { connectSocket } from "./socket";
 import type { StreamMessage } from "./types";
 
 /** Keeps one WebSocket open for the current namespace and feeds the query cache. */
@@ -23,12 +24,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    let ws: WebSocket | null = null;
-    let attempt = 0;
-    let closed = false;
-    let retry: ReturnType<typeof setTimeout> | undefined;
     let podTimer: ReturnType<typeof setTimeout> | undefined;
-
     const schedulePodRefresh = () => {
       podTimer ??= setTimeout(() => {
         podTimer = undefined;
@@ -36,38 +32,22 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       }, POD_REFRESH_DEBOUNCE_MS);
     };
 
-    const connect = () => {
-      ws = new WebSocket(api.streamURL(cluster, namespace));
-      ws.onmessage = (e: MessageEvent<string>) => {
-        let msg: StreamMessage;
-        try {
-          msg = JSON.parse(e.data) as StreamMessage;
-        } catch {
-          return;
-        }
-        if (msg.type === "ready") {
-          // Anything may have changed while we were away.
-          if (attempt > 0) void client.invalidateQueries({ queryKey: ["events", cluster] });
-          attempt = 0;
+    const close = connectSocket<StreamMessage>(api.streamURL(cluster, namespace), {
+      onMessage: (msg, reconnected) => {
+        // Anything may have changed while we were away.
+        if (msg.type === "ready" && reconnected) {
+          void client.invalidateQueries({ queryKey: ["events", cluster] });
         }
         setState({ key, status: "live", lastMessageAt: Date.now() });
         applyMessage(client, cluster, namespace, msg, schedulePodRefresh);
-      };
-      ws.onclose = () => {
-        if (closed) return;
+      },
+      onDrop: () => {
         setState((s) => ({ ...s, key, status: "reconnecting" }));
-        const delay = BACKOFF_MS[Math.min(attempt, BACKOFF_MS.length - 1)];
-        attempt++;
-        retry = setTimeout(connect, delay);
-      };
-    };
-
-    connect();
+      },
+    });
     return () => {
-      closed = true;
-      clearTimeout(retry);
+      close();
       clearTimeout(podTimer);
-      ws?.close();
     };
   }, [client, cluster, namespace, key]);
 

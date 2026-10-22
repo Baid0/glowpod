@@ -21,6 +21,17 @@ if (typeof HTMLDialogElement !== "undefined" && !("showModal" in HTMLDialogEleme
   });
 }
 
+// jsdom has no layout, so every element measures 0×0 and virtualized lists
+// render nothing. Give elements a desktop-sized box.
+Object.defineProperties(HTMLElement.prototype, {
+  offsetHeight: { configurable: true, get: () => 800 },
+  offsetWidth: { configurable: true, get: () => 1200 },
+});
+Object.defineProperties(Element.prototype, {
+  clientHeight: { configurable: true, get: () => 800 },
+  clientWidth: { configurable: true, get: () => 1200 },
+});
+
 afterEach(() => {
   cleanup();
   try {

@@ -3,7 +3,10 @@ import type { RouteObject } from "react-router";
 
 import { OverviewPage } from "../features/overview/OverviewPage";
 import { ComingSoon, NotFound } from "../features/placeholder/ComingSoon";
-import { allPages } from "./navigation";
+import { GenericList } from "../features/resources/GenericList";
+import { ResourceListPage } from "../features/resources/ResourceListPage";
+import { ResourceTypesPage } from "../features/resources/ResourceTypesPage";
+import { allPages, type NavItem } from "./navigation";
 import { Shell, type RouteHandle } from "./Shell";
 
 // Component sheets are for development only and are left out of release builds.
@@ -13,13 +16,17 @@ const GaugeDemo = import.meta.env.DEV
 
 const handle = (title: string): RouteHandle => ({ title });
 
+function pageElement(p: NavItem) {
+  // key: a fresh page (search, sort) per resource.
+  if (p.resource) return <ResourceListPage key={p.path} resource={p.resource} />;
+  if (p.types)
+    return <ResourceTypesPage key={p.path} {...(p.types === "custom" ? { only: "custom" } : {})} />;
+  return <ComingSoon title={p.label} phase={p.phase} />;
+}
+
 const pages: RouteObject[] = allPages()
   .filter((p) => p.path !== "/")
-  .map((p) => ({
-    path: p.path.slice(1),
-    element: <ComingSoon title={p.label} phase={p.phase} />,
-    handle: handle(p.label),
-  }));
+  .map((p) => ({ path: p.path.slice(1), element: pageElement(p), handle: handle(p.label) }));
 
 export const routes: RouteObject[] = [
   {
@@ -30,6 +37,16 @@ export const routes: RouteObject[] = [
       ...pages,
       {
         path: "workloads/:kind/:namespace/:name",
+        element: <ComingSoon title="Details" phase={2} />,
+        handle: handle("Details"),
+      },
+      {
+        path: "resources/:group/:version/:resource",
+        element: <GenericList />,
+        handle: { title: (params) => params.resource ?? "Resources" } satisfies RouteHandle,
+      },
+      {
+        path: "resources/:group/:version/:resource/:namespace/:name",
         element: <ComingSoon title="Details" phase={2} />,
         handle: handle("Details"),
       },

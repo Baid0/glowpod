@@ -1,0 +1,270 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+/* Toolbar */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.search {
+  height: var(--control-height);
+  width: 240px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-control);
+  background: var(--canvas);
+  color: var(--ink);
+  font: var(--text-body-sm);
+}
+
+.search::placeholder {
+  color: var(--muted);
+}
+
+.selectorForm {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.selector {
+  width: 260px;
+  padding-right: 32px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.clear {
+  position: absolute;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.clear:hover {
+  background: var(--surface-elevated);
+  color: var(--ink);
+}
+
+.columns {
+  position: relative;
+}
+
+.columns summary {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--surface-elevated);
+  color: var(--ink);
+  font: var(--text-button);
+  cursor: pointer;
+  list-style: none;
+}
+
+.columns summary::-webkit-details-marker {
+  display: none;
+}
+
+.columnsMenu {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 200px;
+  padding: var(--space-2);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface-card);
+}
+
+.columnOption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px var(--space-2);
+  border-radius: var(--radius-segment);
+  color: var(--body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.columnOption:hover {
+  background: var(--surface-elevated);
+}
+
+.columnOption input {
+  accent-color: var(--primary);
+}
+
+.summary {
+  margin-left: auto;
+  color: var(--muted);
+  font: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+.liveDot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--muted-soft);
+}
+
+.live[data-live="true"] .liveDot {
+  background: var(--primary);
+  border: 1px solid var(--lime-outline);
+}
+
+.note {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
+/* Table: the card scrolls inside, so the header can stick. */
+
+.scroller {
+  max-height: calc(100vh - 64px - 200px);
+  min-height: 240px;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font: var(--text-body-sm);
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 40px;
+  padding: 0 var(--space-4);
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--hairline);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: var(--text-caption-upper);
+  letter-spacing: var(--tracking-caption-upper);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sort:hover {
+  color: var(--ink);
+}
+
+.sortIcon {
+  opacity: 0.4;
+}
+
+.sortIcon[data-active="true"] {
+  opacity: 1;
+  color: var(--ink);
+}
+
+.table td {
+  height: 40px;
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+  color: var(--body);
+  white-space: nowrap;
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table tbody tr:hover td {
+  background: color-mix(in srgb, var(--surface-elevated) 50%, transparent);
+}
+
+.name {
+  color: var(--ink);
+  font: 500 13px / 18px var(--font-mono);
+  text-decoration: none;
+}
+
+.name:hover {
+  text-decoration: underline;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+/* States */
+
+.skeleton {
+  height: 320px;
+  margin: var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--surface-elevated);
+  opacity: 0.5;
+}
+
+.empty,
+.error {
+  padding: var(--space-8) var(--space-4);
+  color: var(--body);
+  text-align: center;
+}
+
+.error {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+}

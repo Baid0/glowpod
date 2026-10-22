@@ -84,7 +84,7 @@ describe("Shell (Deep mode)", () => {
     );
     expect(screen.getByRole("complementary", { name: "Workloads panel" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "Deployments" })).toBeInTheDocument();
-    expect(screen.getByText("Deployments is still growing")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "deployments" })).toBeInTheDocument();
   });
 });
 

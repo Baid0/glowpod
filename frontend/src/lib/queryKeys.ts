@@ -5,4 +5,13 @@ export const queryKeys = {
   overview: (cluster: string, namespace: string) => ["overview", cluster, namespace] as const,
   overviewAll: (cluster: string) => ["overview", cluster] as const,
   events: (cluster: string, namespace: string) => ["events", cluster, namespace] as const,
+  resourceTypes: (cluster: string) => ["resourceTypes", cluster] as const,
+  resourceList: (
+    cluster: string,
+    group: string,
+    version: string,
+    resource: string,
+    namespace: string,
+    labelSelector: string,
+  ) => ["resourceList", cluster, group, version, resource, namespace, labelSelector] as const,
 };

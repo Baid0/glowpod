@@ -1,4 +1,4 @@
-import type { KubeEvent, Overview, Problem, Session } from "../lib/types";
+import type { KubeEvent, Overview, Problem, ResourceTable, Session } from "../lib/types";
 
 export const session: Session = {
   mode: "local",
@@ -182,4 +182,45 @@ export function events(): KubeEvent[] {
       object: { kind: "Job", namespace: "ops", name: "backup-nightly-29341" },
     },
   ];
+}
+
+/** A Table page like the API server returns for pods, with -o wide columns. */
+export function podTable(
+  opts: { names?: string[]; next?: string; remaining?: number } = {},
+): ResourceTable {
+  const names = opts.names ?? [
+    "payments-api-7d9f6b-x2kq9",
+    "checkout-web-6f4b9-m8zr2",
+    "search-indexer-0",
+  ];
+  const status = ["CrashLoopBackOff", "Running", "Pending"];
+  return {
+    type: {
+      group: "",
+      version: "v1",
+      resource: "pods",
+      kind: "Pod",
+      namespaced: true,
+      verbs: ["get", "list", "watch"],
+    },
+    columns: [
+      { name: "Name", type: "string", format: "name", priority: 0 },
+      { name: "Ready", type: "string", priority: 0 },
+      { name: "Status", type: "string", priority: 0 },
+      { name: "Restarts", type: "integer", priority: 0 },
+      { name: "Age", type: "string", priority: 0 },
+      { name: "Node", type: "string", priority: 1 },
+    ],
+    rows: names.map((name, i) => ({
+      cells: [name, i === 0 ? "0/1" : "1/1", status[i % 3], i === 0 ? 14 : i, `${i + 1}h`, `w${i}`],
+      object: {
+        name,
+        namespace: ["payments", "checkout", "search"][i % 3],
+        uid: `uid-${name}`,
+        creationTimestamp: new Date(Date.now() - (i + 1) * 3_600_000).toISOString(),
+      },
+    })),
+    ...(opts.next ? { continue: opts.next } : {}),
+    ...(opts.remaining ? { remainingItemCount: opts.remaining } : {}),
+  };
 }

@@ -17,7 +17,6 @@ export const LiveContext = createContext<Live>({ status: "connecting", lastMessa
 const MAX_EVENTS = 50;
 /** Pod changes come in bursts; refetch the Overview at most this often. */
 export const POD_REFRESH_DEBOUNCE_MS = 2_000;
-export const BACKOFF_MS = [1_000, 2_000, 5_000, 10_000, 30_000];
 
 /** Applies one stream message to the query cache. */
 export function applyMessage(

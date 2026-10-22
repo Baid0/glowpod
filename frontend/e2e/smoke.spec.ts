@@ -13,12 +13,16 @@ async function fakeBackend(page: Page) {
       "/api/v1/clusters/default/overview": fx.overview(ns),
       "/api/v1/clusters/default/events": { events: fx.events() },
     };
-    const json = body[url.pathname];
+    // Any resource list gets a small table, so list pages render too.
+    const json =
+      body[url.pathname] ??
+      (url.pathname.startsWith("/api/v1/clusters/default/resources/") ? fx.podTable() : undefined);
     await (json === undefined
       ? route.fulfill({ status: 404, json: { error: { code: "not_found", message: "nope" } } })
       : route.fulfill({ json }));
   });
-  await page.routeWebSocket(/\/api\/v1\/clusters\/default\/stream/, (ws) => {
+  // The live stream and every list watch.
+  await page.routeWebSocket(/\/api\/v1\/clusters\/default\/(stream|watch\/)/, (ws) => {
     ws.send(JSON.stringify({ type: "ready" }));
   });
 }
@@ -59,6 +63,13 @@ test("Overview renders, switches to Glance and navigates with ⌘K", async ({ pa
   await page.getByRole("combobox", { name: "Search pages and commands" }).fill("nodes");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { level: 1, name: "Nodes" })).toBeVisible();
+
+  // A live list page: kubectl's columns and status pills.
+  await page.goto("/workloads/pods");
+  const pods = page.getByRole("region", { name: "pods" });
+  await expect(pods.getByRole("link", { name: "payments-api-7d9f6b-x2kq9" })).toBeVisible();
+  await expect(pods.getByText("CrashLoopBackOff")).toBeVisible();
+  await expect(pods.getByText("Live")).toBeVisible();
 
   expect(errors).toEqual([]);
 });
