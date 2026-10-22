@@ -4,6 +4,49 @@ entries:
   - annotations:
       artifacthub.io/category: monitoring-logging
       artifacthub.io/changes: |
+        - kind: added
+          description: "The chart has an icon (the Glowpod mark on lime), so Artifact Hub and other chart browsers show the logo instead of the generic Helm one."
+      artifacthub.io/images: |
+        - name: glowpod
+          image: ghcr.io/glowpod-dev/glowpod:0.1.4
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Website
+          url: https://glowpod.dev
+        - name: Documentation
+          url: https://glowpod.dev/docs/
+        - name: Install guide
+          url: https://glowpod.dev/docs/install/
+        - name: Sign-in and access
+          url: https://glowpod.dev/docs/authentication/
+        - name: Security policy
+          url: https://github.com/glowpod-dev/glowpod/security/policy
+        - name: Source
+          url: https://github.com/glowpod-dev/glowpod
+    apiVersion: v2
+    appVersion: 0.1.4
+    created: "2026-10-22T13:38:52.939961866Z"
+    description: A Kubernetes dashboard for app developers and platform teams. People
+      sign in and act as themselves.
+    digest: abbbe1e2261b9a95e1d48e6f084445ea61607ea74cd0af4253f3c9eea9e8be71
+    home: https://glowpod.dev
+    icon: https://glowpod.dev/brand/glowpod-icon.png
+    keywords:
+    - kubernetes
+    - dashboard
+    - rbac
+    - sso
+    kubeVersion: '>=1.28.0-0'
+    name: glowpod
+    sources:
+    - https://github.com/glowpod-dev/glowpod
+    type: application
+    urls:
+    - https://github.com/glowpod-dev/glowpod/releases/download/v0.1.4/glowpod-0.1.4.tgz
+    version: 0.1.4
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
         - kind: changed
           description: "Glowpod moved to the glowpod-dev organization: the repository is https://github.com/glowpod-dev/glowpod, the image ghcr.io/glowpod-dev/glowpod and the OCI chart oci://ghcr.io/glowpod-dev/charts/glowpod. Old links redirect, and 0.1.2 and earlier stay at ghcr.io/baid0. Releases are now signed by the glowpod-dev/glowpod workflow; see the install guide for the new verify commands."
         - kind: changed
@@ -103,4 +146,4 @@ entries:
     urls:
     - https://github.com/glowpod-dev/glowpod/releases/download/v0.1.1/glowpod-0.1.1.tgz
     version: 0.1.1
-generated: "2026-10-22T13:15:27.917178676Z"
+generated: "2026-10-22T13:38:52.93901387Z"
