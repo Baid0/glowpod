@@ -6,6 +6,17 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-10-22
+
+### Changed
+
+- Glowpod moved to the glowpod-dev organization: the repository is
+  https://github.com/glowpod-dev/glowpod, the image `ghcr.io/glowpod-dev/glowpod` and the OCI
+  chart `oci://ghcr.io/glowpod-dev/charts/glowpod`. Old links redirect, and 0.1.2 and earlier stay
+  at `ghcr.io/baid0`. Releases are now signed by the glowpod-dev/glowpod workflow; see the install
+  guide for the new verify commands.
+- The home page installs with `helm repo add`.
+
 ### Added
 
 - Classic chart repository: `helm repo add glowpod https://glowpod.dev/charts`. Every release
@@ -75,7 +86,8 @@ First release.
   restricted security context; multi-arch image (amd64, arm64).
 - Light and dark themes, settings for thresholds, density and refresh.
 
-[Unreleased]: https://github.com/glowpod-dev/glowpod/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/glowpod-dev/glowpod/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/glowpod-dev/glowpod/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/glowpod-dev/glowpod/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/glowpod-dev/glowpod/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/glowpod-dev/glowpod/releases/tag/v0.1.0

@@ -30,8 +30,8 @@ Dex next to Glowpod in a throwaway namespace.
 Each release publishes a multi-arch image (`linux/amd64`, `linux/arm64`;
 distroless, runs as non-root user 65532) and the Helm chart, both signed:
 
-- Image: `ghcr.io/baid0/glowpod:<version>`
-- Chart: `oci://ghcr.io/baid0/charts/glowpod`, which already points at the
+- Image: `ghcr.io/glowpod-dev/glowpod:<version>`
+- Chart: `oci://ghcr.io/glowpod-dev/charts/glowpod`, which already points at the
   image of the same version. The same chart is also in a classic chart
   repository, if your tools expect `helm repo add`:
 
@@ -42,7 +42,7 @@ distroless, runs as non-root user 65532) and the Helm chart, both signed:
   ```
 
   Then use `glowpod/glowpod` wherever the steps below say
-  `oci://ghcr.io/baid0/charts/glowpod`.
+  `oci://ghcr.io/glowpod-dev/charts/glowpod`.
 
 The steps below install the published chart. To install from a checkout
 instead, use `deploy/helm/glowpod` in place of the `oci://` address.
@@ -128,7 +128,7 @@ Notes:
 ## 4. Install
 
 ```bash
-helm upgrade --install glowpod oci://ghcr.io/baid0/charts/glowpod --version 0.1.2 \
+helm upgrade --install glowpod oci://ghcr.io/glowpod-dev/charts/glowpod --version 0.1.3 \
   -n glowpod -f glowpod-values.yaml
 kubectl -n glowpod rollout status deploy/glowpod
 helm test glowpod -n glowpod
@@ -163,7 +163,7 @@ For a quick look, skip the ingress and HTTPS and port-forward. Browsers send
 `Secure` cookies to `localhost`, so this works:
 
 ```bash
-helm upgrade --install glowpod oci://ghcr.io/baid0/charts/glowpod --version 0.1.2 -n glowpod
+helm upgrade --install glowpod oci://ghcr.io/glowpod-dev/charts/glowpod --version 0.1.3 -n glowpod
 kubectl -n glowpod port-forward svc/glowpod 8080:80
 ```
 
@@ -174,14 +174,16 @@ Open <http://localhost:8080> and sign in with a token.
 Release images and charts are signed with [Sigstore cosign](https://docs.sigstore.dev)
 without long-lived keys: the signature proves they were built by this
 repository's release workflow from a version tag. Check before you install:
+(0.1.2 and earlier were released from `Baid0/glowpod`, under `ghcr.io/baid0`; use
+those names to verify them.)
 
 ```bash
-cosign verify ghcr.io/baid0/glowpod:0.1.2 \
-  --certificate-identity-regexp '^https://github.com/Baid0/glowpod/\.github/workflows/release\.yml@refs/tags/v' \
+cosign verify ghcr.io/glowpod-dev/glowpod:0.1.3 \
+  --certificate-identity-regexp '^https://github.com/glowpod-dev/glowpod/\.github/workflows/release\.yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 
-cosign verify ghcr.io/baid0/charts/glowpod:0.1.2 \
-  --certificate-identity-regexp '^https://github.com/Baid0/glowpod/\.github/workflows/release\.yml@refs/tags/v' \
+cosign verify ghcr.io/glowpod-dev/charts/glowpod:0.1.3 \
+  --certificate-identity-regexp '^https://github.com/glowpod-dev/glowpod/\.github/workflows/release\.yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
@@ -189,15 +191,15 @@ The image also carries build provenance and an SBOM (the list of everything
 inside it):
 
 ```bash
-gh attestation verify oci://ghcr.io/baid0/glowpod:0.1.2 -R Baid0/glowpod
-docker buildx imagetools inspect ghcr.io/baid0/glowpod:0.1.2 --format '{{ json .SBOM }}'
+gh attestation verify oci://ghcr.io/glowpod-dev/glowpod:0.1.3 -R glowpod-dev/glowpod
+docker buildx imagetools inspect ghcr.io/glowpod-dev/glowpod:0.1.3 --format '{{ json .SBOM }}'
 ```
 
 Each `glowpod` download on the GitHub Release has a build attestation and a
 line in `checksums.txt`; the release also has an SPDX SBOM:
 
 ```bash
-gh attestation verify glowpod_0.1.2_linux_amd64.tar.gz -R Baid0/glowpod
+gh attestation verify glowpod_0.1.3_linux_amd64.tar.gz -R glowpod-dev/glowpod
 sha256sum -c checksums.txt --ignore-missing
 ```
 
@@ -207,7 +209,7 @@ policy-controller, Kyverno `verifyImages`) at the same identity.
 ## Upgrade
 
 ```bash
-helm upgrade glowpod oci://ghcr.io/baid0/charts/glowpod --version 0.2.0 -n glowpod -f glowpod-values.yaml
+helm upgrade glowpod oci://ghcr.io/glowpod-dev/charts/glowpod --version 0.2.0 -n glowpod -f glowpod-values.yaml
 ```
 
 Sessions are kept in memory, so an upgrade (or any restart) signs everyone out.

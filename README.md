@@ -25,7 +25,7 @@ system blocks a downloaded program, allow it once with
 ## Install it in a cluster
 
 ```bash
-helm install glowpod oci://ghcr.io/baid0/charts/glowpod -n glowpod --create-namespace \
+helm install glowpod oci://ghcr.io/glowpod-dev/charts/glowpod -n glowpod --create-namespace \
   --set publicURL=https://glowpod.example.com \
   --set ingress.enabled=true --set ingress.host=glowpod.example.com
 ```

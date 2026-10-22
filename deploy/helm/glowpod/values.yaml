@@ -4,7 +4,7 @@
 
 image:
   # Where you pushed the image (make image-push IMAGE=...).
-  repository: ghcr.io/baid0/glowpod
+  repository: ghcr.io/glowpod-dev/glowpod
   # Defaults to the chart's appVersion.
   tag: ""
   # Pin an exact image: sha256:... (wins over tag).
