@@ -27,7 +27,12 @@ make site       # format check, build into site/dist, check the CSP
 - **CSP:** every built page carries
   `default-src 'self'; script-src 'self'; style-src 'self'; …` in a meta tag, and
   `scripts/check-csp.mjs` fails the build on inline scripts, styles, event handlers or `data:`
-  URLs. Send the same policy as a header from the host, plus `frame-ancestors 'none'`, which a
-  meta tag can't set.
+  URLs. The build also writes `dist/_headers` from the same policy, so Cloudflare Pages sends it
+  as a header, plus `frame-ancestors 'none'` (which a meta tag can't set), HSTS, `nosniff` and a
+  year-long cache for the hashed files in `/assets/`.
+- **Deploy:** `.github/workflows/site.yml` builds the site and deploys it to the Cloudflare Pages
+  project `glowpod`: pushes to `main` go live, pull requests get a preview URL. It needs the
+  repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; without them it only
+  builds.
 - **Brand files:** the logo mark and Pip are SVGs in `public/brand/`, offered for download on the
   brand page.
