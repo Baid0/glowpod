@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
+import { docInputs, docSources, writeDocPages } from "./scripts/docs.mjs";
 
 const root = import.meta.dirname;
 
@@ -40,6 +41,23 @@ function partials() {
   };
 }
 
+// Generates the guide pages from the repository's Markdown, and again whenever it changes.
+function docs() {
+  writeDocPages();
+  return {
+    name: "glowpod-docs",
+    configureServer(server) {
+      server.watcher.add([...docSources(), resolve(root, "src/doc-page.html")]);
+      server.watcher.on("change", (file) => {
+        if (docSources().includes(file) || file.endsWith("doc-page.html")) {
+          writeDocPages();
+          server.ws.send({ type: "full-reload" });
+        }
+      });
+    },
+  };
+}
+
 function csp() {
   return {
     name: "glowpod-csp",
@@ -53,7 +71,7 @@ function csp() {
 }
 
 export default defineConfig({
-  plugins: [partials(), csp()],
+  plugins: [docs(), partials(), csp()],
   server: { port: 5180, strictPort: true },
   preview: { port: 5181, strictPort: true },
   build: {
@@ -65,6 +83,7 @@ export default defineConfig({
         home: resolve(root, "index.html"),
         docs: resolve(root, "docs/index.html"),
         brand: resolve(root, "brand/index.html"),
+        ...docInputs(),
         notFound: resolve(root, "404.html"),
       },
     },

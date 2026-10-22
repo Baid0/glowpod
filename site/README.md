@@ -8,9 +8,15 @@ make site-dev   # dev server on http://localhost:5180
 make site       # format check, build into site/dist, check the CSP
 ```
 
-- **Pages:** `index.html`, `docs/index.html`, `brand/index.html`, `404.html`. Shared pieces
-  (head, header, footer, the logo mark, icons) live in `partials/` and are pulled in with
-  `<!-- @include header.html -->`; `current=docs` marks the current nav link.
+- **Pages:** `index.html`, `docs/index.html` (the quick start), `brand/index.html`, `404.html`.
+  Shared pieces (head, header, footer, docs sidebar, the logo mark, icons) live in `partials/`
+  and are pulled in with `<!-- @include header.html -->`; `current=docs` marks the current nav
+  link.
+- **Guides:** `scripts/docs.mjs` renders the Markdown in the repository's `docs/` (and the SSO
+  demo README) into `docs/<slug>/index.html` with `src/doc-page.html`, on every build and on
+  every save in `make site-dev`. Those pages are generated and not committed: edit the Markdown.
+  Links between guides become site links, links to other repository files go to GitHub. To add a
+  guide, add it to `DOC_PAGES` and to `partials/docs-nav.html`.
 - **Styles:** `src/styles/` — the same tokens as the app, dark by default, light with
   `<html data-theme="light">`. The visitor's choice is saved under `glowpod.theme`.
 - **Script:** `src/main.js` (theme toggle, menus, copy buttons, install tabs, "On this page").
@@ -22,5 +28,3 @@ make site       # format check, build into site/dist, check the CSP
   meta tag can't set.
 - **Brand files:** the logo mark and Pip are SVGs in `public/brand/`, offered for download on the
   brand page.
-
-The longer guides stay in `docs/` in the repository; the site links to them on GitHub.

@@ -12,3 +12,5 @@ node_modules/
 !/backend/internal/web/dist/.gitkeep
 /dist/
 /site/dist/
+# Generated from the Markdown guides by site/scripts/docs.mjs.
+/site/docs/*/
