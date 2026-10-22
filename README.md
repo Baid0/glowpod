@@ -6,21 +6,26 @@ Glance mode; it only shows less at once.
 
 ## Run it on your machine
 
+Download `glowpod` for your system from the
+[latest release](https://github.com/Baid0/glowpod/releases/latest), unpack it
+and run it:
+
 ```bash
-make build
-./bin/glowpod                 # uses your kubeconfig's current context
-./bin/glowpod -context lab    # or pick one
+tar -xzf glowpod_*_darwin_arm64.tar.gz && cd glowpod_*_darwin_arm64
+./glowpod                     # uses your kubeconfig's current context
+./glowpod -context lab        # or pick one
 ```
 
 Glowpod listens on `127.0.0.1` only and opens your browser with a one-time
-sign-in link. Everything runs as your kubeconfig's user.
+sign-in link. Everything runs as your kubeconfig's user. On macOS, if the
+system blocks a downloaded program, allow it once with
+`xattr -d com.apple.quarantine ./glowpod`. Or build it yourself with
+`make build` (the binary lands in `bin/glowpod`).
 
 ## Install it in a cluster
 
 ```bash
-make image-push IMAGE=registry.example.com/you/glowpod VERSION=0.1.0
-helm install glowpod deploy/helm/glowpod -n glowpod --create-namespace \
-  --set image.repository=registry.example.com/you/glowpod --set image.tag=0.1.0 \
+helm install glowpod oci://ghcr.io/baid0/charts/glowpod -n glowpod --create-namespace \
   --set publicURL=https://glowpod.example.com \
   --set ingress.enabled=true --set ingress.host=glowpod.example.com
 ```
@@ -56,7 +61,23 @@ make dev        # Go API + Vite dev server on http://localhost:5173
 make lint test  # before every commit
 make e2e        # Playwright smoke tests
 make chart      # lint and render the Helm chart
+make dist       # glowpod downloads for every platform, in dist/
 ```
+
+### Release
+
+1. Move the changes under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md)
+   to a new version heading, and bump `version` and `appVersion` in
+   `deploy/helm/glowpod/Chart.yaml`.
+2. Commit, then tag and push: `git tag v0.2.0 && git push origin main v0.2.0`.
+
+The release workflow publishes the signed image and chart, then a GitHub
+Release with the downloads, checksums, SBOM and the changelog section as
+notes. A tag with a dash (`v0.2.0-rc.1`) makes a pre-release.
 
 Project conventions and the design system are in [CLAUDE.md](CLAUDE.md);
 choices that depart from it are in [docs/decisions.md](docs/decisions.md).
+
+## License
+
+[MIT](LICENSE). Security issues: see [SECURITY.md](SECURITY.md).

@@ -6,7 +6,7 @@ RBAC allows. Glowpod's own service account can only *impersonate* (for SSO
 and LDAP users); it never reads or changes anything on its own behalf.
 
 ```bash
-helm install glowpod deploy/helm/glowpod -n glowpod --create-namespace \
+helm install glowpod oci://ghcr.io/baid0/charts/glowpod -n glowpod --create-namespace \
   --set publicURL=https://glowpod.example.com \
   --set ingress.enabled=true --set ingress.host=glowpod.example.com
 ```

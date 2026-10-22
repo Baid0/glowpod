@@ -25,20 +25,26 @@ Dex next to Glowpod in a throwaway namespace.
 - Optional: metrics-server (CPU and memory gauges) and Prometheus (network
   gauge). Glowpod works without them and says what's missing.
 
-## 1. Get the image
+## 1. Get the image and chart
 
-Glowpod is one static binary in a distroless image (`linux/amd64` and
-`linux/arm64`, runs as non-root user 65532).
+Each release publishes a multi-arch image (`linux/amd64`, `linux/arm64`;
+distroless, runs as non-root user 65532) and the Helm chart, both signed:
 
-Tagged releases (`v*`) are built by the release workflow and pushed to
-`ghcr.io/<owner>/glowpod`, with the chart as an OCI artifact next to it. To
-build and push your own:
+- Image: `ghcr.io/baid0/glowpod:<version>`
+- Chart: `oci://ghcr.io/baid0/charts/glowpod`, which already points at the
+  image of the same version
+
+The steps below install the published chart. To install from a checkout
+instead, use `deploy/helm/glowpod` in place of the `oci://` address.
+
+To run your own build, from your own registry:
 
 ```bash
 make image-push IMAGE=registry.example.com/platform/glowpod VERSION=0.1.0
 ```
 
 This needs Docker with `buildx`. `make image` builds for your machine only.
+Then set `image.repository` and `image.tag` in your values.
 
 ## 2. Pick a namespace and the URL
 
@@ -58,10 +64,6 @@ Start from this and add a sign-in method from
 
 ```yaml
 # glowpod-values.yaml
-image:
-  repository: registry.example.com/platform/glowpod
-  tag: "0.1.0"
-
 publicURL: https://glowpod.example.com
 clusterName: prod-eu-1
 
@@ -116,7 +118,8 @@ Notes:
 ## 4. Install
 
 ```bash
-helm upgrade --install glowpod deploy/helm/glowpod -n glowpod -f glowpod-values.yaml
+helm upgrade --install glowpod oci://ghcr.io/baid0/charts/glowpod --version 0.1.1 \
+  -n glowpod -f glowpod-values.yaml
 kubectl -n glowpod rollout status deploy/glowpod
 helm test glowpod -n glowpod
 ```
@@ -150,16 +153,51 @@ For a quick look, skip the ingress and HTTPS and port-forward. Browsers send
 `Secure` cookies to `localhost`, so this works:
 
 ```bash
-helm upgrade --install glowpod deploy/helm/glowpod -n glowpod
+helm upgrade --install glowpod oci://ghcr.io/baid0/charts/glowpod --version 0.1.1 -n glowpod
 kubectl -n glowpod port-forward svc/glowpod 8080:80
 ```
 
 Open <http://localhost:8080> and sign in with a token.
 
+## Verify what you download
+
+Release images and charts are signed with [Sigstore cosign](https://docs.sigstore.dev)
+without long-lived keys: the signature proves they were built by this
+repository's release workflow from a version tag. Check before you install:
+
+```bash
+cosign verify ghcr.io/baid0/glowpod:0.1.1 \
+  --certificate-identity-regexp '^https://github.com/Baid0/glowpod/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+
+cosign verify ghcr.io/baid0/charts/glowpod:0.1.1 \
+  --certificate-identity-regexp '^https://github.com/Baid0/glowpod/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+The image also carries build provenance and an SBOM (the list of everything
+inside it):
+
+```bash
+gh attestation verify oci://ghcr.io/baid0/glowpod:0.1.1 -R Baid0/glowpod
+docker buildx imagetools inspect ghcr.io/baid0/glowpod:0.1.1 --format '{{ json .SBOM }}'
+```
+
+Each `glowpod` download on the GitHub Release has a build attestation and a
+line in `checksums.txt`; the release also has an SPDX SBOM:
+
+```bash
+gh attestation verify glowpod_0.1.1_linux_amd64.tar.gz -R Baid0/glowpod
+sha256sum -c checksums.txt --ignore-missing
+```
+
+To enforce signatures at admission, point a policy controller (Sigstore
+policy-controller, Kyverno `verifyImages`) at the same identity.
+
 ## Upgrade
 
 ```bash
-helm upgrade glowpod deploy/helm/glowpod -n glowpod -f glowpod-values.yaml --set image.tag=0.2.0
+helm upgrade glowpod oci://ghcr.io/baid0/charts/glowpod --version 0.2.0 -n glowpod -f glowpod-values.yaml
 ```
 
 Sessions are kept in memory, so an upgrade (or any restart) signs everyone out.
