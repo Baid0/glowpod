@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/discovery/cached/memory"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
@@ -34,11 +35,11 @@ func newWriteEnv(t *testing.T) *writeEnv {
 	kube := fake.NewClientset()
 	kube.Resources = []*metav1.APIResourceList{
 		{GroupVersion: "v1", APIResources: []metav1.APIResource{
-			{Name: "configmaps", Kind: "ConfigMap", Namespaced: true, Verbs: []string{"get", "list", "update", "delete"}},
+			{Name: "configmaps", Kind: "ConfigMap", Namespaced: true, Verbs: []string{"create", "get", "list", "update", "patch", "delete"}},
 			{Name: "nodes", Kind: "Node", Verbs: []string{"get", "list"}},
 		}},
 		{GroupVersion: "apps/v1", APIResources: []metav1.APIResource{
-			{Name: "deployments", Kind: "Deployment", Namespaced: true, Verbs: []string{"get", "list", "update", "patch", "delete"}},
+			{Name: "deployments", Kind: "Deployment", Namespaced: true, Verbs: []string{"create", "get", "list", "update", "patch", "delete"}},
 			{Name: "deployments/scale", Kind: "Scale", Namespaced: true, Verbs: []string{"get", "patch", "update"}},
 		}},
 	}
@@ -67,6 +68,18 @@ func newWriteEnv(t *testing.T) *writeEnv {
 		obj("v1", "ConfigMap", "settings", map[string]any{"data": map[string]any{"mode": "fast"}}),
 		obj("apps/v1", "Deployment", "web", map[string]any{"spec": map[string]any{"replicas": int64(2)}}),
 	)
+	// Server-side apply creates what's missing; the fake tracker only updates.
+	dyn.PrependReactor("patch", "*", func(a k8stesting.Action) (bool, runtime.Object, error) {
+		p := a.(k8stesting.PatchActionImpl)
+		if p.GetPatchType() != types.ApplyPatchType {
+			return false, nil, nil
+		}
+		var u unstructured.Unstructured
+		if err := json.Unmarshal(p.GetPatch(), &u.Object); err != nil {
+			return true, nil, err
+		}
+		return true, &u, nil
+	})
 	var writes []k8stesting.Action
 	dyn.PrependReactor("*", "*", func(a k8stesting.Action) (bool, runtime.Object, error) {
 		if a.GetVerb() != "get" && a.GetVerb() != "list" {
@@ -114,6 +127,8 @@ func (e *writeEnv) do(t *testing.T, method, path, body string, header map[string
 	e.router.ServeHTTP(rec, req)
 	return rec
 }
+
+const newConfigMap = "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: flags\ndata:\n  beta: \"on\"\n"
 
 const editedSettings = "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: settings\n  resourceVersion: \"5\"\ndata:\n  mode: slow\n"
 
@@ -201,6 +216,55 @@ func TestWriteAPI(t *testing.T) {
 			body: jsonBody(updateRequest{YAML: strings.Replace(editedSettings, "name: settings", "name: x", 1)}), wantStatus: 400, wantCode: "identity_changed",
 		},
 		{name: "edit bad json", method: http.MethodPut, path: base + "/resources/core/v1/configmaps/settings?namespace=shop", body: `yaml: nope`, wantStatus: 400, wantCode: "bad_body"},
+		{
+			name: "create", method: http.MethodPost, path: base + "/resources/core/v1/configmaps?namespace=shop",
+			body: jsonBody(updateRequest{YAML: newConfigMap}), wantStatus: 201,
+			check: func(t *testing.T, body []byte, writes []k8stesting.Action) {
+				if len(writes) != 1 || writes[0].GetVerb() != "create" || writes[0].GetNamespace() != "shop" {
+					t.Fatalf("writes = %v", writes)
+				}
+				var got struct {
+					DryRun bool
+					Object struct{ YAML string }
+				}
+				mustDecode(t, body, &got)
+				if got.DryRun || !strings.Contains(got.Object.YAML, "name: flags") {
+					t.Fatalf("result = %+v", got)
+				}
+			},
+		},
+		{
+			name: "create dry run", method: http.MethodPost, path: base + "/resources/core/v1/configmaps?namespace=shop&dryRun=true",
+			body: jsonBody(updateRequest{YAML: newConfigMap}), wantStatus: 201,
+			check: func(t *testing.T, _ []byte, writes []k8stesting.Action) {
+				if opts := writes[0].(k8stesting.CreateActionImpl).CreateOptions; len(opts.DryRun) != 1 {
+					t.Fatalf("not a dry run: %+v", opts)
+				}
+			},
+		},
+		{name: "create needs the csrf token", method: http.MethodPost, path: base + "/resources/core/v1/configmaps?namespace=shop", body: jsonBody(updateRequest{YAML: newConfigMap}), noCSRF: true, wantStatus: 403, wantCode: "csrf"},
+		{name: "create another kind", method: http.MethodPost, path: base + "/resources/apps/v1/deployments?namespace=shop", body: jsonBody(updateRequest{YAML: newConfigMap}), wantStatus: 400, wantCode: "wrong_kind"},
+		{name: "create where the API can't", method: http.MethodPost, path: base + "/resources/core/v1/nodes", body: jsonBody(updateRequest{YAML: "apiVersion: v1\nkind: Node\nmetadata:\n  name: n\n"}), wantStatus: 400, wantCode: "not_creatable"},
+		{name: "create in two namespaces", method: http.MethodPost, path: base + "/resources/core/v1/configmaps?namespace=shop,prod", body: jsonBody(updateRequest{YAML: newConfigMap}), wantStatus: 400, wantCode: "one_namespace"},
+		{
+			name: "apply", method: http.MethodPost, path: base + "/apply?namespace=shop",
+			body: jsonBody(updateRequest{YAML: newConfigMap + "---\napiVersion: example.com/v1\nkind: Widget\nmetadata:\n  name: w\n"}), wantStatus: 200,
+			check: func(t *testing.T, body []byte, writes []k8stesting.Action) {
+				var got struct {
+					Items []struct{ Kind, Namespace, Name, Result, Code string }
+				}
+				mustDecode(t, body, &got)
+				if len(got.Items) != 2 || got.Items[0].Result != "created" || got.Items[0].Namespace != "shop" ||
+					got.Items[1].Result != "failed" || got.Items[1].Code != "unknown_kind" {
+					t.Fatalf("items = %+v", got.Items)
+				}
+				if len(writes) != 1 || writes[0].GetVerb() != "patch" {
+					t.Fatalf("writes = %v", writes)
+				}
+			},
+		},
+		{name: "apply nothing", method: http.MethodPost, path: base + "/apply?namespace=shop", body: jsonBody(updateRequest{YAML: "# empty\n"}), wantStatus: 400, wantCode: "bad_manifest"},
+		{name: "apply needs the csrf token", method: http.MethodPost, path: base + "/apply?namespace=shop", body: jsonBody(updateRequest{YAML: newConfigMap}), noCSRF: true, wantStatus: 403, wantCode: "csrf"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

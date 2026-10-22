@@ -1,7 +1,7 @@
 // The demo's stand-in for the Go server: answers the same REST routes from the in-memory cluster.
 // Nothing here talks to a network.
 
-import type { Session, UpdateResult } from "../lib/types";
+import type { ApplyItem, ApplyResult, CreateResult, Session, UpdateResult } from "../lib/types";
 import { DemoCluster, DemoError, K, meta, nameOf, resourceKey, type Clock } from "./cluster";
 import { crashLines, logKindFor, logLine, startLines } from "./logs";
 import { child, isObj, list, Random, text, type Obj } from "./util";
@@ -201,6 +201,11 @@ export class DemoServer {
       }
       case "nodes":
         return this.nodes(method, a, b, input);
+      case "apply": {
+        if (method !== "POST") break;
+        const yaml = text(input().yaml) ?? "";
+        return json(this.apply(ns, yaml, q.get("dryRun") === "true"));
+      }
       case "logs": {
         if (parts.at(-1) !== "download") break;
         const container = q.get("container") ?? "";
@@ -213,6 +218,10 @@ export class DemoServer {
         if (!a) return json({ types: resourceTypes(c) });
         const group = a === "core" ? "" : a;
         const resource = d;
+        if (!e && method === "POST") {
+          const yaml = text(input().yaml) ?? "";
+          return json(this.create(group, b, resource, ns, yaml, q.get("dryRun") === "true"), 201);
+        }
         if (!e) {
           return json(
             table(c, group, resource, {
@@ -385,6 +394,158 @@ export class DemoServer {
       object: objectView(c, type.group, resourceNameOf(key), namespace, name, false),
     };
   }
+
+  private create(
+    group: string,
+    version: string,
+    resource: string,
+    namespace: string,
+    yaml: string,
+    dryRun: boolean,
+  ): CreateResult {
+    const c = this.cluster;
+    const type = typeFor(c, group, resource);
+    if (yaml.split(/^---\s*$/m).filter((d) => d.trim()).length !== 1) {
+      throw new DemoError(400, "bad_manifest", "Send exactly one object.");
+    }
+    const obj = newObject(c, { ...type, version }, this.parse(yaml), namespace);
+    const ns = text(meta(obj).namespace) ?? "";
+    const key = resourceKey(type.group, resource);
+    if (c.find(key, ns, nameOf(obj))) {
+      throw new DemoError(409, "already_exists", "Something with that name already exists.");
+    }
+    if (dryRun) {
+      const shown = structuredClone(obj);
+      if (key === K.secrets) for (const f of ["data", "stringData"]) hideValues(shown, f);
+      return {
+        dryRun: true,
+        object: { object: shown, yaml: toYaml(shown), redacted: key === K.secrets },
+      };
+    }
+    c.put(key, obj);
+    return {
+      dryRun: false,
+      object: objectView(c, type.group, resource, type.namespaced ? ns : "", nameOf(obj), false),
+    };
+  }
+
+  private apply(namespace: string, yaml: string, dryRun: boolean): ApplyResult {
+    const c = this.cluster;
+    const docs = yaml
+      .split(/^---\s*$/m)
+      .filter((d) => d.split("\n").some((l) => l.trim() && !l.trim().startsWith("#")));
+    if (docs.length === 0) throw new DemoError(400, "bad_manifest", "There's nothing to apply.");
+    if (docs.length > 50) {
+      throw new DemoError(400, "too_many_objects", "Apply up to 50 objects at a time.");
+    }
+    const items = docs.map((doc): ApplyItem => {
+      let parsed: unknown;
+      try {
+        parsed = fromYaml(doc);
+      } catch (err) {
+        const message = err instanceof YamlError ? err.message : "This isn't valid YAML.";
+        return {
+          result: "failed",
+          code: "bad_manifest",
+          message: `This isn't valid YAML: ${message}`,
+        };
+      }
+      if (!isObj(parsed))
+        return { result: "failed", code: "bad_manifest", message: "This YAML isn't an object." };
+      const kind = text(parsed.kind) ?? "";
+      const apiVersion = text(parsed.apiVersion) ?? "";
+      const m = isObj(parsed.metadata) ? parsed.metadata : {};
+      const item: ApplyItem = { apiVersion, kind, name: text(m.name) ?? "", result: "failed" };
+      const [g, v] = apiVersion.includes("/") ? apiVersion.split("/") : ["", apiVersion];
+      const type = resourceTypes(c).find((t) => t.group === g && t.kind === kind);
+      if (!type || !v) {
+        return {
+          ...item,
+          code: "unknown_kind",
+          message: `This cluster doesn't have ${apiVersion} ${kind}.`,
+        };
+      }
+      if (!item.name) {
+        return { ...item, code: "name_required", message: "Give it a name: metadata.name." };
+      }
+      item.namespace = type.namespaced ? orDefault(text(m.namespace), namespace) : "";
+      Object.assign(item, {
+        group: type.group || "core",
+        version: type.version,
+        resource: type.resource,
+      });
+      const key = resourceKey(type.group, type.resource);
+      const current = c.find(key, item.namespace, item.name);
+      if (!current) {
+        if (!dryRun) {
+          const obj = newObject(
+            c,
+            type,
+            { ...parsed, apiVersion: type.group ? `${type.group}/${type.version}` : type.version },
+            item.namespace,
+          );
+          c.put(key, obj);
+        }
+        return { ...item, result: "created" };
+      }
+      const next = { ...structuredClone(current), ...parsed, metadata: { ...meta(current), ...m } };
+      const same = JSON.stringify(next) === JSON.stringify(current);
+      if (!dryRun && !same) c.replace(key, current, next);
+      return { ...item, result: same ? "unchanged" : "configured" };
+    });
+    return { dryRun, items };
+  }
+
+  private parse(yaml: string): unknown {
+    try {
+      return fromYaml(yaml);
+    } catch (err) {
+      const message = err instanceof YamlError ? err.message : "This isn't valid YAML.";
+      throw new DemoError(400, "bad_manifest", `This isn't valid YAML: ${message}`);
+    }
+  }
+}
+
+/** The object's own namespace, else the page's, else "default"; "" counts as unset. */
+function orDefault(own: string | undefined, page: string): string {
+  if (own) return own;
+  return page ? page : "default";
+}
+
+function hideValues(obj: Obj, field: string) {
+  const values = obj[field];
+  if (isObj(values)) for (const k of Object.keys(values)) values[k] = "";
+}
+
+/** The demo's create: one object of the URL's type, like the real API. */
+function newObject(
+  c: DemoCluster,
+  type: { group: string; version: string; kind: string; namespaced: boolean },
+  parsed: unknown,
+  namespace: string,
+): Obj {
+  if (!isObj(parsed)) throw new DemoError(400, "bad_manifest", "This YAML isn't an object.");
+  const apiVersion = type.group ? `${type.group}/${type.version}` : type.version;
+  if (parsed.apiVersion !== apiVersion || parsed.kind !== type.kind) {
+    throw new DemoError(
+      400,
+      "wrong_kind",
+      `This creates a ${type.kind}: use apiVersion: ${apiVersion} and kind: ${type.kind}, or use Apply YAML for other kinds.`,
+    );
+  }
+  const m = isObj(parsed.metadata) ? parsed.metadata : {};
+  if (!text(m.name)) throw new DemoError(400, "name_required", "Give it a name: metadata.name.");
+  if (type.namespaced) m.namespace = orDefault(text(m.namespace), namespace);
+  else Reflect.deleteProperty(m, "namespace");
+  for (const f of ["resourceVersion", "uid", "creationTimestamp", "generation", "managedFields"]) {
+    Reflect.deleteProperty(m, f);
+  }
+  m.uid = c.uid();
+  m.creationTimestamp = new Date(c.now()).toISOString().replace(/\.\d+Z$/, "Z");
+  m.generation = 1;
+  parsed.metadata = m;
+  Reflect.deleteProperty(parsed, "status");
+  return parsed;
 }
 
 function resourceNameOf(key: string): string {

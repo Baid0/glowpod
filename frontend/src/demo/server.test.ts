@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import type {
+  ApplyResult,
+  CreateResult,
   HelmReleaseDetail,
   NodeDetail,
   Overview,
@@ -155,6 +157,66 @@ describe("the demo API", () => {
       yaml: "kind: [oops\n",
     });
     expect(broken.body.error.code).toBe("bad_manifest");
+  });
+
+  it("creates objects after a dry run, and applies multi-document YAML", async () => {
+    const { call, get } = server();
+    const cm = "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: flags\ndata:\n  beta: 'on'\n";
+    const list = async () =>
+      (await get<ResourceTable>(`${API}/resources/core/v1/configmaps?namespace=shop`)).rows.map(
+        (r) => r.object.name,
+      );
+
+    const dry = await call<CreateResult>(
+      "POST",
+      `${API}/resources/core/v1/configmaps?namespace=shop&dryRun=true`,
+      { yaml: cm },
+    );
+    expect(dry.status).toBe(201);
+    expect(dry.body.dryRun).toBe(true);
+    expect(await list()).not.toContain("flags");
+
+    const made = await call<CreateResult>(
+      "POST",
+      `${API}/resources/core/v1/configmaps?namespace=shop`,
+      { yaml: cm },
+    );
+    expect(made.body.object.object.metadata).toMatchObject({ name: "flags", namespace: "shop" });
+    expect(await list()).toContain("flags");
+
+    const again = await call<{ error: { code: string } }>(
+      "POST",
+      `${API}/resources/core/v1/configmaps?namespace=shop`,
+      { yaml: cm },
+    );
+    expect(again.status).toBe(409);
+    const wrong = await call<{ error: { code: string } }>(
+      "POST",
+      `${API}/resources/apps/v1/deployments?namespace=shop`,
+      { yaml: cm },
+    );
+    expect(wrong.body.error.code).toBe("wrong_kind");
+
+    const manifest = `${cm}---\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: more\n---\napiVersion: example.com/v1\nkind: Widget\nmetadata:\n  name: w\n`;
+    const plan = await call<ApplyResult>("POST", `${API}/apply?namespace=shop&dryRun=true`, {
+      yaml: manifest,
+    });
+    expect(plan.body.items.map((it) => `${it.name ?? ""}:${it.result}`)).toEqual([
+      "flags:unchanged",
+      "more:created",
+      "w:failed",
+    ]);
+    expect(await list()).not.toContain("more");
+
+    const applied = await call<ApplyResult>("POST", `${API}/apply?namespace=shop`, {
+      yaml: manifest.replace("'on'", "'off'"),
+    });
+    expect(applied.body.items.map((it) => `${it.name ?? ""}:${it.result}`)).toEqual([
+      "flags:configured",
+      "more:created",
+      "w:failed",
+    ]);
+    expect(await list()).toEqual(expect.arrayContaining(["flags", "more"]));
   });
 
   it("won't save a Secret whose values are still hidden", async () => {

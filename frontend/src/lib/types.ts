@@ -298,6 +298,36 @@ export interface UpdateResult {
   object?: ResourceObject;
 }
 
+/** POST .../resources/{group}/{version}/{resource}: the new object, or what it would be. */
+export interface CreateResult {
+  dryRun: boolean;
+  object: ResourceObject;
+}
+
+/** What happened to one object of an Apply (or would, on a dry run). */
+export type ApplyOutcome = "created" | "configured" | "unchanged" | "applied" | "failed";
+
+export interface ApplyItem {
+  apiVersion?: string;
+  kind?: string;
+  namespace?: string;
+  name?: string;
+  /** URL form, for linking to the object. */
+  group?: string;
+  version?: string;
+  resource?: string;
+  result: ApplyOutcome;
+  code?: string;
+  message?: string;
+  detail?: string;
+}
+
+/** POST .../apply */
+export interface ApplyResult {
+  dryRun: boolean;
+  items: ApplyItem[];
+}
+
 export interface NodeCondition {
   type: string;
   status: string;
