@@ -263,3 +263,15 @@ export function sectionFor(pathname: string, mode: Mode): Section | undefined {
 export function sectionHome(s: Section): string {
   return s.items[0]?.path ?? "/";
 }
+
+/** The list page for a resource type: its nav page if it has one, else the generic list. */
+export function listPathFor(ref: ResourceRef): string {
+  const group = ref.group === "core" ? "" : ref.group;
+  const item = allPages().find(
+    (p) =>
+      p.resource?.group === group &&
+      p.resource.version === ref.version &&
+      p.resource.resource === ref.resource,
+  );
+  return item?.path ?? `/resources/${group || "core"}/${ref.version}/${ref.resource}`;
+}

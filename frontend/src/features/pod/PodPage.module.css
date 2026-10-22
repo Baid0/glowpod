@@ -29,6 +29,10 @@
   gap: var(--space-3);
 }
 
+.actions {
+  margin-left: auto;
+}
+
 .name {
   font: 600 20px / 28px var(--font-mono);
   color: var(--ink);

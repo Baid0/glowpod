@@ -1,0 +1,60 @@
+.dialog {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+  color: var(--body);
+  overflow: hidden;
+}
+
+.dialog[data-size="wide"] {
+  width: min(1100px, calc(100vw - 32px));
+}
+
+.dialog::backdrop {
+  background: color-mix(in srgb, var(--bio-black) 60%, transparent);
+}
+
+.box {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-6) 0;
+}
+
+.title {
+  color: var(--ink);
+  font: var(--text-title-md);
+  overflow-wrap: anywhere;
+}
+
+.description {
+  color: var(--body);
+  font: var(--text-body-sm);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 0;
+  padding: var(--space-4) var(--space-6) 0;
+  overflow-y: auto;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-6);
+}

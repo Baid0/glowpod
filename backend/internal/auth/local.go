@@ -33,6 +33,7 @@ var LocalIdentity = cluster.Identity{Key: "local"}
 type Local struct {
 	token    string
 	session  string
+	csrf     string
 	disabled bool
 }
 
@@ -46,13 +47,22 @@ func NewLocal() (*Local, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Local{token: token, session: session}, nil
+	csrf, err := randomSecret()
+	if err != nil {
+		return nil, err
+	}
+	return &Local{token: token, session: session, csrf: csrf}, nil
 }
 
 // NewLocalDisabled skips the session check. Only for `glowpod -dev`, where
 // the Vite dev server fronts the API and the server is still loopback-only.
 func NewLocalDisabled() *Local {
-	return &Local{disabled: true}
+	// Writes still need a CSRF token; the UI reads it from /session.
+	csrf, err := randomSecret()
+	if err != nil {
+		panic(err) // crypto/rand doesn't fail on supported platforms
+	}
+	return &Local{disabled: true, csrf: csrf}
 }
 
 // LaunchURL is the link to print and open. It signs the browser in.
@@ -101,7 +111,8 @@ func (l *Local) Require(next http.Handler) http.Handler {
 			}})
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(WithIdentity(r.Context(), LocalIdentity)))
+		ctx := WithCSRFToken(WithIdentity(r.Context(), LocalIdentity), l.csrf)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

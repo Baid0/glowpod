@@ -22,6 +22,9 @@ export const queryKeys = {
     name: string,
     reveal: boolean,
   ) => ["object", cluster, group, version, resource, namespace, name, reveal] as const,
+  /** Permission answers; cleared when anything is changed. */
+  access: (cluster: string, checks: string) => ["access", cluster, checks] as const,
+  accessAll: (cluster: string) => ["access", cluster] as const,
   resourceList: (
     cluster: string,
     group: string,

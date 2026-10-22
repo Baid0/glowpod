@@ -89,7 +89,7 @@ func NewRouter(opts Options) http.Handler {
 	if opts.Provider != nil && opts.Auth != nil {
 		r.Get(auth.LoginPath, opts.Auth.HandleLogin)
 		r.Route("/api/v1", func(r chi.Router) {
-			r.Use(opts.Auth.Require)
+			r.Use(opts.Auth.Require, auth.RequireCSRF)
 			r.Get("/session", s.session)
 			r.Route("/clusters/{cluster}", func(r chi.Router) {
 				r.Use(s.requireCluster, requireNamespace)
@@ -105,6 +105,11 @@ func NewRouter(opts Options) http.Handler {
 				r.Get("/resources", s.resourceTypes)
 				r.Get("/resources/{group}/{version}/{resource}", s.listResource)
 				r.Get("/resources/{group}/{version}/{resource}/{name}", s.getResource)
+				r.Put("/resources/{group}/{version}/{resource}/{name}", s.updateResource)
+				r.Delete("/resources/{group}/{version}/{resource}/{name}", s.deleteResource)
+				r.Put("/resources/{group}/{version}/{resource}/{name}/scale", s.scaleResource)
+				r.Post("/resources/{group}/{version}/{resource}/{name}/restart", s.restartResource)
+				r.Post("/access", s.access)
 				r.Get("/watch/{group}/{version}/{resource}", s.watchResource)
 			})
 			r.NotFound(apiNotFound)
@@ -134,6 +139,8 @@ func apiMethodNotAllowed(w http.ResponseWriter, _ *http.Request) {
 type errorBody struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
+	// Detail is the cluster's own explanation, when it has one worth showing.
+	Detail string `json:"detail,omitempty"`
 }
 
 func writeError(w http.ResponseWriter, status int, code, message string) {

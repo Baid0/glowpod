@@ -1,4 +1,5 @@
 import type {
+  AccessCheck,
   AppDetail,
   AppSummary,
   KubeEvent,
@@ -9,6 +10,7 @@ import type {
   ResourceTable,
   ResourceType,
   Session,
+  UpdateResult,
 } from "./types";
 
 /** The only cluster in v1. Routes already carry the id for multi-cluster later. */
@@ -20,6 +22,8 @@ export class ApiError extends Error {
     readonly status: number,
     readonly code: string,
     message: string,
+    /** The cluster's own explanation (validation, policy), when it gave one. */
+    readonly detail?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -27,8 +31,29 @@ export class ApiError extends Error {
 }
 
 interface ErrorBody {
-  error?: { code?: string; message?: string };
+  error?: { code?: string; message?: string; detail?: string };
 }
+
+async function toApiError(res: Response): Promise<ApiError> {
+  let body: ErrorBody = {};
+  try {
+    body = (await res.json()) as ErrorBody;
+  } catch {
+    // not JSON; fall through to a generic message
+  }
+  return new ApiError(
+    res.status,
+    body.error?.code ?? "http_" + String(res.status),
+    body.error?.message ?? "Something went wrong.",
+    body.error?.detail,
+  );
+}
+
+const unreachable = () =>
+  new ApiError(0, "server_unreachable", "Can't reach the Glowpod server. Is it running?");
+
+// The session's CSRF token; every write sends it back in a header.
+let csrfToken = "";
 
 export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> {
   let res: Response;
@@ -36,21 +61,46 @@ export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> 
     res = await fetch(path, { signal, headers: { Accept: "application/json" } });
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") throw err;
-    throw new ApiError(0, "server_unreachable", "Can't reach the Glowpod server. Is it running?");
+    throw unreachable();
   }
-  if (!res.ok) {
-    let body: ErrorBody = {};
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as T;
+}
+
+/**
+ * A write (POST, PUT, DELETE). Carries the CSRF token, and fetches it again
+ * once if the server no longer knows it (it restarted).
+ */
+export async function apiSend<T = void>(
+  method: "POST" | "PUT" | "DELETE",
+  path: string,
+  body?: unknown,
+): Promise<T> {
+  const send = async () => {
+    if (!csrfToken) await api.session();
     try {
-      body = (await res.json()) as ErrorBody;
+      return await fetch(path, {
+        method,
+        headers: {
+          Accept: "application/json",
+          "X-CSRF-Token": csrfToken,
+          ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+        },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      });
     } catch {
-      // not JSON; fall through to a generic message
+      throw unreachable();
     }
-    throw new ApiError(
-      res.status,
-      body.error?.code ?? "http_" + String(res.status),
-      body.error?.message ?? "Something went wrong.",
-    );
+  };
+  let res = await send();
+  if (res.status === 403) {
+    const err = await toApiError(res);
+    if (err.code !== "csrf") throw err;
+    csrfToken = "";
+    res = await send();
   }
+  if (!res.ok) throw await toApiError(res);
+  if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
 
@@ -62,7 +112,11 @@ function clusterPath(cluster: string, rest: string, params: Record<string, strin
 }
 
 export const api = {
-  session: (signal?: AbortSignal) => apiGet<Session>("/api/v1/session", signal),
+  session: (signal?: AbortSignal) =>
+    apiGet<Session>("/api/v1/session", signal).then((s) => {
+      csrfToken = s.csrfToken;
+      return s;
+    }),
   namespaces: (cluster: string, signal?: AbortSignal) =>
     apiGet<{ namespaces: string[] }>(clusterPath(cluster, "namespaces", {}), signal).then(
       (r) => r.namespaces,
@@ -136,7 +190,49 @@ export const api = {
       clusterPath(cluster, `pods/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`, {}),
       signal,
     ),
+  access: (cluster: string, checks: AccessCheck[]) =>
+    apiSend<{ allowed: boolean[] }>("POST", clusterPath(cluster, "access", {}), { checks }).then(
+      (r) => r.allowed,
+    ),
+  updateResource: (
+    cluster: string,
+    ref: ResourceRef,
+    namespace: string,
+    name: string,
+    yaml: string,
+    dryRun: boolean,
+  ) =>
+    apiSend<UpdateResult>(
+      "PUT",
+      objectPath(cluster, ref, namespace, name, "", { dryRun: dryRun ? "true" : undefined }),
+      { yaml },
+    ),
+  deleteResource: (
+    cluster: string,
+    ref: ResourceRef,
+    namespace: string,
+    name: string,
+    propagation?: "background" | "foreground" | "orphan",
+  ) => apiSend("DELETE", objectPath(cluster, ref, namespace, name, "", { propagation })),
+  scale: (cluster: string, ref: ResourceRef, namespace: string, name: string, replicas: number) =>
+    apiSend("PUT", objectPath(cluster, ref, namespace, name, "/scale", {}), { replicas }),
+  restart: (cluster: string, ref: ResourceRef, namespace: string, name: string) =>
+    apiSend("POST", objectPath(cluster, ref, namespace, name, "/restart", {})),
 };
+
+function objectPath(
+  cluster: string,
+  ref: ResourceRef,
+  namespace: string,
+  name: string,
+  suffix: string,
+  params: Record<string, string | undefined>,
+) {
+  return clusterPath(cluster, `resources/${refPath(ref)}/${encodeURIComponent(name)}${suffix}`, {
+    namespace: namespace || undefined,
+    ...params,
+  });
+}
 
 export interface ListOptions {
   namespace?: string;

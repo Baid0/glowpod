@@ -27,6 +27,8 @@ type Type struct {
 	Verbs      []string `json:"verbs"`
 	ShortNames []string `json:"shortNames,omitempty"`
 	Categories []string `json:"categories,omitempty"`
+	// Subresources the API serves, such as "scale", "exec" or "log".
+	Subresources []string `json:"subresources,omitempty"`
 }
 
 // GVR returns the dynamic-client address of t.
@@ -36,6 +38,9 @@ func (t Type) GVR() schema.GroupVersionResource {
 
 // Can reports whether the API serves verb for t.
 func (t Type) Can(verb string) bool { return slices.Contains(t.Verbs, verb) }
+
+// Has reports whether the API serves subresource for t.
+func (t Type) Has(subresource string) bool { return slices.Contains(t.Subresources, subresource) }
 
 // URLGroup is the group as it appears in Glowpod URLs ("core" for "").
 func (t Type) URLGroup() string {
@@ -72,13 +77,21 @@ func Discover(d discovery.DiscoveryInterface) ([]Type, error) {
 		if v, ok := preferred[gv.Group]; ok && v != gv.Version {
 			continue
 		}
+		subs := map[string][]string{}
+		for _, r := range list.APIResources {
+			if parent, sub, ok := strings.Cut(r.Name, "/"); ok {
+				subs[parent] = append(subs[parent], sub)
+			}
+		}
 		for _, r := range list.APIResources {
 			gr := schema.GroupResource{Group: gv.Group, Resource: r.Name}
 			if strings.Contains(r.Name, "/") || seen[gr] || !slices.Contains(r.Verbs, "list") {
 				continue
 			}
 			seen[gr] = true
-			out = append(out, typeOf(gv, r))
+			t := typeOf(gv, r)
+			t.Subresources = subs[r.Name]
+			out = append(out, t)
 		}
 	}
 	slices.SortFunc(out, func(a, b Type) int {

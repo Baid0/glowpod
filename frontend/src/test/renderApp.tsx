@@ -37,7 +37,7 @@ export class FakeWebSocket {
   }
 }
 
-type Responder = (url: URL) => Response | undefined;
+type Responder = (url: URL, init?: RequestInit) => Response | undefined;
 
 function urlOf(input: RequestInfo | URL): string {
   if (typeof input === "string") return input;
@@ -66,9 +66,9 @@ export function defaultResponder(url: URL): Response | undefined {
 export function renderApp(path = "/", respond: Responder = defaultResponder) {
   FakeWebSocket.instances = [];
   vi.stubGlobal("WebSocket", FakeWebSocket);
-  const fetchMock = vi.fn((input: RequestInfo | URL) => {
+  const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(urlOf(input), "http://127.0.0.1:7171");
-    const res = respond(url) ?? defaultResponder(url);
+    const res = respond(url, init) ?? defaultResponder(url);
     return Promise.resolve(
       res ?? Response.json({ error: { code: "not_found", message: "nope" } }, { status: 404 }),
     );

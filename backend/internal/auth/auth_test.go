@@ -155,3 +155,51 @@ func TestRequireHost(t *testing.T) {
 		})
 	}
 }
+
+func TestRequireCSRF(t *testing.T) {
+	const token = "csrf-token"
+	h := RequireCSRF(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	tests := []struct {
+		name    string
+		method  string
+		header  string
+		origin  string
+		site    string
+		want    int
+		noToken bool
+	}{
+		{name: "reads pass", method: http.MethodGet, want: http.StatusNoContent},
+		{name: "write with token", method: http.MethodPost, header: token, origin: "http://localhost:7171", site: "same-origin", want: http.StatusNoContent},
+		{name: "write from a tool", method: http.MethodDelete, header: token, want: http.StatusNoContent},
+		{name: "write without token", method: http.MethodPost, origin: "http://localhost:7171", want: http.StatusForbidden},
+		{name: "wrong token", method: http.MethodPut, header: "guess", want: http.StatusForbidden},
+		{name: "other origin", method: http.MethodPost, header: token, origin: "https://evil.example.com", want: http.StatusForbidden},
+		{name: "cross-site fetch", method: http.MethodPost, header: token, site: "cross-site", want: http.StatusForbidden},
+		{name: "no session token", method: http.MethodPost, header: "", noToken: true, want: http.StatusForbidden},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequestWithContext(t.Context(), tt.method, "/api/v1/x", nil)
+			req.Host = "localhost:7171"
+			if !tt.noToken {
+				req = req.WithContext(WithCSRFToken(req.Context(), token))
+			}
+			if tt.header != "" {
+				req.Header.Set(CSRFHeader, tt.header)
+			}
+			if tt.origin != "" {
+				req.Header.Set("Origin", tt.origin)
+			}
+			if tt.site != "" {
+				req.Header.Set("Sec-Fetch-Site", tt.site)
+			}
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, req)
+			if rec.Code != tt.want {
+				t.Fatalf("status = %d, want %d", rec.Code, tt.want)
+			}
+		})
+	}
+}

@@ -60,6 +60,9 @@ func TestDiscover(t *testing.T) {
 	if strings.Join(got, ",") != want {
 		t.Fatalf("types = %v, want %s (subresources, non-listable and non-preferred versions dropped)", got, want)
 	}
+	if pods, _ := Find(types, CoreGroup, "v1", "pods"); !pods.Has("log") || pods.Has("exec") {
+		t.Fatalf("pod subresources = %v", pods.Subresources)
+	}
 }
 
 func TestFindAndResolve(t *testing.T) {

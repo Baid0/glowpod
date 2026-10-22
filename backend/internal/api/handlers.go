@@ -75,14 +75,16 @@ func (s *server) classify(err error) int { return kerr.Classify(err).Status }
 func (s *server) clusterError(w http.ResponseWriter, err error) {
 	c := kerr.Classify(err)
 	s.opts.Logger.Warn("cluster request failed", "code", c.Code, "err", err)
-	writeError(w, c.Status, c.Code, c.Message)
+	writeJSON(w, c.Status, map[string]errorBody{"error": {Code: c.Code, Message: c.Message, Detail: c.Detail}})
 }
 
 // sessionResponse is GET /api/v1/session.
 type sessionResponse struct {
-	Mode     string         `json:"mode"`
-	User     sessionUser    `json:"user"`
-	Clusters []cluster.Info `json:"clusters"`
+	Mode string `json:"mode"`
+	// CSRFToken goes in the X-CSRF-Token header of every write.
+	CSRFToken string         `json:"csrfToken"`
+	User      sessionUser    `json:"user"`
+	Clusters  []cluster.Info `json:"clusters"`
 }
 
 type sessionUser struct {
@@ -91,7 +93,7 @@ type sessionUser struct {
 
 func (s *server) session(w http.ResponseWriter, r *http.Request) {
 	info := s.opts.Provider.Info()
-	resp := sessionResponse{Mode: "local", Clusters: []cluster.Info{info}}
+	resp := sessionResponse{Mode: "local", CSRFToken: auth.CSRFTokenFrom(r.Context()), Clusters: []cluster.Info{info}}
 
 	// Ask the cluster who we are; this is the name RBAC sees.
 	id, _ := auth.IdentityFrom(r.Context())

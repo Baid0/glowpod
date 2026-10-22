@@ -11,6 +11,7 @@ import type {
 
 export const session: Session = {
   mode: "local",
+  csrfToken: "test-csrf",
   user: { username: "kubernetes-admin" },
   clusters: [{ id: "default", name: "prod-eu-1", server: "192.0.2.10:6443" }],
 };

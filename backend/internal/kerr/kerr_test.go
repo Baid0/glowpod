@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -32,6 +33,10 @@ func TestClassify(t *testing.T) {
 		{"connection refused", fmt.Errorf("list nodes: %w", refused), http.StatusServiceUnavailable, "cluster_unreachable"},
 		{"no route", &net.OpError{Op: "dial", Err: syscall.EHOSTUNREACH}, http.StatusServiceUnavailable, "cluster_unreachable"},
 		{"other", apierrors.NewInternalError(errors.New("etcd")), http.StatusBadGateway, "cluster_error"},
+		{"conflict", apierrors.NewConflict(pods, "api", errors.New("changed")), http.StatusConflict, "conflict"},
+		{"exists", apierrors.NewAlreadyExists(pods, "api"), http.StatusConflict, "already_exists"},
+		{"invalid", apierrors.NewInvalid(schema.GroupKind{Kind: "Pod"}, "api", nil), http.StatusUnprocessableEntity, "invalid"},
+		{"bad request", apierrors.NewBadRequest("no"), http.StatusBadRequest, "bad_request"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -40,5 +45,20 @@ func TestClassify(t *testing.T) {
 				t.Fatalf("got %+v, want %d %s", got, tt.status, tt.code)
 			}
 		})
+	}
+}
+
+func TestClassifyDetail(t *testing.T) {
+	deny := apierrors.NewForbidden(schema.GroupResource{Group: "apps", Resource: "deployments"}, "api",
+		errors.New(`admission webhook "policy.example.com" denied the request: images must be signed`))
+	if got := Classify(deny).Detail; got == "" || !strings.Contains(got, "images must be signed") {
+		t.Fatalf("detail = %q", got)
+	}
+	if got := Classify(fmt.Errorf("x: %w", context.DeadlineExceeded)).Detail; got != "" {
+		t.Fatalf("non-API errors have no detail, got %q", got)
+	}
+	long := apierrors.NewBadRequest(string(make([]byte, 5000)))
+	if got := Classify(long).Detail; len(got) > maxDetail+len("…") {
+		t.Fatalf("detail not capped: %d bytes", len(got))
 	}
 }

@@ -8,6 +8,8 @@ export interface ClusterInfo {
 
 export interface Session {
   mode: "local" | "in-cluster";
+  /** Sent back in X-CSRF-Token on every write. */
+  csrfToken: string;
   user: { username: string };
   clusters: ClusterInfo[];
 }
@@ -128,6 +130,8 @@ export interface ResourceType {
   verbs: string[];
   shortNames?: string[];
   categories?: string[];
+  /** Subresources such as "scale", "exec" and "log". */
+  subresources?: string[];
 }
 
 export interface TableColumn {
@@ -266,4 +270,22 @@ export interface AppDetail {
   pods: PodSummary[];
   problems: Problem[];
   deploys: Deploy[];
+}
+
+/** "May I verb this?" Group uses "core" or "" for the core group. */
+export interface AccessCheck {
+  verb: "get" | "list" | "watch" | "create" | "update" | "patch" | "delete";
+  group: string;
+  resource: string;
+  subresource?: string;
+  namespace?: string;
+  name?: string;
+}
+
+/** PUT .../resources/...: a dry run has before/after; a save has the object. */
+export interface UpdateResult {
+  dryRun: boolean;
+  before?: string;
+  after?: string;
+  object?: ResourceObject;
 }

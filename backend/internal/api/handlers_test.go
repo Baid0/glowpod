@@ -216,7 +216,7 @@ func TestAPI(t *testing.T) {
 		{name: "bad tail", path: "/api/v1/clusters/default/logs/alpha/api-1?tailLines=0", wantStatus: 400, wantCode: "bad_tail"},
 		{name: "pod in a bad namespace", path: "/api/v1/clusters/default/pods/Not_Valid/x", wantStatus: 400, wantCode: "bad_namespace"},
 		{name: "unknown api path", path: "/api/v1/nope", wantStatus: 404, wantCode: "not_found"},
-		{name: "wrong method", method: http.MethodPost, path: "/api/v1/clusters/default/overview", wantStatus: 405, wantCode: "method_not_allowed"},
+		{name: "write without csrf token", method: http.MethodPost, path: "/api/v1/clusters/default/overview", wantStatus: 403, wantCode: "csrf"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

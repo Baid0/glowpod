@@ -7,6 +7,7 @@ import { ApiError } from "../../lib/api";
 import { usePreferences } from "../../lib/preferences";
 import { formatAge, useNow } from "../../lib/time";
 import type { PodDetail } from "../../lib/types";
+import { ResourceActions } from "../actions/ResourceActions";
 import { statusTone } from "../resources/cells";
 import { LogViewer } from "../logs/LogViewer";
 import { ObjectYaml } from "../yaml/ObjectYaml";
@@ -129,6 +130,15 @@ function Header({
           ) : (
             <Badge tone={statusTone(pod.phase)}>{pod.phase}</Badge>
           ))}
+        <div className={styles.actions}>
+          <ResourceActions
+            resource={PODS}
+            namespace={namespace}
+            name={name}
+            kind="Pod"
+            {...(owner ? { ownerKind: owner.kind } : {})}
+          />
+        </div>
       </div>
       <dl className={styles.facts}>
         <Fact label="Namespace">{namespace}</Fact>

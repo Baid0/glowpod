@@ -3,6 +3,7 @@ import { useState } from "react";
 import { usePreferences } from "../../lib/preferences";
 import { formatAge, useNow } from "../../lib/time";
 import type { ResourceRef } from "../../lib/types";
+import { ResourceActions } from "../actions/ResourceActions";
 import { ObjectYaml } from "../yaml/ObjectYaml";
 import { useObject } from "../yaml/useObject";
 import styles from "./ResourceDetailPage.module.css";
@@ -30,8 +31,21 @@ export function ResourceDetailPage({
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <p className={styles.kind}>{data?.object.kind ?? resource.resource}</p>
-        <h2 className={styles.name}>{name}</h2>
+        <div className={styles.titleRow}>
+          <div className={styles.title}>
+            <p className={styles.kind}>{data?.object.kind ?? resource.resource}</p>
+            <h2 className={styles.name}>{name}</h2>
+          </div>
+          {data?.object.kind && (
+            <ResourceActions
+              resource={resource}
+              namespace={namespace}
+              name={name}
+              kind={data.object.kind}
+              {...replicasOf(data.object)}
+            />
+          )}
+        </div>
         <dl className={styles.facts}>
           {namespace && (
             <div className={styles.fact}>
@@ -69,4 +83,13 @@ export function ResourceDetailPage({
       />
     </div>
   );
+}
+
+/** spec.replicas, for objects that have it. */
+function replicasOf(obj: Record<string, unknown>): { replicas?: number } {
+  const spec = obj.spec;
+  if (spec && typeof spec === "object" && "replicas" in spec && typeof spec.replicas === "number") {
+    return { replicas: spec.replicas };
+  }
+  return {};
 }
