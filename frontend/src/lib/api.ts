@@ -131,6 +131,17 @@ export const api = {
       clusterPath(cluster, "events", { namespace, limit: String(limit) }),
       signal,
     ).then((r) => r.events),
+  objectEvents: (
+    cluster: string,
+    namespace: string,
+    kind: string,
+    name: string,
+    signal?: AbortSignal,
+  ) =>
+    apiGet<{ events: KubeEvent[] }>(
+      clusterPath(cluster, "events", { namespace, kind, name, limit: "50" }),
+      signal,
+    ).then((r) => r.events),
   streamURL: (cluster: string, namespace: string) =>
     wsURL(clusterPath(cluster, "stream", { namespace })),
   resourceTypes: (cluster: string, signal?: AbortSignal) =>

@@ -5,6 +5,8 @@ export const queryKeys = {
   overview: (cluster: string, namespace: string) => ["overview", cluster, namespace] as const,
   overviewAll: (cluster: string) => ["overview", cluster] as const,
   events: (cluster: string, namespace: string) => ["events", cluster, namespace] as const,
+  objectEvents: (cluster: string, namespace: string, kind: string, name: string) =>
+    ["events", cluster, namespace, "object", kind, name] as const,
   /** The Events page's longer list; under events() so resyncs refresh both. */
   eventsPage: (cluster: string, namespace: string) =>
     ["events", cluster, namespace, "page"] as const,

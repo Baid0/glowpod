@@ -76,3 +76,9 @@
   color: var(--body);
   font: 400 12px / 18px var(--font-mono);
 }
+
+.skeleton {
+  height: 240px;
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+}

@@ -11,6 +11,7 @@ import (
 	authnv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	"glowpod/internal/auth"
@@ -179,6 +180,14 @@ func (s *server) events(w http.ResponseWriter, r *http.Request) {
 	kube := clientsFrom(r).Kube
 	var all []corev1.Event
 	opts := metav1.ListOptions{Limit: listPage}
+	// ?kind=&name= narrows to one object's events.
+	if kind, name := r.URL.Query().Get("kind"), r.URL.Query().Get("name"); kind != "" || name != "" {
+		if kind == "" || name == "" || len(kind) > 63 || len(name) > 253 {
+			writeError(w, http.StatusBadRequest, "bad_object", "Give both kind and name to see one object's events.")
+			return
+		}
+		opts.FieldSelector = fields.Set{"involvedObject.kind": kind, "involvedObject.name": name}.AsSelector().String()
+	}
 	for range maxEventPages {
 		list, err := kube.CoreV1().Events(r.URL.Query().Get("namespace")).List(r.Context(), opts)
 		if err != nil {

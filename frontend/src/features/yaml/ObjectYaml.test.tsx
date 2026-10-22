@@ -37,7 +37,7 @@ function secret(reveal: boolean) {
 
 describe("Resource detail with YAML", () => {
   it("shows what the object is and its highlighted YAML", async () => {
-    const { fetched } = renderApp("/workloads/deployments/shop/web", (url) =>
+    const { fetched } = renderApp("/workloads/deployments/shop/web?tab=yaml", (url) =>
       url.pathname === `${BASE}/apps/v1/deployments/web`
         ? Response.json({
             object: {
@@ -66,7 +66,7 @@ describe("Resource detail with YAML", () => {
     const user = userEvent.setup();
     const writeText = vi.fn(() => Promise.resolve());
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
-    renderApp("/resources/apps/v1/deployments/shop/web", (url) =>
+    renderApp("/resources/apps/v1/deployments/shop/web?tab=yaml", (url) =>
       url.pathname === `${BASE}/apps/v1/deployments/web`
         ? Response.json({ object: { kind: "Deployment" }, yaml: deploymentYaml, redacted: false })
         : undefined,
@@ -78,7 +78,7 @@ describe("Resource detail with YAML", () => {
 
   it("hides Secret values until Reveal, decodes them, and hides them again", async () => {
     const user = userEvent.setup();
-    const { fetched } = renderApp("/resources/core/v1/secrets/shop/db", (url) =>
+    const { fetched } = renderApp("/resources/core/v1/secrets/shop/db?tab=yaml", (url) =>
       url.pathname === `${BASE}/core/v1/secrets/db`
         ? Response.json(secret(url.searchParams.get("reveal") === "true"))
         : undefined,

@@ -1,16 +1,26 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router";
 
+import { Tabs } from "../../components/Tabs";
 import { usePreferences } from "../../lib/preferences";
 import { formatAge, useNow } from "../../lib/time";
 import type { ResourceRef } from "../../lib/types";
 import { ResourceActions } from "../actions/ResourceActions";
+import { ObjectError } from "../yaml/ObjectError";
 import { ObjectYaml } from "../yaml/ObjectYaml";
 import { isSecret, useObject } from "../yaml/useObject";
 import styles from "./ResourceDetailPage.module.css";
+import { Summary } from "./summary/Summary";
+
+const TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "yaml", label: "YAML" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
 
 /**
- * Any object, CRDs included: what it is and its YAML. Richer pages for
- * specific kinds come in later phases.
+ * Any object, CRDs included: a plain summary (richer for kinds Glowpod
+ * knows), its conditions and events, and its YAML.
  */
 export function ResourceDetailPage({
   resource,
@@ -25,10 +35,15 @@ export function ResourceDetailPage({
   const [revealed, setRevealed] = useState(false);
   const [editing, setEditing] = useState(false);
   const secret = isSecret(resource);
-  const { data } = useObject(resource, namespace, name, revealed);
+  const { data, error, refetch } = useObject(resource, namespace, name, revealed);
   const now = useNow(30_000);
   const meta = data?.object.metadata;
   const labels = Object.entries(meta?.labels ?? {});
+  const [params, setParams] = useSearchParams();
+  const tab: TabId = params.get("tab") === "yaml" ? "yaml" : "overview";
+  const select = (id: TabId) => {
+    setParams(id === "overview" ? {} : { tab: id }, { replace: true });
+  };
 
   return (
     <div className={styles.page}>
@@ -51,6 +66,7 @@ export function ResourceDetailPage({
                     onEdit: () => {
                       // Editing a Secret shows its values: the click is the reveal.
                       if (secret) setRevealed(true);
+                      select("yaml");
                       setEditing(true);
                     },
                     editLabel: secret && !revealed ? "Reveal and edit" : "Edit YAML",
@@ -86,18 +102,29 @@ export function ResourceDetailPage({
           </ul>
         )}
       </header>
-      <ObjectYaml
-        resource={resource}
-        namespace={namespace}
-        name={name}
-        revealed={revealed}
-        onReveal={(r) => {
-          setRevealed(r);
-          if (!r) setEditing(false);
-        }}
-        editing={editing}
-        onEditingChange={setEditing}
-      />
+      <Tabs tabs={TABS} selected={tab} onSelect={select} label="Views" />
+      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+        {tab === "yaml" ? (
+          <ObjectYaml
+            resource={resource}
+            namespace={namespace}
+            name={name}
+            revealed={revealed}
+            onReveal={(r) => {
+              setRevealed(r);
+              if (!r) setEditing(false);
+            }}
+            editing={editing}
+            onEditingChange={setEditing}
+          />
+        ) : data ? (
+          <Summary resource={resource} object={data.object} namespace={namespace} name={name} />
+        ) : error ? (
+          <ObjectError error={error} onRetry={() => void refetch()} />
+        ) : (
+          <div className={styles.skeleton} aria-label="Loading" />
+        )}
+      </div>
     </div>
   );
 }

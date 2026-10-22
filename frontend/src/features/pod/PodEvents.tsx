@@ -5,7 +5,7 @@ import type { KubeEvent } from "../../lib/types";
 import styles from "./PodPage.module.css";
 
 /** The pod's events, newest first. Kubernetes keeps them for about an hour. */
-export function PodEvents({ events }: { events: KubeEvent[] }) {
+export function PodEvents({ events, title }: { events: KubeEvent[]; title?: string }) {
   const now = useNow(15_000);
   if (events.length === 0) {
     return (
@@ -15,9 +15,9 @@ export function PodEvents({ events }: { events: KubeEvent[] }) {
     );
   }
   return (
-    <Card>
+    <Card title={title}>
       <table className={styles.events}>
-        <caption className="visually-hidden">Events for this pod</caption>
+        <caption className="visually-hidden">{title ?? "Events for this pod"}</caption>
         <thead>
           <tr>
             <th scope="col">When</th>

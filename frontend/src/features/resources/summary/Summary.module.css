@@ -1,0 +1,129 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.muted {
+  color: var(--muted);
+  font: var(--text-caption);
+  overflow-wrap: anywhere;
+}
+
+.mono {
+  color: var(--ink);
+  font: 500 13px / 18px var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.skeleton {
+  height: 120px;
+  border-radius: var(--radius-control);
+  background: var(--surface-elevated);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-6);
+  margin: 0 0 var(--space-4);
+}
+
+.fields:last-child {
+  margin-bottom: 0;
+}
+
+.fields > div {
+  display: contents;
+}
+
+.fields dt {
+  color: var(--muted);
+}
+
+.fields dd {
+  margin: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--surface-elevated);
+  color: var(--body);
+  font: 400 12px / 18px var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--text-body-sm);
+}
+
+.table th {
+  padding: 0 var(--space-3) var(--space-2) 0;
+  color: var(--muted);
+  font: var(--text-caption-upper);
+  letter-spacing: var(--tracking-caption-upper);
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.table td {
+  padding: 10px var(--space-3) 10px 0;
+  border-top: 1px solid var(--hairline);
+  color: var(--body);
+}
+
+.conditions,
+.pods {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.condition,
+.pod {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.values {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.values dd {
+  margin: var(--space-1) 0 0;
+}
+
+.value {
+  max-height: 240px;
+  margin: 0;
+  padding: var(--space-3);
+  overflow: auto;
+  border-radius: var(--radius-control);
+  background: var(--canvas);
+  color: var(--body);
+  font: 400 12px / 18px var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

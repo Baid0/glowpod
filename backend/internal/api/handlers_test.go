@@ -230,6 +230,18 @@ func TestAPI(t *testing.T) {
 		{name: "node missing", path: "/api/v1/clusters/default/nodes/w9", wantStatus: 404, wantCode: "not_found"},
 		{name: "node bad name", path: "/api/v1/clusters/default/nodes/Bad_Node", wantStatus: 400, wantCode: "bad_node"},
 		{name: "drain plan", path: "/api/v1/clusters/default/nodes/w1/drain", wantStatus: 200},
+		{name: "events need kind and name together", path: "/api/v1/clusters/default/events?kind=Pod", wantStatus: 400, wantCode: "bad_object"},
+		{
+			name: "one object's events", path: "/api/v1/clusters/default/events?kind=Pod&name=api&namespace=alpha", wantStatus: 200,
+			setup: func(k *fake.Clientset) {
+				k.PrependReactor("list", "events", func(a k8stesting.Action) (bool, runtime.Object, error) {
+					if got := a.(k8stesting.ListAction).GetListRestrictions().Fields.String(); got != "involvedObject.kind=Pod,involvedObject.name=api" {
+						t.Errorf("field selector = %q", got)
+					}
+					return false, nil, nil
+				})
+			},
+		},
 		{name: "exec needs a container", path: "/api/v1/clusters/default/exec/alpha/api-1", wantStatus: 400, wantCode: "bad_container"},
 		{name: "exec bad pod name", path: "/api/v1/clusters/default/exec/alpha/Bad_Pod?container=app", wantStatus: 400, wantCode: "bad_pod"},
 		{name: "pod in a bad namespace", path: "/api/v1/clusters/default/pods/Not_Valid/x", wantStatus: 400, wantCode: "bad_namespace"},

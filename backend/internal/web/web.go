@@ -27,8 +27,9 @@ func Dist() fs.FS {
 const notBuiltMessage = "The Glowpod frontend isn't built into this binary yet. " +
 	"Run `make build`, or `make dev` while developing.\n"
 
-// Handler serves static files from fsys. Paths that aren't files and have no
-// extension get index.html, so client-side routes survive a reload.
+// Handler serves static files from fsys. Paths that aren't files get
+// index.html, so client-side routes survive a reload; only missing files
+// under assets/ are 404s.
 func Handler(fsys fs.FS) http.Handler {
 	files := http.FileServerFS(fsys)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +56,10 @@ func Handler(fsys fs.FS) http.Handler {
 			files.ServeHTTP(w, r)
 			return
 		}
-		if path.Ext(name) != "" {
+		// A missing build asset is a real 404. Anything else is a client
+		// route, even with a dot in it: Kubernetes names often have one
+		// (applications.argoproj.io, ip-10-0-1-21.ec2.internal).
+		if strings.HasPrefix(name, "assets/") {
 			http.NotFound(w, r)
 			return
 		}

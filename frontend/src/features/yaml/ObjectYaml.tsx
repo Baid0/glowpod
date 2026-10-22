@@ -2,10 +2,10 @@ import { IconEye, IconEyeOff, IconLock } from "@tabler/icons-react";
 import { useState } from "react";
 
 import { Button } from "../../components/Button";
-import { ApiError } from "../../lib/api";
 import type { ResourceRef } from "../../lib/types";
 import styles from "./ObjectYaml.module.css";
 import { EditYaml } from "./EditYaml";
+import { ObjectError } from "./ObjectError";
 import { decodeSecretValue } from "./secret";
 import { isSecret, useObject } from "./useObject";
 import { YamlView } from "./YamlView";
@@ -39,24 +39,7 @@ export function ObjectYaml({
   // A hidden Secret can't be edited: saving would blank its values.
   const canEdit = editing && (!secret || revealed);
 
-  if (error) {
-    const msg =
-      error instanceof ApiError && error.status === 403
-        ? "You can't read this. Ask an admin for access."
-        : error instanceof ApiError && error.status === 404
-          ? "This object is gone."
-          : error.message;
-    return (
-      <div className={styles.error} role="alert">
-        <p>{msg}</p>
-        {!(error instanceof ApiError && [403, 404].includes(error.status)) && (
-          <Button size="sm" onClick={() => void refetch()}>
-            Retry
-          </Button>
-        )}
-      </div>
-    );
-  }
+  if (error) return <ObjectError error={error} onRetry={() => void refetch()} />;
   if (isPending) return <div className={styles.skeleton} aria-label="Loading YAML" />;
 
   const values = Object.entries(data.object.data ?? {});

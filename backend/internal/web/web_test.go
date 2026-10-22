@@ -35,6 +35,8 @@ func TestHandler(t *testing.T) {
 		{name: "css asset", fsys: built, path: "/assets/index-abc.css", wantStatus: 200, wantType: "text/css"},
 		{name: "top-level file", fsys: built, path: "/favicon.svg", wantStatus: 200, wantBody: "<svg/>"},
 		{name: "missing asset is 404, not index", fsys: built, path: "/assets/gone.js", wantStatus: 404},
+		{name: "route with a dotted name falls back to index", fsys: built, path: "/resources/apiextensions.k8s.io/v1/customresourcedefinitions/_/applications.argoproj.io", wantStatus: 200, wantBody: "<title>Glowpod"},
+		{name: "node with a dotted name", fsys: built, path: "/nodes/ip-10-0-1-21.ec2.internal", wantStatus: 200, wantBody: "<title>Glowpod"},
 		{name: "dotfiles are hidden", fsys: built, path: "/.gitkeep", wantStatus: 404},
 		{name: "path traversal is cleaned", fsys: built, path: "/../index.html", wantStatus: 200, wantBody: "<title>Glowpod"},
 		{name: "directory falls back to index", fsys: built, path: "/assets", wantStatus: 200, wantBody: "<title>Glowpod"},
