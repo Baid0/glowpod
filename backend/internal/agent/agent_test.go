@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/coder/websocket"
+	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -174,4 +175,52 @@ func TestTunnel(t *testing.T) {
 	if _, err := sessions.Dial(t.Context(), "c1"); err == nil {
 		t.Fatal("dial should fail without a tunnel")
 	}
+}
+
+// Running the import command again (for a new CA) brings back a token the
+// agent doesn't need; it keeps its credential and drops the token.
+func TestConnectDropsAnUnneededToken(t *testing.T) {
+	sessions := tunnel.NewSessions()
+	connected := make(chan bool, 4)
+	sessions.OnChange = func(_ string, ok bool) { connected <- ok }
+	var auth string
+	hubSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth = r.Header.Get("Authorization")
+		_ = sessions.Accept(w, r, "c1")
+	}))
+	t.Cleanup(hubSrv.Close)
+
+	kube := fake.NewClientset(&corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "glowpod-agent", Namespace: "glowpod-system"},
+		Data: map[string][]byte{
+			KeyHubURL:     []byte(hubSrv.URL),
+			KeyCredential: []byte("c1.the-credential"),
+			KeyToken:      []byte("c1.a-new-import-token"),
+		},
+	})
+	cfg := Config{Namespace: "glowpod-system", Secret: "glowpod-agent", Kube: kube, Logger: slog.New(slog.DiscardHandler)}
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	go func() { _ = connectOnce(ctx, cfg, http.NotFoundHandler()) }()
+	if !<-connected {
+		t.Fatal("no tunnel")
+	}
+	if auth != "Bearer c1.the-credential" {
+		t.Fatalf("connected with %q, want the credential", auth)
+	}
+	s, err := kube.CoreV1().Secrets("glowpod-system").Get(t.Context(), "glowpod-agent", metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := s.Data[KeyToken]; ok || string(s.Data[KeyCredential]) != "c1.the-credential" {
+		t.Fatalf("Secret keys after connecting: %v", keys(s.Data))
+	}
+}
+
+func keys(m map[string][]byte) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
 }

@@ -51,11 +51,12 @@ type serverConfig struct {
 	sessionIdle     time.Duration
 	insecureCookies bool
 
-	hub          bool
-	hubNamespace string
-	hubAdmins    string
-	hubCAFile    string
-	agentImage   string
+	hub           bool
+	hubNamespace  string
+	hubAdmins     string
+	hubCAFile     string
+	agentImage    string
+	kubeconfigTTL time.Duration
 	// bootstrapHint tells how to read the bootstrap password; not a flag.
 	bootstrapHint string
 
@@ -116,6 +117,7 @@ func parseFlags(args []string, stderr io.Writer) (config, error) {
 	fs.StringVar(&s.hubAdmins, "hub-admins", "", "hub: comma-separated users or groups, as Kubernetes sees them (oidc:ops), who are Hub administrators besides admin")
 	fs.StringVar(&s.hubCAFile, "hub-ca-file", "", "hub: CA bundle agents should trust for the Hub's address (a private CA)")
 	fs.StringVar(&s.agentImage, "agent-image", "", "hub: image for glowpod-agent in imported clusters (default: this version's image)")
+	fs.DurationVar(&s.kubeconfigTTL, "kubeconfig-ttl", 8*time.Hour, "hub: how long a downloaded kubeconfig works")
 
 	fs.StringVar(&s.oidcIssuer, "oidc-issuer", "", "server: OpenID Connect issuer URL; turns on SSO")
 	fs.StringVar(&s.oidcClientID, "oidc-client-id", "", "server: OIDC client ID")
@@ -243,6 +245,9 @@ func (s *serverConfig) check() error {
 		}
 	} else if !s.token && s.oidcIssuer == "" && s.ldapURL == "" {
 		return errors.New("turn on a sign-in method: -auth-token, -oidc-issuer or -ldap-url")
+	}
+	if s.kubeconfigTTL < time.Minute || s.kubeconfigTTL > 30*24*time.Hour {
+		return errors.New("-kubeconfig-ttl must be between 1m and 720h")
 	}
 	if s.sessionTTL <= 0 || s.sessionIdle <= 0 {
 		return errors.New("-session-ttl and -session-idle must be positive")

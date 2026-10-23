@@ -7,6 +7,7 @@ import type {
   ClusterInfo,
   ClusterSummary,
   ImportCommand,
+  KubeTokenList,
   CreateResult,
   DrainPlan,
   DrainResult,
@@ -89,6 +90,17 @@ export async function apiSend<T = void>(
   path: string,
   body?: unknown,
 ): Promise<T> {
+  const res = await apiSendRaw(method, path, body);
+  if (res.status === 204) return undefined as T;
+  return (await res.json()) as T;
+}
+
+/** apiSend's request, for an answer that isn't JSON (a file). */
+async function apiSendRaw(
+  method: "POST" | "PUT" | "DELETE",
+  path: string,
+  body?: unknown,
+): Promise<Response> {
   const send = async () => {
     if (!csrfToken) await api.session();
     try {
@@ -113,8 +125,7 @@ export async function apiSend<T = void>(
     res = await send();
   }
   if (!res.ok) throw await toApiError(res);
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  return res;
 }
 
 function clusterPath(cluster: string, rest: string, params: Record<string, string | undefined>) {
@@ -158,6 +169,15 @@ export const api = {
     apiSend<ImportCommand>("POST", `/api/v1/hub/clusters/${encodeURIComponent(cluster)}/import`, {
       owner,
     }),
+  /** A new kubeconfig for every cluster you see, starting in current. */
+  kubeconfig: async (current?: string) => {
+    const res = await apiSendRaw("POST", "/api/v1/hub/kubeconfig", { current });
+    return { yaml: await res.text(), expires: res.headers.get("X-Glowpod-Token-Expires") ?? "" };
+  },
+  kubeconfigTokens: (signal?: AbortSignal) =>
+    apiGet<KubeTokenList>("/api/v1/hub/kubeconfig/tokens", signal),
+  revokeKubeconfigToken: (id: string) =>
+    apiSend("DELETE", `/api/v1/hub/kubeconfig/tokens/${encodeURIComponent(id)}`),
   removeCluster: (cluster: string) =>
     apiSend<{ cleanup: string }>("DELETE", `/api/v1/hub/clusters/${encodeURIComponent(cluster)}`),
   namespaces: (cluster: string, signal?: AbortSignal) =>

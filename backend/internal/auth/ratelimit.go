@@ -9,7 +9,8 @@ import (
 	"time"
 )
 
-// limiter allows Max attempts per key within Window. It slows down
+// limiter allows Max attempts per key within Window: every attempt with
+// allow, failed ones only with blocked and fail. It slows down
 // password and token guessing; it isn't a substitute for strong secrets.
 type limiter struct {
 	max    int
@@ -26,9 +27,35 @@ func newLimiter(maxAttempts int, window time.Duration) *limiter {
 
 // allow records an attempt and reports whether it's within the limit.
 func (l *limiter) allow(key string) bool {
-	now := l.now()
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	if l.full(key) {
+		return false
+	}
+	l.hits[key] = append(l.hits[key], l.now())
+	return true
+}
+
+// blocked reports whether key has used up its attempts, without counting
+// one; with fail, only failed sign-ins count.
+func (l *limiter) blocked(key string) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.full(key)
+}
+
+// fail counts a failed attempt.
+func (l *limiter) fail(key string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.full(key)
+	l.hits[key] = append(l.hits[key], l.now())
+}
+
+// full drops key's attempts older than the window and reports whether the
+// rest reach the limit. Call it with mu held.
+func (l *limiter) full(key string) bool {
+	now := l.now()
 	if len(l.hits) > 10000 {
 		l.hits = map[string][]time.Time{} // bounded memory beats perfect accounting
 	}
@@ -38,12 +65,8 @@ func (l *limiter) allow(key string) bool {
 			recent = append(recent, t)
 		}
 	}
-	if len(recent) >= l.max {
-		l.hits[key] = recent
-		return false
-	}
-	l.hits[key] = append(recent, now)
-	return true
+	l.hits[key] = recent
+	return len(recent) >= l.max
 }
 
 // clientIP is who is asking. Behind trusted proxies (an ingress

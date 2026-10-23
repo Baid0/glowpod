@@ -132,6 +132,7 @@ func runHubServer(ctx context.Context, args []string, stderr io.Writer) error {
 			Addr:              *httpAddr,
 			Handler:           quickstart.Redirect(cfg.server.publicURL),
 			ReadHeaderTimeout: 10 * time.Second,
+			ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelDebug),
 		}
 		wg.Go(func() {
 			if err := redirect.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

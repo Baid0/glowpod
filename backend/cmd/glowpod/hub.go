@@ -64,6 +64,7 @@ func newHub(ctx context.Context, sc serverConfig, base *rest.Config, clusters *c
 		HubCA:         ca,
 		Admins:        admins,
 		BootstrapHint: sc.bootstrapHint,
+		KubeconfigTTL: sc.kubeconfigTTL,
 		Logger:        logger.With("component", "hub"),
 	})
 	if err := h.Start(ctx); err != nil {

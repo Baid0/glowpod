@@ -1,7 +1,9 @@
-import { IconLogout, IconSearch } from "@tabler/icons-react";
+import { IconKey, IconLogout, IconSearch } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router";
 
+import { KubeconfigDialog } from "../features/clusters/KubeconfigDialog";
 import { api } from "../lib/api";
 import { initials } from "../lib/format";
 import { useLive } from "../lib/live";
@@ -136,8 +138,10 @@ function Avatar() {
   const client = useQueryClient();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [kubeconfig, setKubeconfig] = useState(false);
   const [error, setError] = useState("");
   const box = useRef<HTMLDivElement>(null);
+  const { cluster } = useParams();
   const name = data?.user.username ?? "";
   const groups = data?.user.groups ?? [];
 
@@ -194,6 +198,19 @@ function Avatar() {
               {groups.length > 8 && <li>+{groups.length - 8} more</li>}
             </ul>
           )}
+          {data?.hub && (
+            <button
+              type="button"
+              className={styles.menuButton}
+              onClick={() => {
+                setOpen(false);
+                setKubeconfig(true);
+              }}
+            >
+              <IconKey size={16} stroke={1.75} aria-hidden="true" />
+              Kubeconfig
+            </button>
+          )}
           {data?.mode === "in-cluster" && (
             <button type="button" className={styles.menuButton} onClick={() => void signOut()}>
               <IconLogout size={16} stroke={1.75} aria-hidden="true" />
@@ -206,6 +223,15 @@ function Avatar() {
             </p>
           )}
         </div>
+      )}
+      {data?.hub && (
+        <KubeconfigDialog
+          open={kubeconfig}
+          onClose={() => {
+            setKubeconfig(false);
+          }}
+          cluster={cluster}
+        />
       )}
     </div>
   );

@@ -37,6 +37,9 @@ hub:
   admins: []
   # The image agents run in imported clusters; empty = this chart's image.
   agentImage: ""
+  # How long a kubeconfig downloaded from the Hub works (account menu,
+  # Kubeconfig). People can revoke theirs sooner.
+  kubeconfigTTL: 8h
   # A Secret with ca.crt that agents should trust for publicURL, when the
   # Hub's certificate comes from a private CA.
   caSecret: ""

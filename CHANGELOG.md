@@ -6,6 +6,25 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- kubectl through Glowpod Hub: the account menu's **Kubeconfig** downloads a kubeconfig with a
+  context for every cluster you can see ([guide](docs/hub.md#use-kubectl)). kubectl reaches each
+  cluster through the Hub (and its agent), as you, with your RBAC; `exec`, `logs -f`, watches and
+  `port-forward` work too. It works for 8 hours (`hub.kubeconfigTTL`), and you can revoke it from
+  the same menu. The Hub ignores `--as` and other impersonation from the client.
+
+### Changed
+
+- The sign-in limit counts only failed attempts per person (10 in 5 minutes), so signing in
+  often no longer locks you out.
+- A Hub served over plain HTTP no longer offers the `curl --insecure` import command, which is
+  only for HTTPS.
+- net/http's own messages, such as TLS handshakes a client gave up on, go to the log in its
+  format at debug level, instead of as raw lines.
+- An agent whose import command is run again (for a new CA, say) keeps its credential and
+  removes the import token it no longer needs from its Secret.
+
 ## [0.5.0] - 2026-10-23
 
 ### Added

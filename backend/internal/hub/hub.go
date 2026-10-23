@@ -74,6 +74,9 @@ type Config struct {
 	// BootstrapHint tells how to read the bootstrap password; the default
 	// is the kubectl command.
 	BootstrapHint string
+	// KubeconfigTTL is how long a downloaded kubeconfig works; 0 means
+	// DefaultKubeconfigTTL.
+	KubeconfigTTL time.Duration
 	Logger        *slog.Logger
 }
 
@@ -87,6 +90,9 @@ type Hub struct {
 	mu            sync.Mutex
 	records       map[string]*Record
 	localSubjects subjects.Set
+
+	kubeTokens kubeTokens
+	upstreams  upstreams
 }
 
 // New returns a Hub. Call Start before serving.
@@ -122,7 +128,12 @@ func (h *Hub) Start(ctx context.Context) error {
 	go func() {
 		t := time.NewTicker(pollInterval)
 		defer t.Stop()
+		lastPrune := time.Now()
 		for {
+			if time.Since(lastPrune) > pruneInterval {
+				h.pruneKubeTokens(ctx)
+				lastPrune = time.Now()
+			}
 			select {
 			case <-ctx.Done():
 				return
@@ -132,6 +143,14 @@ func (h *Hub) Start(ctx context.Context) error {
 		}
 	}()
 	return nil
+}
+
+// pruneInterval is how often expired kubeconfig tokens are deleted.
+const pruneInterval = 10 * time.Minute
+
+// tokenSession is who a kubeconfig token acts as, for Visible.
+func tokenSession(t KubeToken) auth.SessionInfo {
+	return auth.SessionInfo{User: t.User, Groups: t.Groups}
 }
 
 // bootstrap makes the first-start password, once, until setup is done. It

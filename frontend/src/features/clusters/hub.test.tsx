@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { ClusterInfo, HubSession, Session } from "../../lib/types";
 import * as fx from "../../test/fixtures";
@@ -249,5 +249,65 @@ describe("Hub sign-in", () => {
     await waitFor(() => {
       expect(posted).toEqual([{ username: "admin", password: "the bootstrap one" }]);
     });
+  });
+});
+
+describe("kubeconfig from the Hub", () => {
+  it("downloads one, lists it and revokes it", async () => {
+    const user = userEvent.setup();
+    let tokens = [{ id: "a1b2c3", user: "glowpod:admin", created: ago(90), expires: ago(-390) }];
+    const created: string[] = [];
+    const blobs = vi.spyOn(URL, "createObjectURL").mockImplementation((b: Blob | MediaSource) => {
+      created.push(b instanceof Blob ? b.type : "");
+      return "blob:kubeconfig";
+    });
+    const clicks = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      created.push(this.download);
+    });
+    try {
+      const { sent } = hub(hubSession({ role: "admin" }), {
+        "POST /api/v1/hub/kubeconfig": () =>
+          new Response("apiVersion: v1\nkind: Config\n", {
+            headers: { "Content-Type": "application/yaml", "X-Glowpod-Token-Expires": ago(-480) },
+          }),
+        "GET /api/v1/hub/kubeconfig/tokens": () => Response.json({ tokens, ttlSeconds: 28800 }),
+        "DELETE /api/v1/hub/kubeconfig/tokens/a1b2c3": () => {
+          tokens = [];
+          return new Response(null, { status: 204 });
+        },
+      });
+      await user.click(await screen.findByRole("button", { name: /signed in as glowpod:admin/i }));
+      await user.click(screen.getByRole("button", { name: "Kubeconfig" }));
+      const dialog = await screen.findByRole("dialog", { name: "Use kubectl" });
+      expect(within(dialog).getByText(/for 8 hours/)).toBeInTheDocument();
+      expect(
+        await within(dialog).findByText(/Made 1 h ago · works 6 h more · not used yet/),
+      ).toBeInTheDocument();
+
+      await user.click(within(dialog).getByRole("button", { name: "Download kubeconfig" }));
+      expect(await within(dialog).findByText(/Saved glowpod-kubeconfig.yaml/)).toBeInTheDocument();
+      expect(created).toEqual(["application/yaml", "glowpod-kubeconfig.yaml"]);
+      expect(sent).toContainEqual({ method: "POST", path: "/api/v1/hub/kubeconfig", body: {} });
+
+      await user.click(
+        within(dialog).getByRole("button", { name: /Revoke the kubeconfig made 1 h ago/ }),
+      );
+      expect(
+        await within(dialog).findByText("You have no kubeconfigs that still work."),
+      ).toBeInTheDocument();
+      expect(sent.some((s) => s.method === "DELETE")).toBe(true);
+    } finally {
+      blobs.mockRestore();
+      clicks.mockRestore();
+    }
+  });
+
+  it("isn't offered outside a Hub", async () => {
+    const user = userEvent.setup();
+    renderApp("/");
+    await user.click(await screen.findByRole("button", { name: /signed in as/i }));
+    expect(screen.queryByRole("button", { name: "Kubeconfig" })).not.toBeInTheDocument();
   });
 });

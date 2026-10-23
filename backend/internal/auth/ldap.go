@@ -227,7 +227,8 @@ func (s *Server) loginLDAP(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "bad_credentials", "Enter your username and password.")
 		return
 	}
-	if !s.idLimit.allow("ldap:" + strings.ToLower(username)) {
+	limitKey := "ldap:" + strings.ToLower(username)
+	if s.idLimit.blocked(limitKey) {
 		writeJSONError(w, http.StatusTooManyRequests, "too_many_attempts", "Too many sign-in attempts. Wait a few minutes and try again.")
 		return
 	}
@@ -235,6 +236,7 @@ func (s *Server) loginLDAP(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	user, groups, err := s.cfg.LDAP.Authenticate(ctx, username, req.Password)
 	if errors.Is(err, ErrBadCredentials) {
+		s.idLimit.fail(limitKey)
 		writeJSONError(w, http.StatusUnauthorized, "bad_credentials", "That username and password didn't work.")
 		return
 	}

@@ -99,6 +99,7 @@ impersonate.
 | `-hub-admins` | | `hub.admins` (list) | Users or groups, as Kubernetes sees them (`oidc:platform`), who are Hub administrators besides `admin` |
 | `-hub-ca-file` | | `hub.caSecret` (Secret with `ca.crt`) | CA that agents should trust for the Hub's address |
 | `-agent-image` | this version's image | `hub.agentImage` | Image the agent runs in imported clusters |
+| `-kubeconfig-ttl` | `8h` | `hub.kubeconfigTTL` | How long a kubeconfig downloaded from the Hub works (1m to 720h) |
 | | | `hub.localAdmin` (`true`) | Make `glowpod:admin` cluster-admin on the Hub's own cluster |
 
 ### The `glowpod-hub` image

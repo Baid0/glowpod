@@ -87,3 +87,28 @@
   color: var(--ink);
   font: var(--text-body-sm);
 }
+
+.tokens {
+  display: flex;
+  flex-direction: column;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+}
+
+.token {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  color: var(--body);
+  font: var(--text-body-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.token + .token {
+  border-top: 1px solid var(--hairline);
+}

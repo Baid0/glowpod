@@ -28,11 +28,17 @@ func (h *Hub) MountPublic(r chi.Router) {
 	r.Get(tunnel.ImportPrefix+"{file}", h.importManifest)
 	r.Post(tunnel.RegisterPath, h.register)
 	r.Get(tunnel.ConnectPath, h.connect)
+	// kubectl, with a kubeconfig token instead of a cookie.
+	r.HandleFunc(KubeAPIPrefix+"{cluster}", h.kubeAPI)
+	r.HandleFunc(KubeAPIPrefix+"{cluster}/*", h.kubeAPI)
 }
 
 // MountAPI adds /api/v1/hub/…, for people signed in (with CSRF checked).
 func (h *Hub) MountAPI(r chi.Router) {
 	r.Post("/setup", h.handleSetup)
+	r.Post("/kubeconfig", h.downloadKubeconfig)
+	r.Get("/kubeconfig/tokens", h.listKubeTokens)
+	r.Delete("/kubeconfig/tokens/{id}", h.revokeKubeToken)
 	r.Group(func(r chi.Router) {
 		r.Use(h.requireAdmin)
 		r.Post("/clusters", h.importCluster)
@@ -112,9 +118,10 @@ type importRequest struct {
 type ImportResponse struct {
 	Cluster cluster.Info `json:"cluster"`
 	// Command installs the agent; InsecureCommand does the same when the
-	// Hub's certificate isn't trusted by the machine running kubectl.
+	// Hub's certificate isn't trusted by the machine running kubectl. A
+	// plain-HTTP Hub has no certificate, so no InsecureCommand.
 	Command         string    `json:"command"`
-	InsecureCommand string    `json:"insecureCommand"`
+	InsecureCommand string    `json:"insecureCommand,omitempty"`
 	ExpiresAt       time.Time `json:"expiresAt"`
 }
 
@@ -187,12 +194,11 @@ func (h *Hub) respondImport(w http.ResponseWriter, r *http.Request, id string, o
 		return
 	}
 	manifest := serverURL + tunnel.ImportPrefix + token + ".yaml"
-	writeJSON(w, http.StatusOK, ImportResponse{
-		Cluster:         h.info(id),
-		Command:         "kubectl apply -f " + manifest,
-		InsecureCommand: "curl --insecure -sfL " + manifest + " | kubectl apply -f -",
-		ExpiresAt:       expires,
-	})
+	resp := ImportResponse{Cluster: h.info(id), Command: "kubectl apply -f " + manifest, ExpiresAt: expires}
+	if strings.HasPrefix(serverURL, "https://") {
+		resp.InsecureCommand = "curl --insecure -sfL " + manifest + " | kubectl apply -f -"
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // newID is a URL-safe id for a new cluster that no other cluster has.
@@ -229,6 +235,7 @@ func (h *Hub) removeCluster(w http.ResponseWriter, r *http.Request) {
 	delete(h.records, id)
 	h.mu.Unlock()
 	h.sessions.Close(id)
+	h.forgetUpstream(id)
 	h.cfg.Logger.Info("removed a cluster", "cluster", id, "by", auth.SessionInfoFrom(r.Context()).User)
 	writeJSON(w, http.StatusOK, RemoveResponse{Cleanup: cleanupCommand()})
 }

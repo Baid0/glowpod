@@ -71,6 +71,8 @@ spec:
               value: {{ join "," .Values.hub.admins | quote }}
             - name: GLOWPOD_AGENT_IMAGE
               value: {{ .Values.hub.agentImage | default (include "glowpod.image" .) | quote }}
+            - name: GLOWPOD_KUBECONFIG_TTL
+              value: {{ .Values.hub.kubeconfigTTL | quote }}
             {{- if .Values.hub.caSecret }}
             - name: GLOWPOD_HUB_CA_FILE
               value: /etc/glowpod/hub-ca/ca.crt

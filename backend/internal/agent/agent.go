@@ -125,6 +125,13 @@ func connectOnce(ctx context.Context, cfg Config, h http.Handler) error {
 		if credential, err = register(ctx, cfg, client, hubURL, secret); err != nil {
 			return err
 		}
+	} else if _, ok := secret.Data[KeyToken]; ok {
+		// Running the import command again (for a new CA, say) brings a
+		// token this agent doesn't need: it has its credential.
+		delete(secret.Data, KeyToken)
+		if _, err := cfg.Kube.CoreV1().Secrets(cfg.Namespace).Update(ctx, secret, metav1.UpdateOptions{}); err != nil {
+			cfg.Logger.Warn("couldn't remove the unused import token from the agent's Secret", "err", err)
+		}
 	}
 
 	wsURL, err := url.Parse(hubURL + tunnel.ConnectPath)

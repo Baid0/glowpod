@@ -30,6 +30,7 @@
           "items": { "type": "string", "minLength": 1 }
         },
         "agentImage": { "type": "string" },
+        "kubeconfigTTL": { "type": "string", "pattern": "^([0-9]+(h|m))+$" },
         "caSecret": { "type": "string" },
         "localAdmin": { "type": "boolean" }
       }

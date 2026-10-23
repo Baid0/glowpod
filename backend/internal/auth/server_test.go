@@ -243,3 +243,27 @@ func TestClientIP(t *testing.T) {
 		})
 	}
 }
+
+func TestLimiterCountsOnlyFailures(t *testing.T) {
+	l := newLimiter(3, time.Minute)
+	now := time.Now()
+	l.now = func() time.Time { return now }
+	for range 10 { // signing in successfully, again and again
+		if l.blocked("ann") {
+			t.Fatal("successful sign-ins don't use up the limit")
+		}
+	}
+	for range 3 {
+		l.fail("ann")
+	}
+	if !l.blocked("ann") {
+		t.Fatal("three failures block")
+	}
+	if l.blocked("bob") {
+		t.Fatal("only ann")
+	}
+	now = now.Add(61 * time.Second)
+	if l.blocked("ann") {
+		t.Fatal("the window slides")
+	}
+}

@@ -25,7 +25,8 @@ func (s *Server) loginPassword(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "bad_credentials", "Enter your username and password.")
 		return
 	}
-	if !s.idLimit.allow("password:" + strings.ToLower(username)) {
+	limitKey := "password:" + strings.ToLower(username)
+	if s.idLimit.blocked(limitKey) {
 		writeJSONError(w, http.StatusTooManyRequests, "too_many_attempts", "Too many sign-in attempts. Wait a few minutes and try again.")
 		return
 	}
@@ -33,6 +34,7 @@ func (s *Server) loginPassword(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	user, err := s.cfg.Passwords.CheckPassword(ctx, username, req.Password)
 	if errors.Is(err, ErrBadCredentials) {
+		s.idLimit.fail(limitKey)
 		writeJSONError(w, http.StatusUnauthorized, "bad_credentials", "That username and password didn't work.")
 		return
 	}

@@ -18,7 +18,9 @@ import (
 )
 
 const (
-	maxTokenLen  = 16 << 10
+	maxTokenLen = 16 << 10
+	// loginTries is failed sign-ins per person, or attempts per address
+	// (times three), within loginWindow.
 	loginTries   = 10
 	loginWindow  = 5 * time.Minute
 	loginTimeout = 15 * time.Second
@@ -224,7 +226,7 @@ func (s *Server) loginToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := cluster.TokenIdentity(token)
-	if !s.idLimit.allow(id.Key) {
+	if s.idLimit.blocked(id.Key) {
 		writeJSONError(w, http.StatusTooManyRequests, "too_many_attempts", "Too many sign-in attempts. Wait a few minutes and try again.")
 		return
 	}
@@ -233,6 +235,7 @@ func (s *Server) loginToken(w http.ResponseWriter, r *http.Request) {
 	user, groups, err := s.cfg.WhoAmI(ctx, id)
 	if err != nil {
 		if apierrors.IsUnauthorized(err) {
+			s.idLimit.fail(id.Key)
 			writeJSONError(w, http.StatusUnauthorized, "token_rejected", "The cluster didn't accept that token. It may be wrong or expired.")
 			return
 		}

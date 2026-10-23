@@ -215,6 +215,32 @@ because the agent reports its bindings every 30 seconds. SSO and LDAP are
 set up as in [Sign-in and access](authentication.md); on a Hub, their
 prefixes are always `oidc:` and `ldap:`.
 
+## Use kubectl
+
+Open the account menu (your initials, top right) and choose **Kubeconfig**,
+then **Download kubeconfig**. The file has a context for each cluster you
+can see, named by the cluster's ID, and starts in the cluster you had open:
+
+```bash
+kubectl --kubeconfig ~/Downloads/glowpod-kubeconfig.yaml get pods --context prod-eu
+```
+
+- kubectl goes through the Hub, and through the agent for imported
+  clusters, so it works for clusters behind a firewall too. `get`, `apply`,
+  `logs -f`, `get -w`, `exec` and `port-forward` all work.
+- It acts **as you**, exactly as the UI does: the cluster's own RBAC decides
+  what you can do. The Hub ignores `--as` and any other impersonation the
+  client asks for, so a kubeconfig can't become someone else.
+- It works for 8 hours (`hub.kubeconfigTTL`). The same dialog lists your
+  kubeconfigs, with when each was made and last used; **Revoke** stops one
+  at once. Each person keeps at most 20; a new one past that replaces the
+  oldest.
+- The Hub keeps only a hash of each token, in a Secret
+  `glowpod-kubeconfig-<id>` in its namespace, and logs when a token is made
+  or revoked, never the token.
+- If the Hub's certificate comes from a private CA (its own, in the Docker
+  install), the file carries that CA, so kubectl trusts it.
+
 ## States on the Clusters page
 
 | State | What it means |
@@ -243,6 +269,8 @@ kubectl delete namespace glowpod-system && kubectl delete clusterrole glowpod-ag
 | The agent's pod logs "certificate has expired or is not yet valid" | That cluster's clock is off: a certificate made just now looks like it's from the future. Turn on time sync on its nodes (`timedatectl set-ntp true`) |
 | "Waiting for agent" stays | `kubectl -n glowpod-system logs deploy/glowpod-agent` in that cluster; check it can reach the server URL over HTTPS |
 | Someone signed in but sees no clusters | Bind their `oidc:`/`ldap:` name or group in a cluster; it appears within 30 seconds |
+| kubectl says "This kubeconfig expired or was revoked" | Download a new one: account menu, **Kubeconfig** |
+| kubectl says "Glowpod Hub has no cluster … that you can see" | The context's cluster was removed, or you have no binding in it any more |
 | `admin` can't sign in with the bootstrap password | Setup is already done; the bootstrap password stopped working then |
 | The Docker Hub stops right after starting | `docker logs glowpod`; K3s's own log is in the volume: `docker exec glowpod tail -50 /var/lib/glowpod/k3s.log`. Check the container is `--privileged` |
 
@@ -250,8 +278,9 @@ kubectl delete namespace glowpod-system && kubectl delete clusterrole glowpod-ag
 
 These come next, in this order:
 
-- A `kubectl` shell in the browser for each cluster, and one kubeconfig
-  download for all of them. Pod shells already work through the Hub.
+- A `kubectl` shell in the browser for each cluster, with `kubectl` and
+  `helm` ready. Pod shells already work through the Hub, and so does
+  kubectl on your machine (see [Use kubectl](#use-kubectl)).
 - More local users, cluster members and projects, and setting up SSO and
   LDAP in the UI. Until then, `admin` is the only local account; everyone
   else signs in with SSO or LDAP.

@@ -51,6 +51,10 @@ func NewServer(base *rest.Config, info Info) *Server {
 // Info implements Provider.
 func (s *Server) Info() Info { return s.info }
 
+// Base returns a copy of Glowpod's own identity on this cluster, for
+// proxying requests that then impersonate someone.
+func (s *Server) Base() *rest.Config { return rest.CopyConfig(s.base) }
+
 // ClientsFor implements Provider.
 func (s *Server) ClientsFor(_ context.Context, id Identity) (*Clients, error) {
 	if id.Key == "" || (id.Token == "" && id.User == "") {

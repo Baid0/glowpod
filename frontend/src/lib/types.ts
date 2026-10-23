@@ -46,11 +46,28 @@ export interface HubSession {
   serverURL?: string;
 }
 
+/** A kubeconfig you downloaded from the Hub; its token acts as you. */
+export interface KubeToken {
+  id: string;
+  user: string;
+  groups?: string[];
+  created: string;
+  expires: string;
+  lastUsed?: string;
+}
+
+/** GET /api/v1/hub/kubeconfig/tokens: your live kubeconfigs. */
+export interface KubeTokenList {
+  tokens: KubeToken[];
+  ttlSeconds: number;
+}
+
 /** POST /api/v1/hub/clusters: how to install the agent. */
 export interface ImportCommand {
   cluster: ClusterInfo;
   command: string;
-  insecureCommand: string;
+  /** Only for an HTTPS Hub: the same, without checking its certificate. */
+  insecureCommand?: string;
   expiresAt: string;
 }
 

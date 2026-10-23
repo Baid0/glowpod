@@ -148,11 +148,17 @@ function ImportSteps({ result }: { result: ImportCommand }) {
   return (
     <div className={styles.stack}>
       <Command text={result.command} label="Install command" />
-      <p className={styles.hint}>If the Hub's certificate isn't trusted where you run kubectl:</p>
-      <Command
-        text={result.insecureCommand}
-        label="Install command without checking the certificate"
-      />
+      {result.insecureCommand && (
+        <>
+          <p className={styles.hint}>
+            If the Hub's certificate isn't trusted where you run kubectl:
+          </p>
+          <Command
+            text={result.insecureCommand}
+            label="Install command without checking the certificate"
+          />
+        </>
+      )}
       <p className={styles.waiting} aria-live="polite">
         {live.state === "connected" ? (
           <>
@@ -169,7 +175,7 @@ function ImportSteps({ result }: { result: ImportCommand }) {
   );
 }
 
-function Command({ text, label }: { text: string; label: string }) {
+export function Command({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
     if (!copied) return;

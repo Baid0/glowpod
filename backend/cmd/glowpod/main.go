@@ -112,6 +112,9 @@ func serve(ctx context.Context, cfg config, logger *slog.Logger, stderr io.Write
 		Handler:           api.NewRouter(opts),
 		ReadHeaderTimeout: 10 * time.Second,
 		BaseContext:       func(net.Listener) context.Context { return ctx },
+		// net/http's own messages, mostly clients that drop a connection or
+		// reject a certificate: debug, in the same log format.
+		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelDebug),
 	}
 	afterStart()
 

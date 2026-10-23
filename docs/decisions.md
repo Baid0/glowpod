@@ -226,3 +226,30 @@ doesn't count.
   connected over HTTPS trusting the Hub's CA; summaries of both `local` and
   `lab`; `docker restart` kept the sign-in and the agent reconnected by
   itself.
+
+## kubectl through the Hub (Hub phase 4, first half)
+
+- **One proxy, one rule:** `/k8s/clusters/<id>/…` takes a kubeconfig
+  token only (no cookie, so no CSRF), drops `Authorization`, `Cookie` and
+  every `Impersonate-*` header the client sent, and calls the cluster with
+  the Hub's own identity impersonating the token's owner, through client-go's
+  impersonating round tripper. For imported clusters that goes through the
+  tunnel, where the agent's guard still applies. Upgrades (exec, attach,
+  port-forward, kubectl's WebSockets) use an HTTP/1.1 transport; watches
+  flush at once. Errors are Kubernetes `Status` objects, so kubectl prints
+  the message.
+- **Who sees which cluster** is the same rule as the Clusters page: a
+  cluster you can't see answers 404, as if it didn't exist.
+- **Tokens** are `<id>.<32 random bytes>`; a Secret per token keeps its
+  SHA-256, the name and groups it acts as (as they were at download), and
+  its times. Checked tokens are trusted for 30 seconds in memory; revoking
+  clears that at once, and the Hub has one replica. Last use is written at
+  most every 5 minutes. Expired ones are deleted every 10 minutes. 20 per
+  person, oldest replaced. Download is a POST with CSRF (it makes a token),
+  saved in the browser from a blob.
+- **Sign-in limits** count failed attempts per person (`blocked`/`fail`);
+  the per-address limit still counts every attempt.
+- **Tested** on the Docker Hub with your mkcert certificate and the lab
+  imported: `auth whoami` (and `--as system:admin` ignored), nodes on `lab`
+  and `local`, discovery, `exec` and `port-forward` through the agent,
+  `logs`, `get -w`, and revoke ending kubectl at once with the message.
