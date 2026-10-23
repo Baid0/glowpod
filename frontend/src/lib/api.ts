@@ -171,8 +171,9 @@ export const api = {
     }),
   clusters: (signal?: AbortSignal) =>
     apiGet<{ clusters: ClusterInfo[] }>("/api/v1/clusters", signal).then((r) => r.clusters),
-  clusterSummary: (cluster: string, signal?: AbortSignal) =>
-    apiGet<ClusterSummary>(clusterPath(cluster, "summary", {}), signal),
+  /** namespace: where to look if the person may not list every namespace. */
+  clusterSummary: (cluster: string, namespace: string, signal?: AbortSignal) =>
+    apiGet<ClusterSummary>(clusterPath(cluster, "summary", { namespace }), signal),
   /** Objects whose names match query; namespace is where to look if all of them can't be listed. */
   search: (cluster: string, query: string, namespace: string, signal?: AbortSignal) =>
     apiGet<SearchResult>(clusterPath(cluster, "search", { q: query, namespace }), signal),

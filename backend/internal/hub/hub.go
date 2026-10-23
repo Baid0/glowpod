@@ -395,6 +395,21 @@ func (h *Hub) Visible(info auth.SessionInfo, clusterID string) bool {
 	return r != nil && r.Subjects.Includes(info.User, info.Groups)
 }
 
+// Namespaces are the namespaces of a cluster where someone, or one of their
+// groups, is named in a RoleBinding: where to look for people who may not
+// list every namespace. Agents before 0.8.0 don't report them.
+func (h *Hub) Namespaces(info auth.SessionInfo, clusterID string) []string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if clusterID == LocalID {
+		return h.localSubjects.NamespacesOf(info.User, info.Groups)
+	}
+	if r := h.records[clusterID]; r != nil {
+		return r.Subjects.NamespacesOf(info.User, info.Groups)
+	}
+	return nil
+}
+
 // SessionInfo is the Hub's part of GET /api/v1/session.
 type SessionInfo struct {
 	Role string `json:"role"`

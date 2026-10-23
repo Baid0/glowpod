@@ -25,6 +25,29 @@ const Everyone = "system:authenticated"
 type Set struct {
 	Users  []string `json:"users"`
 	Groups []string `json:"groups"`
+	// Namespaces are the users and groups each namespace's RoleBindings
+	// name, so people who may not list namespaces can be offered theirs.
+	Namespaces map[string]Set `json:"namespaces,omitempty"`
+}
+
+// NamespacesOf are the namespaces whose RoleBindings name user or one of
+// groups, sorted.
+func (s Set) NamespacesOf(user string, groups []string) []string {
+	var out []string
+	for ns, in := range s.Namespaces {
+		if _, ok := slices.BinarySearch(in.Users, user); ok {
+			out = append(out, ns)
+			continue
+		}
+		for _, g := range groups {
+			if _, ok := slices.BinarySearch(in.Groups, g); ok {
+				out = append(out, ns)
+				break
+			}
+		}
+	}
+	slices.Sort(out)
+	return out
 }
 
 // Includes says whether someone with this username and these groups is in s.
@@ -89,10 +112,38 @@ func List(ctx context.Context, kube kubernetes.Interface) (Set, error) {
 	if err != nil {
 		return Set{}, fmt.Errorf("list role bindings: %w", err)
 	}
+	perNS := map[string]*[2]map[string]bool{}
 	for i := range rbs {
 		add(rbs[i].RoleRef, rbs[i].Subjects, false)
+		if strings.HasPrefix(rbs[i].RoleRef.Name, "system:") {
+			continue
+		}
+		in := perNS[rbs[i].Namespace]
+		if in == nil {
+			in = &[2]map[string]bool{{}, {}}
+			perNS[rbs[i].Namespace] = in
+		}
+		for _, s := range rbs[i].Subjects {
+			switch {
+			case s.Kind == rbacv1.UserKind:
+				in[0][s.Name] = true
+			// Everyone's helper roles say nothing about whose namespace it is.
+			case s.Kind == rbacv1.GroupKind && s.Name != Everyone:
+				in[1][s.Name] = true
+			}
+		}
 	}
-	return Set{Users: sorted(users), Groups: sorted(groups)}, nil
+	set := Set{Users: sorted(users), Groups: sorted(groups)}
+	for ns, in := range perNS {
+		if len(in[0])+len(in[1]) == 0 {
+			continue
+		}
+		if set.Namespaces == nil {
+			set.Namespaces = map[string]Set{}
+		}
+		set.Namespaces[ns] = Set{Users: sorted(in[0]), Groups: sorted(in[1])}
+	}
+	return set, nil
 }
 
 func sorted(m map[string]bool) []string {

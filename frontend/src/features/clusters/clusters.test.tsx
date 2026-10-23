@@ -276,3 +276,87 @@ describe("cluster paths", () => {
     expect(samePage(path)).toBe(want);
   });
 });
+
+describe("people who can see some namespaces only", () => {
+  const needed = () =>
+    Response.json(
+      {
+        error: {
+          code: "namespace_needed",
+          message: "You can see some namespaces of this cluster, not all. Pick yours to see them.",
+        },
+      },
+      { status: 403 },
+    );
+
+  it("asks them to pick a namespace, and then uses it", async () => {
+    window.localStorage.setItem("glowpod.namespaces", JSON.stringify({ "prod-eu-1": "payments" }));
+    const { fetched } = renderApp(
+      "/",
+      (url) => {
+        if (url.pathname === "/api/v1/clusters") return Response.json({ clusters });
+        if (url.pathname === "/api/v1/clusters/kind-lab/summary") return needed();
+        if (url.pathname.endsWith("/summary")) return Response.json(summary("prod-eu-1"));
+        return undefined;
+      },
+      { home: true },
+    );
+    await waitFor(() => {
+      expect(within(row("kind-lab")).getByText("Pick a namespace")).toBeInTheDocument();
+    });
+    // It's not a fault: a neutral pill, the reason on hover.
+    expect(
+      within(row("kind-lab")).getByText("Pick a namespace").closest("[title]"),
+    ).toHaveAttribute(
+      "title",
+      "You can see some namespaces of this cluster, not all. Pick yours to see them.",
+    );
+    // The namespace picked in a cluster goes with its row's request.
+    expect(fetched("/clusters/prod-eu-1/summary")).toContain(
+      "/api/v1/clusters/prod-eu-1/summary?namespace=payments",
+    );
+    expect(fetched("/clusters/kind-lab/summary")).toContain("/api/v1/clusters/kind-lab/summary");
+  });
+
+  it("shows no node count when they can't see nodes", async () => {
+    const hidden = {
+      state: "no-access",
+      value: 0,
+      max: 0,
+      unit: "pods",
+      message: "You can't see the cluster's nodes, so its load isn't shown.",
+    };
+    renderApp(
+      "/",
+      (url) => {
+        if (url.pathname === "/api/v1/clusters") return Response.json({ clusters });
+        if (url.pathname.endsWith("/summary")) {
+          const s = summary("prod-eu-1");
+          return Response.json({
+            ...s,
+            cluster: { ...s.cluster, nodes: 0, nodesReady: 0 },
+            gauges: { cpu: hidden, memory: hidden, pods: hidden },
+          });
+        }
+        return undefined;
+      },
+      { home: true },
+    );
+    await waitFor(() => {
+      expect(within(row("prod-eu-1")).getByText("Connected")).toBeInTheDocument();
+    });
+    expect(row("prod-eu-1")).not.toHaveTextContent("0 ready");
+    expect(within(row("prod-eu-1")).getByTitle(hidden.message)).toHaveTextContent("—");
+  });
+
+  it("shows a calm Overview that says how to start", async () => {
+    renderApp("/", (url) =>
+      url.pathname === "/api/v1/clusters/default/overview" ? needed() : undefined,
+    );
+    expect(await screen.findByRole("region", { name: "Pick your namespace" })).toHaveTextContent(
+      "Type yours in the namespace menu at the top",
+    );
+    expect(screen.queryByRole("meter")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Pick yours to see them/)).not.toBeInTheDocument();
+  });
+});

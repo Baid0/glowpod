@@ -47,6 +47,9 @@ type Info struct {
 	State string `json:"state,omitempty"`
 	// Since is when State last changed.
 	Since *time.Time `json:"since,omitempty"`
+	// Namespace is the kubeconfig context's namespace, if it names one: a
+	// place to look for people who may not list every namespace.
+	Namespace string `json:"-"`
 }
 
 // Identity is who a request acts as. Key separates per-user state such as
@@ -141,7 +144,7 @@ func LoadKubeconfig(path, contextName string) (*rest.Config, Info, error) {
 	// connecting after a while. Streams, once open, aren't limited.
 	cfg.Dial = (&net.Dialer{Timeout: dialTimeout, KeepAlive: 30 * time.Second}).DialContext
 
-	return cfg, Info{ID: DefaultID, Name: name, Server: serverHost(cfg.Host)}, nil
+	return cfg, Info{ID: DefaultID, Name: name, Server: serverHost(cfg.Host), Namespace: raw.Contexts[name].Namespace}, nil
 }
 
 func serverHost(host string) string {

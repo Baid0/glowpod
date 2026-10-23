@@ -4,6 +4,7 @@ import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { HalfGauge } from "../../components/HalfGauge";
+import { ApiError } from "../../lib/api";
 import { usePreferences } from "../../lib/preferences";
 import { OVERVIEW_REFRESH_MS, useOverview, useThresholds } from "../../lib/queries";
 import { formatAge, useNow } from "../../lib/time";
@@ -27,6 +28,21 @@ export function OverviewPage() {
   const now = useNow();
   const stale = isError && data !== undefined;
   const updated = data ? `updated ${formatAge(now - dataUpdatedAt)} ago` : undefined;
+
+  // People who may see some namespaces only, none of them known yet.
+  if (!data && query.error instanceof ApiError && query.error.code === "namespace_needed") {
+    return (
+      <div className={styles.page}>
+        <Card title="Pick your namespace">
+          <p className={styles.pickNamespace}>
+            You can see some namespaces of this cluster, not all, and Glowpod doesn&apos;t know
+            which ones are yours. Type yours in the namespace menu at the top, and the Overview
+            shows what&apos;s in it.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   // Network only renders when Prometheus was found.
   const kinds: GaugeKind[] = ["cpu", "memory", "pods", "storage"];
@@ -98,13 +114,20 @@ function ClusterLine({ data }: { data: Overview | undefined }) {
   const version = c.version.replace(/^(v\d+\.\d+).*/, "$1");
   const n = data.problemCount;
   const critical = data.problems.some((p) => p.severity === "critical");
+  // People who can't see nodes or namespaces get no count, rather than 0.
+  const facts = [
+    version && `Kubernetes ${version}`,
+    data.gauges.pods.state !== "no-access" &&
+      `${String(c.nodes)} ${c.nodes === 1 ? "node" : "nodes"}`,
+    !data.unavailable?.some((u) => u.section === "namespaces") &&
+      `${String(c.namespaces)} namespaces`,
+  ].filter(Boolean);
 
   return (
     <div className={styles.clusterLine}>
       <p className={styles.clusterFacts}>
         <span className={styles.mono}>{c.name}</span>
-        {version && <> · Kubernetes {version}</>} · {c.nodes} {c.nodes === 1 ? "node" : "nodes"} ·{" "}
-        {c.namespaces} namespaces
+        {facts.map((f) => ` · ${String(f)}`)}
         {data.namespace && (
           <>
             {" "}

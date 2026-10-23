@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"slices"
 	"strconv"
@@ -192,13 +193,46 @@ func (s *server) overviewDeps(r *http.Request) overview.Deps {
 }
 
 func (s *server) overview(w http.ResponseWriter, r *http.Request) {
-	id, _ := auth.IdentityFrom(r.Context())
-	resp, err := s.opts.Overview.Build(r.Context(), id, clusterFrom(r), s.overviewDeps(r), namespacesFrom(r))
+	resp, err := s.buildOverview(r.Context(), r, s.overviewDeps(r), namespacesFrom(r), nil)
 	if err != nil {
-		s.clusterError(w, err)
+		s.overviewError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// errNamespaceNeeded: the person may not list pods in every namespace, and
+// Glowpod doesn't know which ones are theirs.
+var errNamespaceNeeded = errors.New("pods can't be listed in all namespaces, and no namespace is known")
+
+// buildOverview builds the Overview for ns. People who may not list every
+// pod get it for the namespaces they picked (picked, for the Clusters page,
+// which asks for all namespaces first) or Glowpod guesses are theirs.
+func (s *server) buildOverview(ctx context.Context, r *http.Request, deps overview.Deps, ns scope.Namespaces, picked scope.Namespaces) (*overview.Response, error) {
+	id, _ := auth.IdentityFrom(ctx)
+	resp, err := s.opts.Overview.Build(ctx, id, clusterFrom(r), deps, ns)
+	if err == nil || !ns.All() || !apierrors.IsForbidden(err) {
+		return resp, err //nolint:wrapcheck // Build says what failed
+	}
+	theirs := slices.Concat([]string(picked), s.guessNamespaces(r))
+	slices.Sort(theirs)
+	theirs = slices.Compact(theirs)
+	if len(theirs) == 0 {
+		return nil, errNamespaceNeeded
+	}
+	if len(theirs) > scope.Max {
+		theirs = theirs[:scope.Max]
+	}
+	return s.opts.Overview.Build(ctx, id, clusterFrom(r), deps, scope.Namespaces(theirs)) //nolint:wrapcheck // Build says what failed
+}
+
+func (s *server) overviewError(w http.ResponseWriter, err error) {
+	if errors.Is(err, errNamespaceNeeded) {
+		writeError(w, http.StatusForbidden, "namespace_needed",
+			"You can see some namespaces of this cluster, not all. Pick yours to see them.")
+		return
+	}
+	s.clusterError(w, err)
 }
 
 // summaryTimeout bounds one cluster's row on the Clusters page, so a
@@ -229,7 +263,6 @@ type summaryGauges struct {
 func (s *server) summary(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), summaryTimeout)
 	defer cancel()
-	id, _ := auth.IdentityFrom(r.Context())
 	deps := s.overviewDeps(r)
 	// The row has no network gauge; don't look for Prometheus.
 	deps.Prometheus = func(context.Context) (metrics.Prometheus, error) { return nil, nil }
@@ -241,14 +274,16 @@ func (s *server) summary(w http.ResponseWriter, r *http.Request) {
 	}
 	done := make(chan built, 1)
 	go func() {
-		resp, err := s.opts.Overview.Build(ctx, id, clusterFrom(r), deps, nil)
+		// All namespaces, like the cluster's own numbers; ?namespace= are the
+		// ones to use for people who may not list them all.
+		resp, err := s.buildOverview(ctx, r, deps, nil, namespacesFrom(r))
 		done <- built{resp, err}
 	}()
 	var resp *overview.Response
 	select {
 	case b := <-done:
 		if b.err != nil && ctx.Err() == nil {
-			s.clusterError(w, b.err)
+			s.overviewError(w, b.err)
 			return
 		}
 		resp = b.resp
@@ -283,7 +318,7 @@ func (s *server) namespaces(w http.ResponseWriter, r *http.Request) {
 	for {
 		list, err := kube.CoreV1().Namespaces().List(r.Context(), opts)
 		if apierrors.IsForbidden(err) {
-			writeJSON(w, http.StatusOK, namespacesResponse{Namespaces: guessNamespaces(r), Restricted: true})
+			writeJSON(w, http.StatusOK, namespacesResponse{Namespaces: s.guessNamespaces(r), Restricted: true})
 			return
 		}
 		if err != nil {
@@ -302,15 +337,26 @@ func (s *server) namespaces(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, namespacesResponse{Namespaces: names})
 }
 
-// guessNamespaces offers a service account its own namespace.
-func guessNamespaces(r *http.Request) []string {
-	user := auth.SessionInfoFrom(r.Context()).User
-	if rest, ok := strings.CutPrefix(user, "system:serviceaccount:"); ok {
+// guessNamespaces are the namespaces someone who may not list them all
+// probably works in: a service account's own, the kubeconfig context's (local
+// mode), and on a Hub the ones whose RoleBindings name them or their groups.
+func (s *server) guessNamespaces(r *http.Request) []string {
+	info := auth.SessionInfoFrom(r.Context())
+	out := []string{}
+	if rest, ok := strings.CutPrefix(info.User, "system:serviceaccount:"); ok {
 		if ns, _, ok := strings.Cut(rest, ":"); ok && ns != "" {
-			return []string{ns}
+			out = append(out, ns)
 		}
 	}
-	return []string{}
+	c := clusterFrom(r)
+	if c.Namespace != "" {
+		out = append(out, c.Namespace)
+	}
+	if s.opts.Hub != nil {
+		out = append(out, s.opts.Hub.Namespaces(info, c.ID)...)
+	}
+	slices.Sort(out)
+	return slices.Compact(out)
 }
 
 type eventsResponse struct {

@@ -1,6 +1,7 @@
 package subjects
 
 import (
+	"slices"
 	"testing"
 
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -67,6 +68,49 @@ func TestWhoSeesACluster(t *testing.T) {
 			}
 			if got := set.Includes(tt.user, tt.groups); got != tt.sees {
 				t.Fatalf("sees = %v, want %v (set %+v)", got, tt.sees, set)
+			}
+		})
+	}
+}
+
+func rb(ns, name, role string, subjects ...rbacv1.Subject) *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
+		RoleRef:    rbacv1.RoleRef{Kind: "ClusterRole", Name: role},
+		Subjects:   subjects,
+	}
+}
+
+func TestNamespacesOf(t *testing.T) {
+	kube := fake.NewClientset(
+		rb("payments", "glowpod-project-pay-1", "edit", group("oidc:payments")),
+		rb("payments-staging", "glowpod-project-pay-2", "edit", group("oidc:payments")),
+		rb("search", "ann", "view", user("oidc:ann")),
+		rb("tools", "bob", "admin", user("oidc:bob")),
+		// Not anyone's namespace: Kubernetes' own roles, and grants to everyone.
+		rb("kube-public", "system:controller:bootstrap-signer", "system:controller:bootstrap-signer", user("oidc:bob")),
+		rb("kube-system", "sealed-secrets-proxier", "sealed-secrets-proxier", group(Everyone)),
+	)
+	set, err := List(t.Context(), kube)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name   string
+		user   string
+		groups []string
+		want   []string
+	}{
+		{"through a group", "oidc:carol", []string{"oidc:payments"}, []string{"payments", "payments-staging"}},
+		{"by name and group", "oidc:ann", []string{"oidc:payments"}, []string{"payments", "payments-staging", "search"}},
+		{"never Kubernetes' own roles", "oidc:bob", nil, []string{"tools"}},
+		{"no one's", "oidc:dave", []string{Everyone}, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := set.NamespacesOf(tt.user, tt.groups)
+			if !slices.Equal(got, tt.want) {
+				t.Fatalf("NamespacesOf = %v, want %v", got, tt.want)
 			}
 		})
 	}

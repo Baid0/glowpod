@@ -55,9 +55,14 @@ Good to know:
 
 - **Namespaces list.** The namespace picker lists namespaces when the person
   may `list namespaces` (a cluster-scoped right that `view` and `edit` in a
-  RoleBinding don't give). Without it, Glowpod asks them to type a namespace
-  and remembers it. To let people see the list without seeing anything
-  inside other namespaces:
+  RoleBinding don't give). Without it, Glowpod offers the namespaces it can
+  tell are theirs: a service account's own, the kubeconfig context's (local
+  mode), and on a Hub the ones whose RoleBindings name them or their groups
+  (project namespaces included; agents from 0.8.0). The Overview, the
+  Clusters page and ⌘K search use those too. When it can't tell, the
+  Overview and the Clusters page ask them to pick theirs, and Glowpod
+  remembers it per cluster. To let people see the list without seeing
+  anything inside other namespaces:
 
   ```bash
   kubectl create clusterrole namespace-lister --verb=get,list,watch --resource=namespaces

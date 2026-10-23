@@ -5,7 +5,8 @@ export const queryKeys = {
   kubeconfigTokens: ["kubeconfigTokens"] as const,
   hubUsers: ["hubUsers"] as const,
   hubSettings: ["hubSettings"] as const,
-  clusterSummary: (cluster: string) => ["clusterSummary", cluster] as const,
+  clusterSummary: (cluster: string, namespace: string) =>
+    ["clusterSummary", cluster, namespace] as const,
   search: (cluster: string, query: string, namespace: string) =>
     ["search", cluster, query, namespace] as const,
   namespaces: (cluster: string) => ["namespaces", cluster] as const,

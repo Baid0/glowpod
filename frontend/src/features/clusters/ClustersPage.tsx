@@ -293,13 +293,23 @@ function rowState(
   if (error instanceof ApiError) {
     if (error.code === "cluster_unauthorized")
       return { tone: "high", word: "Credentials refused", detail: error.message };
+    if (error.code === "namespace_needed")
+      return { tone: "neutral", word: "Pick a namespace", detail: error.message };
     if (error.status === 403) return { tone: "neutral", word: "No access", detail: error.message };
     return { tone: "high", word: "Unreachable", detail: error.message };
   }
   return { tone: "high", word: "Unreachable", ...(error ? { detail: error.message } : {}) };
 }
 
-function nodes(s: ClusterSummary): string {
+function nodes(s: ClusterSummary) {
+  // People who may not list nodes: not "0 ready".
+  if (s.gauges.pods.state === "no-access") {
+    return (
+      <span className={styles.muted} title={s.gauges.pods.message}>
+        —
+      </span>
+    );
+  }
   const { nodes, nodesReady } = s.cluster;
   return nodesReady === nodes
     ? `${String(nodes)} ready`

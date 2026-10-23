@@ -23,7 +23,7 @@ func (s *server) search(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "bad_query", "Search for 1 to 100 characters.")
 		return
 	}
-	fallback := slices.Concat([]string(namespacesFrom(r)), guessNamespaces(r))
+	fallback := slices.Concat([]string(namespacesFrom(r)), s.guessNamespaces(r))
 	slices.Sort(fallback)
 	fallback = slices.Compact(fallback)
 

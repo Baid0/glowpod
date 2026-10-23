@@ -49,6 +49,11 @@ of those namespaces:
   project shows "Not in …" with **Apply there too**.
 - Deleting a project takes its namespaces out of it and removes its
   members' access there. Nothing else is deleted.
+- Members who may see only their project's namespaces don't have to find
+  them: the namespace picker, the Overview, the Clusters page and ⌘K search
+  start from the namespaces their RoleBindings are in. This needs the
+  cluster's agent to be 0.8.0 or later (**Connect** updates it); before
+  that, they pick their namespace once per cluster.
 
 ## Who may change access
 

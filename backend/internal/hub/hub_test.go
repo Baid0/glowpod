@@ -327,6 +327,31 @@ func TestVisible(t *testing.T) {
 	}
 }
 
+func TestNamespaces(t *testing.T) {
+	th := newTestHub(t)
+	set := subjectsOf([]string{"oidc:ann"}, []string{"oidc:payments"})
+	set.Namespaces = map[string]subjects.Set{
+		"payments": subjectsOf(nil, []string{"oidc:payments"}),
+		"search":   subjectsOf([]string{"oidc:ann"}, nil),
+	}
+	th.add(Record{ID: "prod", Name: "prod", Subjects: set})
+	tests := []struct {
+		who     auth.SessionInfo
+		cluster string
+		want    []string
+	}{
+		{auth.SessionInfo{User: "oidc:ann", Groups: []string{"oidc:payments"}}, "prod", []string{"payments", "search"}},
+		{auth.SessionInfo{User: "oidc:cy", Groups: []string{"oidc:payments"}}, "prod", []string{"payments"}},
+		{auth.SessionInfo{User: "oidc:eve"}, "prod", nil},
+		{auth.SessionInfo{User: "oidc:ann"}, "unknown", nil},
+	}
+	for _, tt := range tests {
+		if got := th.Namespaces(tt.who, tt.cluster); !slices.Equal(got, tt.want) {
+			t.Errorf("%s in %s: %v, want %v", tt.who.User, tt.cluster, got, tt.want)
+		}
+	}
+}
+
 func TestPasswordHash(t *testing.T) {
 	h, err := hashPassword("correct horse battery")
 	if err != nil {

@@ -76,6 +76,8 @@ type Hub interface {
 	Session(ctx context.Context, info auth.SessionInfo) any
 	// Visible says whether to list a cluster for someone.
 	Visible(info auth.SessionInfo, clusterID string) bool
+	// Namespaces are the namespaces of a cluster someone is bound to.
+	Namespaces(info auth.SessionInfo, clusterID string) []string
 }
 
 type server struct {

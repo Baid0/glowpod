@@ -12,7 +12,7 @@ import { useParams } from "react-router";
 
 import { KubeconfigDialog } from "../features/clusters/KubeconfigDialog";
 import { PasswordDialog } from "../features/hub/PasswordDialog";
-import { api } from "../lib/api";
+import { api, ApiError } from "../lib/api";
 import { initials } from "../lib/format";
 import { useLive } from "../lib/live";
 import { usePreferences, type Mode } from "../lib/preferences";
@@ -109,6 +109,8 @@ function Updated() {
 
   // Never loaded: say why, even if the live stream is talking (it can
   // connect while the cluster refuses every list).
+  // Not an error: the Overview asks them to pick a namespace.
+  if (isError && error instanceof ApiError && error.code === "namespace_needed") return null;
   if (isError && dataUpdatedAt === 0) {
     return (
       <span className={styles.updated}>

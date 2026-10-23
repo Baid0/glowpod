@@ -79,21 +79,26 @@ export function useClusters({ refetchInterval }: { refetchInterval?: number } = 
 export const SUMMARY_REFRESH_MS = 30_000;
 
 /** One row of the Clusters page. A cluster that's down doesn't retry for long. */
-const summaryQuery = (cluster: string, enabled: boolean) => ({
-  queryKey: queryKeys.clusterSummary(cluster),
-  queryFn: ({ signal }: { signal: AbortSignal }) => api.clusterSummary(cluster, signal),
+// The namespaces picked in a cluster go along, for people who may not list them all.
+const summaryQuery = (cluster: string, namespace: string, enabled: boolean) => ({
+  queryKey: queryKeys.clusterSummary(cluster, namespace),
+  queryFn: ({ signal }: { signal: AbortSignal }) => api.clusterSummary(cluster, namespace, signal),
   refetchInterval: SUMMARY_REFRESH_MS,
   retry: false,
   enabled,
 });
 
 export function useClusterSummary(cluster: string, enabled = true) {
-  return useQuery(summaryQuery(cluster, enabled));
+  const { namespaceFor } = usePreferences();
+  return useQuery(summaryQuery(cluster, namespaceFor(cluster), enabled));
 }
 
 /** Several clusters' summaries at once; shares the cache with useClusterSummary. */
 export function useClusterSummaries(clusters: { id: string; enabled: boolean }[]) {
-  return useQueries({ queries: clusters.map((c) => summaryQuery(c.id, c.enabled)) });
+  const { namespaceFor } = usePreferences();
+  return useQueries({
+    queries: clusters.map((c) => summaryQuery(c.id, namespaceFor(c.id), c.enabled)),
+  });
 }
 
 export function useNamespaces() {

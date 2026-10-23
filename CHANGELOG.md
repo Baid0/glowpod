@@ -16,6 +16,15 @@ All notable changes to Glowpod. The format follows
   user. Words narrow it (`deploy web`, `payments api`); Enter opens the object in its cluster.
 - The Clusters page's top bar has the Glance / Deep tabs and ⌘K.
 
+### Fixed
+
+- People who may see some namespaces only (a project member, a namespaced service account) no longer
+  get "No access" on the Clusters page and errors on the Overview. Glowpod uses the namespaces it can
+  tell are theirs (a service account's own, the kubeconfig context's, and on a Hub the ones their
+  RoleBindings are in, from agents 0.8.0 on) or the ones they picked; when it can't tell, it asks them
+  to pick one, without an error.
+- No "0 ready" nodes or "0 namespaces" for people who may not list them: those counts are left out.
+
 ## [0.7.1] - 2026-10-23
 
 ### Fixed

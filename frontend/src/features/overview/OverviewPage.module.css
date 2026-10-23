@@ -494,3 +494,9 @@
   background: var(--surface-elevated);
   opacity: 0.5;
 }
+
+.pickNamespace {
+  max-width: 60ch;
+  color: var(--body);
+  font: var(--text-body-sm);
+}

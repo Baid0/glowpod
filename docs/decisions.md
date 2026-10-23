@@ -437,3 +437,30 @@ doesn't count.
   objects but not the Secret its role can't list. The first search built
   the lab's index in about 30 ms; the next ones answered in about 2 ms.
 
+## People who see some namespaces only
+
+- **Glowpod works out their namespaces** instead of asking: a service
+  account's own, the kubeconfig context's namespace in local mode, and on a
+  Hub the namespaces whose RoleBindings name them or one of their groups.
+  The agent already lists every binding to decide who sees the cluster; it
+  now also reports them per namespace (Kubernetes' own `system:` roles and
+  grants to everyone left out). Agents before 0.8.0 don't, and the Hub keeps
+  the map in memory only, so it fills in at the first poll after a restart.
+  The namespaces are a place to look, never a grant: every list still runs
+  as the person.
+- **Where it's used:** the namespace picker's list, the Overview when it's
+  asked for all namespaces, each Clusters page row (all namespaces first,
+  like everyone's numbers, then the namespaces picked in that cluster and
+  the ones worked out), and ⌘K search.
+- **When none is known**, the API answers `namespace_needed` (403) instead
+  of a plain "forbidden": the row shows a neutral **Pick a namespace** pill
+  and the Overview a short card saying how to start, with no red error.
+- **Counts they can't know aren't shown as 0:** no node count when nodes
+  can't be listed (the gauges already say "No access"), no namespace count
+  when namespaces can't.
+- **Tested** with local mode on the lab: a service account that may view one
+  namespace, as one context that names the namespace (connected at once) and
+  one that doesn't (asked to pick, then connected and listed in Needs
+  attention); unit tests for the Hub's bindings per namespace. Not tested
+  live through a Hub and agent yet.
+
