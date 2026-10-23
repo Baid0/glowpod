@@ -87,9 +87,13 @@ describe("sign-in page", () => {
     expect(
       screen.getByRole("form", { name: "Sign in with your directory account" }),
     ).toBeInTheDocument();
-    // The token form opens on request when other methods exist.
-    await userEvent.click(screen.getByRole("button", { name: "Use a service account token" }));
+    // One form at a time: the switch picks the token form instead.
+    expect(screen.queryByLabelText("Service account token")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: "Token" }));
     expect(screen.getByLabelText("Service account token")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("form", { name: "Sign in with your directory account" }),
+    ).not.toBeInTheDocument();
   });
 
   it("signs in with LDAP, then goes where the user was headed", async () => {
@@ -210,14 +214,19 @@ describe("safeReturn", () => {
 });
 
 describe("sign-in with LDAP and Glowpod accounts", () => {
-  it("titles each username form, so they can't be mixed up", async () => {
+  it("shows one username form at a time, with a switch between them", async () => {
     const user = userEvent.setup();
     serverMode([{ type: "oidc", name: "Dex" }, { type: "ldap" }, { type: "password" }]);
     const ldap = await screen.findByRole("form", { name: "Sign in with your directory account" });
-    expect(within(ldap).getByText("Directory account")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Sign in with a Glowpod account" }));
+    expect(within(ldap).getByText(/company username and password/)).toBeInTheDocument();
+    expect(screen.getAllByLabelText("Username")).toHaveLength(1);
+
+    await user.click(screen.getByRole("radio", { name: "Glowpod account" }));
     const account = await screen.findByRole("form", { name: "Sign in with a Glowpod account" });
-    expect(within(account).getByText("Glowpod account")).toBeInTheDocument();
-    expect(within(account).queryByText("Directory account")).not.toBeInTheDocument();
+    expect(within(account).getByText(/made on this Hub/)).toBeInTheDocument();
+    expect(screen.getAllByLabelText("Username")).toHaveLength(1);
+    expect(
+      screen.queryByRole("form", { name: "Sign in with your directory account" }),
+    ).not.toBeInTheDocument();
   });
 });

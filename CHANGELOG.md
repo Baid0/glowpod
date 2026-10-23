@@ -11,7 +11,8 @@ All notable changes to Glowpod. The format follows
 ### Fixed
 
 - The sign-in page showed two identical username forms when LDAP and Glowpod accounts were both on.
-  Each is now titled: **Directory account** (LDAP) and **Glowpod account**.
+  Now there's one form at a time: SSO stays the main button, and a **Directory account | Glowpod
+  account** switch (with **Token** where tokens are on) picks the form below it.
 
 ## [0.7.0] - 2026-10-23
 

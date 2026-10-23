@@ -240,8 +240,9 @@ describe("Hub sign-in", () => {
       return undefined;
     });
     expect(await screen.findByRole("link", { name: "Sign in with Okta" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Sign in with a Glowpod account" }));
+    // The only username method: its form shows at once, titled.
     const form = screen.getByRole("form", { name: "Sign in with a Glowpod account" });
+    expect(within(form).getByText("Glowpod account")).toBeInTheDocument();
     expect(screen.getByText(/bootstrap password/)).toBeInTheDocument();
     await user.type(within(form).getByLabelText("Username"), "admin");
     await user.type(within(form).getByLabelText("Password"), "the bootstrap one");

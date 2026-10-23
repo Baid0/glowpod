@@ -174,3 +174,13 @@
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
+
+/* The method switch spans the card, its choices sharing the width. */
+.switch > [role="radiogroup"] {
+  display: flex;
+  width: 100%;
+}
+
+.switch [role="radio"] {
+  flex: 1;
+}

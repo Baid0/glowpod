@@ -1,9 +1,10 @@
-import { IconKey, IconLogin2, IconUser } from "@tabler/icons-react";
+import { IconLogin2 } from "@tabler/icons-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useState } from "react";
 import { useSearchParams } from "react-router";
 
 import { Button } from "../components/Button";
+import { Segmented } from "../components/Segmented";
 import { api, ApiError } from "../lib/api";
 import type { AuthMethod } from "../lib/types";
 import { Logo } from "./Logo";
@@ -81,11 +82,30 @@ export function SignInPage() {
   );
 }
 
+/** The sign-in methods that ask for a username or a token. */
+type FormKind = "ldap" | "password" | "token";
+
+const FORMS: { kind: FormKind; label: string; hint: string }[] = [
+  { kind: "ldap", label: "Directory account", hint: "Your company username and password (LDAP)." },
+  {
+    kind: "password",
+    label: "Glowpod account",
+    hint: "An account made on this Hub, such as admin.",
+  },
+  { kind: "token", label: "Token", hint: "A Kubernetes service account token." },
+];
+
+/**
+ * SSO first, as one button. The other methods share one form, with a
+ * switch between them when there's more than one, so two look-alike
+ * username forms never stand side by side.
+ */
 function Methods({ methods, returnTo }: { methods: AuthMethod[]; returnTo: string }) {
   const oidc = methods.find((m) => m.type === "oidc");
-  const ldap = methods.some((m) => m.type === "ldap");
-  const password = methods.some((m) => m.type === "password");
-  const token = methods.some((m) => m.type === "token");
+  const forms = FORMS.filter((f) => methods.some((m) => m.type === f.kind));
+  const [picked, setPicked] = useState<FormKind | undefined>();
+  const current = forms.find((f) => f.kind === picked) ?? forms[0];
+  const primary = !oidc;
   return (
     <div className={styles.methods}>
       {oidc && (
@@ -94,55 +114,47 @@ function Methods({ methods, returnTo }: { methods: AuthMethod[]; returnTo: strin
           Sign in with {oidc.name ?? "SSO"}
         </a>
       )}
-      {oidc && (ldap || password || token) && <Divider />}
-      {ldap && (
+      {oidc && current && <Divider />}
+      {forms.length > 1 && current && (
+        <div className={styles.switch}>
+          <Segmented
+            label="Sign in with"
+            options={forms.map((f) => ({ value: f.kind, label: f.label }))}
+            value={current.kind}
+            onChange={setPicked}
+          />
+        </div>
+      )}
+      {current?.kind === "ldap" && (
         <PasswordForm
+          key="ldap"
           returnTo={returnTo}
-          primary={!oidc}
+          primary={primary}
           label="Sign in with your directory account"
-          title="Directory account"
-          hint="Your company username and password (LDAP)."
+          title={forms.length === 1 ? current.label : undefined}
+          hint={current.hint}
           signIn={api.signInLDAP}
         />
       )}
-      {ldap && (password || token) && <Divider />}
-      {password && <AccountForm returnTo={returnTo} open={!oidc && !ldap} />}
-      {password && token && <Divider />}
-      {token && <TokenForm returnTo={returnTo} open={!oidc && !ldap && !password} />}
+      {current?.kind === "password" && (
+        <>
+          <PasswordForm
+            key="password"
+            returnTo={returnTo}
+            primary={primary}
+            label="Sign in with a Glowpod account"
+            title={forms.length === 1 ? current.label : undefined}
+            hint={current.hint}
+            signIn={api.signInPassword}
+          />
+          <p className={styles.hint}>
+            First time? Sign in as <code>admin</code> with the bootstrap password. The Hub&apos;s
+            log says how to read it.
+          </p>
+        </>
+      )}
+      {current?.kind === "token" && <TokenForm key="token" returnTo={returnTo} primary={primary} />}
     </div>
-  );
-}
-
-/** A Hub's local accounts; admin's first password is the bootstrap one. */
-function AccountForm({ returnTo, open }: { returnTo: string; open: boolean }) {
-  const [shown, setShown] = useState(open);
-  if (!shown) {
-    return (
-      <Button
-        icon={<IconUser size={16} stroke={1.75} />}
-        onClick={() => {
-          setShown(true);
-        }}
-      >
-        Sign in with a Glowpod account
-      </Button>
-    );
-  }
-  return (
-    <>
-      <PasswordForm
-        returnTo={returnTo}
-        primary={open}
-        label="Sign in with a Glowpod account"
-        title="Glowpod account"
-        hint="An account made on this Hub, such as admin."
-        signIn={api.signInPassword}
-      />
-      <p className={styles.hint}>
-        First time? Sign in as <code>admin</code> with the bootstrap password. The Hub's log says
-        how to read it.
-      </p>
-    </>
   );
 }
 
@@ -187,8 +199,8 @@ function PasswordForm({
   returnTo: string;
   primary: boolean;
   label: string;
-  /** Shown above the fields, so two username forms can't be mixed up. */
-  title: string;
+  /** Shown above the fields when this is the only form. */
+  title?: string;
   hint: string;
   signIn: (username: string, password: string) => Promise<void>;
 }) {
@@ -207,7 +219,7 @@ function PasswordForm({
       aria-label={label}
     >
       <div className={styles.formHead}>
-        <p className={styles.formTitle}>{title}</p>
+        {title && <p className={styles.formTitle}>{title}</p>}
         <p className={styles.formHint}>{hint}</p>
       </div>
       <label htmlFor={userId} className={styles.label}>
@@ -249,24 +261,11 @@ function PasswordForm({
   );
 }
 
-function TokenForm({ returnTo, open }: { returnTo: string; open: boolean }) {
+function TokenForm({ returnTo, primary }: { returnTo: string; primary: boolean }) {
   const { busy, error, run } = useSignIn(returnTo);
-  const [shown, setShown] = useState(open);
   const [token, setToken] = useState("");
   const tokenId = useId();
   const hintId = useId();
-  if (!shown) {
-    return (
-      <Button
-        icon={<IconKey size={16} stroke={1.75} />}
-        onClick={() => {
-          setShown(true);
-        }}
-      >
-        Use a service account token
-      </Button>
-    );
-  }
   return (
     <form
       className={styles.form}
@@ -301,7 +300,7 @@ function TokenForm({ returnTo, open }: { returnTo: string; open: boolean }) {
           {error}
         </p>
       )}
-      <Button type="submit" variant={open ? "primary" : "secondary"} disabled={busy}>
+      <Button type="submit" variant={primary ? "primary" : "secondary"} disabled={busy}>
         {busy ? "Checking…" : "Sign in with token"}
       </Button>
     </form>
