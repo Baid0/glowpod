@@ -6,6 +6,8 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-23
+
 ### Added
 
 - A shell in the browser on Glowpod Hub: **Shell** in the top bar opens a terminal with `kubectl`,
@@ -216,7 +218,8 @@ First release.
   restricted security context; multi-arch image (amd64, arm64).
 - Light and dark themes, settings for thresholds, density and refresh.
 
-[Unreleased]: https://github.com/glowpod-dev/glowpod/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/glowpod-dev/glowpod/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/glowpod-dev/glowpod/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/glowpod-dev/glowpod/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/glowpod-dev/glowpod/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/glowpod-dev/glowpod/compare/v0.2.0...v0.3.0

@@ -53,7 +53,7 @@ container and the Hub on it, like Rancher's Docker install. Needs Glowpod
 ```bash
 docker run -d --name glowpod --restart=unless-stopped --privileged \
   -p 80:80 -p 443:443 -v glowpod:/var/lib/glowpod \
-  ghcr.io/glowpod-dev/glowpod-hub:0.5.0
+  ghcr.io/glowpod-dev/glowpod-hub:0.6.0
 ```
 
 - **`--privileged`** is needed to run Kubernetes inside a container, as for
@@ -217,7 +217,7 @@ prefixes are always `oidc:` and `ldap:`.
 
 ## Use kubectl
 
-Open the account menu (your initials, top right) and choose **Kubeconfig**,
+Needs Glowpod 0.6.0 or later. Open the account menu (your initials, top right) and choose **Kubeconfig**,
 then **Download kubeconfig**. The file has a context for each cluster you
 can see, named by the cluster's ID, and starts in the cluster you had open:
 
@@ -243,7 +243,7 @@ kubectl --kubeconfig ~/Downloads/glowpod-kubeconfig.yaml get pods --context prod
 
 ## Shell in the browser
 
-On any cluster page, **Shell** in the top bar opens a terminal along the
+Needs Glowpod 0.6.0 or later. On any cluster page, **Shell** in the top bar opens a terminal along the
 bottom of the page, with `kubectl`, `helm`, `jq`, `yq` and `glowpod term`
 set up for that cluster, as you. kubectl starts in the namespace you picked,
 and `k` is short for `kubectl`.
