@@ -8,7 +8,7 @@ Nothing is ever locked away in Glance mode; it only simplifies what is shown.
 - Three ways to run it from the same binary:
   - **Local mode:** `glowpod` CLI reads the user's kubeconfig, lists every context as a cluster, and opens the browser.
   - **In-cluster mode:** installed with a Helm chart; users sign in; one cluster.
-  - **Hub mode:** an in-cluster install that also takes `glowpod agent` connections from other clusters (Rancher-style, free/MIT). Design: `docs/design/multi-cluster.md`.
+  - **Hub mode:** works like Rancher (free/MIT): Helm `hub.enabled` (or a Docker quick start with K3s inside), bootstrap password, local users + SSO/LDAP, clusters imported with `kubectl apply` that run `glowpod agent`, members and projects. The agent only impersonates, unlike Rancher's. Design: `docs/design/multi-cluster.md`.
 - Sign-in methods: **OIDC SSO**, **service-account token**, **kubeconfig** (local mode only).
 - Theme: **dark by default**, light mode available.
 
@@ -171,11 +171,12 @@ Refresh every 15 s; pause while the browser tab is hidden.
 
 Then Glowpod Hub (`docs/design/multi-cluster.md`):
 
-7. **Many clusters in local mode:** cluster registry, Clusters page, real cluster picker, every kubeconfig context.
-8. **Hub and agent:** outbound agent tunnel, registration, impersonation guards, visibility from RBAC subjects.
-9. **Cluster shell and kubeconfig download.**
-10. **Access:** Members page, hub settings.
-11. **Across clusters:** search and "Needs attention" over all clusters.
+7. **Many clusters in local mode:** cluster registry, Clusters page, real cluster picker, every kubeconfig context. ✅
+8. **Hub and agent:** Helm `hub.enabled`, bootstrap password, local users, `kubectl apply` import, outbound tunnel, impersonation guards, `local` cluster, cluster list from RBAC subjects.
+9. **Docker quick start:** `glowpod-hub` image with K3s inside.
+10. **Cluster shell and kubeconfig download.**
+11. **Members, projects, Hub settings** (SSO/LDAP in the UI), backup and restore.
+12. **Across clusters:** search and "Needs attention" over all clusters.
 
 Finish and test each phase before starting the next.
 
