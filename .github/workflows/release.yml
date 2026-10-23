@@ -10,6 +10,16 @@
 #     CHANGELOG.md;
 #   - the version in the classic chart repo, https://glowpod.dev/charts
 #     (site/public/charts/index.yaml, pointing at the Release's chart).
+# The three images also go to Docker Hub, as docker.io/<namespace>/glowpod and
+# so on, with the same digests, tags and signatures, once these are set in the
+# repository's Actions settings:
+#   - secret DOCKERHUB_TOKEN: a Docker Hub access token that can read and
+#     write (and create) the three repositories;
+#   - variable DOCKERHUB_USERNAME: the account the token belongs to (for an
+#     organization access token, the organization's name);
+#   - variable DOCKERHUB_NAMESPACE, optional: where the images go, if not
+#     under DOCKERHUB_USERNAME.
+# Without them, images go to GHCR only.
 # Signing is keyless: signatures are tied to this workflow on this repository
 # (see docs/install.md, "Verify what you download").
 # A tag with a dash (v0.2.0-rc.1) is a pre-release and doesn't move :latest.
@@ -34,8 +44,13 @@ jobs:
       shell_image: ${{ steps.v.outputs.shell_image }}
       shell_tags: ${{ steps.v.outputs.shell_tags }}
       prerelease: ${{ steps.v.outputs.prerelease }}
+      dockerhub: ${{ steps.v.outputs.dockerhub }}
     steps:
       - id: v
+        env:
+          DOCKERHUB_READY: ${{ secrets.DOCKERHUB_TOKEN != '' && vars.DOCKERHUB_USERNAME != '' }}
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+          DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE }}
         run: |
           version="${GITHUB_REF_NAME#v}"
           # Image names must be lowercase; GitHub owners needn't be.
@@ -43,28 +58,46 @@ jobs:
           image="ghcr.io/${owner}/glowpod"
           hub_image="ghcr.io/${owner}/glowpod-hub"
           shell_image="ghcr.io/${owner}/glowpod-shell"
-          tags="${image}:${version}"
-          hub_tags="${hub_image}:${version}"
-          shell_tags="${shell_image}:${version}"
           prerelease=false
           if [[ "$version" == *-* ]]; then
             prerelease=true
-          else
-            tags="${tags},${image}:latest"
-            hub_tags="${hub_tags},${hub_image}:latest"
-            shell_tags="${shell_tags},${shell_image}:latest"
           fi
+          # The Docker Hub namespace, or empty when Docker Hub isn't set up.
+          dockerhub=""
+          if [ "$DOCKERHUB_READY" = true ]; then
+            dockerhub="${DOCKERHUB_NAMESPACE:-$DOCKERHUB_USERNAME}"
+            dockerhub="${dockerhub,,}"
+          fi
+          # The version tag, and :latest for a release, on every registry.
+          tags_for() {
+            local refs=("ghcr.io/${owner}/$1") ref out=()
+            if [ -n "$dockerhub" ]; then
+              refs+=("docker.io/${dockerhub}/$1")
+            fi
+            for ref in "${refs[@]}"; do
+              out+=("${ref}:${version}")
+              if [ "$prerelease" = false ]; then
+                out+=("${ref}:latest")
+              fi
+            done
+            local IFS=,
+            echo "${out[*]}"
+          }
           {
             echo "version=${version}"
             echo "owner=${owner}"
             echo "image=${image}"
-            echo "tags=${tags}"
+            echo "tags=$(tags_for glowpod)"
             echo "hub_image=${hub_image}"
-            echo "hub_tags=${hub_tags}"
+            echo "hub_tags=$(tags_for glowpod-hub)"
             echo "shell_image=${shell_image}"
-            echo "shell_tags=${shell_tags}"
+            echo "shell_tags=$(tags_for glowpod-shell)"
             echo "prerelease=${prerelease}"
+            echo "dockerhub=${dockerhub}"
           } >> "$GITHUB_OUTPUT"
+          if [ -z "$dockerhub" ]; then
+            echo "Images go to GHCR only, because DOCKERHUB_TOKEN or DOCKERHUB_USERNAME isn't set." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   image:
     needs: meta
@@ -82,6 +115,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - if: needs.meta.outputs.dockerhub != ''
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - id: build
         uses: docker/build-push-action@v7
         with:
@@ -97,10 +135,24 @@ jobs:
           cache-to: type=gha,mode=max
       - uses: sigstore/cosign-installer@v4.1.2
       - name: Sign the image
-        run: cosign sign --yes "${{ needs.meta.outputs.image }}@${{ steps.build.outputs.digest }}"
+        env:
+          IMAGE: ${{ needs.meta.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          DOCKERHUB: ${{ needs.meta.outputs.dockerhub }}
+        run: |
+          cosign sign --yes "${IMAGE}@${DIGEST}"
+          if [ -n "$DOCKERHUB" ]; then
+            cosign sign --yes "docker.io/${DOCKERHUB}/glowpod@${DIGEST}"
+          fi
       - uses: actions/attest-build-provenance@v4
         with:
           subject-name: ${{ needs.meta.outputs.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+      - if: needs.meta.outputs.dockerhub != ''
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: index.docker.io/${{ needs.meta.outputs.dockerhub }}/glowpod
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
@@ -121,6 +173,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - if: needs.meta.outputs.dockerhub != ''
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - id: build
         uses: docker/build-push-action@v7
         with:
@@ -136,10 +193,24 @@ jobs:
           cache-to: type=gha,mode=max
       - uses: sigstore/cosign-installer@v4.1.2
       - name: Sign the image
-        run: cosign sign --yes "${{ needs.meta.outputs.hub_image }}@${{ steps.build.outputs.digest }}"
+        env:
+          IMAGE: ${{ needs.meta.outputs.hub_image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          DOCKERHUB: ${{ needs.meta.outputs.dockerhub }}
+        run: |
+          cosign sign --yes "${IMAGE}@${DIGEST}"
+          if [ -n "$DOCKERHUB" ]; then
+            cosign sign --yes "docker.io/${DOCKERHUB}/glowpod-hub@${DIGEST}"
+          fi
       - uses: actions/attest-build-provenance@v4
         with:
           subject-name: ${{ needs.meta.outputs.hub_image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+      - if: needs.meta.outputs.dockerhub != ''
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: index.docker.io/${{ needs.meta.outputs.dockerhub }}/glowpod-hub
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
@@ -160,6 +231,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - if: needs.meta.outputs.dockerhub != ''
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - id: build
         uses: docker/build-push-action@v7
         with:
@@ -175,10 +251,24 @@ jobs:
           cache-to: type=gha,mode=max
       - uses: sigstore/cosign-installer@v4.1.2
       - name: Sign the image
-        run: cosign sign --yes "${{ needs.meta.outputs.shell_image }}@${{ steps.build.outputs.digest }}"
+        env:
+          IMAGE: ${{ needs.meta.outputs.shell_image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          DOCKERHUB: ${{ needs.meta.outputs.dockerhub }}
+        run: |
+          cosign sign --yes "${IMAGE}@${DIGEST}"
+          if [ -n "$DOCKERHUB" ]; then
+            cosign sign --yes "docker.io/${DOCKERHUB}/glowpod-shell@${DIGEST}"
+          fi
       - uses: actions/attest-build-provenance@v4
         with:
           subject-name: ${{ needs.meta.outputs.shell_image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+      - if: needs.meta.outputs.dockerhub != ''
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: index.docker.io/${{ needs.meta.outputs.dockerhub }}/glowpod-shell
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
@@ -269,6 +359,7 @@ jobs:
           IMAGE: ${{ needs.meta.outputs.image }}
           OWNER: ${{ needs.meta.outputs.owner }}
           PRERELEASE: ${{ needs.meta.outputs.prerelease }}
+          DOCKERHUB: ${{ needs.meta.outputs.dockerhub }}
         run: |
           # This version's CHANGELOG section, then how to install and verify.
           awk -v v="$VERSION" 'index($0, "## [" v "]") == 1 {on=1; next} on && (/^## \[/ || /^\[[^]]*\]: /) {exit} on' CHANGELOG.md > notes.md
@@ -278,7 +369,7 @@ jobs:
           ## Install
 
           - In a cluster: \`helm install glowpod oci://ghcr.io/${OWNER}/charts/glowpod --version ${VERSION} -n glowpod --create-namespace\` ([guide](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/docs/install.md))
-          - Image: \`${IMAGE}:${VERSION}\`
+          - Image: \`${IMAGE}:${VERSION}\`${DOCKERHUB:+, or \`${DOCKERHUB}/glowpod:${VERSION}\` on Docker Hub}
           - On your machine: download \`glowpod\` for your platform below.
 
           Verify the downloads with \`gh attestation verify <file> -R ${GITHUB_REPOSITORY}\`, and the image with cosign ([how](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/docs/install.md#verify-what-you-download)).

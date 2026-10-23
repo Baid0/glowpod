@@ -369,3 +369,19 @@ doesn't count.
   agent pointed at it and connecting with its existing credential, then a
   restore onto the Hub in use, after which the agent reconnected by
   itself.
+
+## Images on Docker Hub too
+
+- **GHCR stays the main registry.** The chart, the Hub's default agent and
+  shell images and the docs point there; Docker Hub is a copy for people who
+  look for images there, or want short names like `glowpod/glowpod-hub`.
+- **One build, two registries:** each image is built once and pushed to both
+  with the same tags, so both have the same digest, SBOM and provenance. It
+  is signed with cosign and attested on each registry, so
+  `cosign verify` works against either name.
+- **Off until set up:** Docker Hub is used only when the secret
+  `DOCKERHUB_TOKEN` and the variable `DOCKERHUB_USERNAME` exist
+  (`DOCKERHUB_NAMESPACE` if the images go under another name); otherwise a
+  release goes to GHCR only and says so in its summary, like Homebrew and
+  Scoop without `PACKAGES_TOKEN`. Once set, a failed Docker Hub push fails
+  the release, so the two never drift apart silently.
