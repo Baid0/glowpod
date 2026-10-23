@@ -6,6 +6,8 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-23
+
 ### Added
 
 - **Glowpod Hub**: one Glowpod for many clusters, the way Rancher works ([guide](docs/hub.md)).
@@ -18,7 +20,6 @@ All notable changes to Glowpod. The format follows
   remove a cluster, which revokes its agent.
 - Sign in with a Glowpod account (the Hub's `admin`), next to SSO and LDAP.
 - `-ldap-username-prefix` (`auth.ldap.usernamePrefix`), for usernames such as `ldap:bob`.
-
 - Many clusters in local mode. Every context in your kubeconfig is a cluster: `glowpod` opens
   your current context (or the one given with `-context`), and a new **Clusters** page lists
   them all with their state (connected, unreachable, credentials refused), Kubernetes version,
@@ -166,7 +167,8 @@ First release.
   restricted security context; multi-arch image (amd64, arm64).
 - Light and dark themes, settings for thresholds, density and refresh.
 
-[Unreleased]: https://github.com/glowpod-dev/glowpod/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/glowpod-dev/glowpod/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/glowpod-dev/glowpod/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/glowpod-dev/glowpod/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/glowpod-dev/glowpod/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/glowpod-dev/glowpod/compare/v0.1.3...v0.1.4
