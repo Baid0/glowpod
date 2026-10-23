@@ -53,7 +53,7 @@ container and the Hub on it, like Rancher's Docker install. Needs Glowpod
 ```bash
 docker run -d --name glowpod --restart=unless-stopped --privileged \
   -p 80:80 -p 443:443 -v glowpod:/var/lib/glowpod \
-  ghcr.io/glowpod-dev/glowpod-hub:0.7.0
+  ghcr.io/glowpod-dev/glowpod-hub:0.7.1
 ```
 
 - **`--privileged`** is needed to run Kubernetes inside a container, as for
