@@ -106,6 +106,33 @@ with their own RBAC.
 | [Configuration](docs/configuration.md) | Every flag, environment variable and Helm value |
 | [Running Glowpod](docs/operations.md) | Security model, logs, health, troubleshooting |
 | [SSO demo](deploy/examples/sso-demo/README.md) | Dex + LDAP in a throwaway namespace, to try it all in ten minutes |
+| [Glowpod Hub](docs/hub.md) | Many clusters, one sign-in, like Rancher |
+
+## Many clusters: Glowpod Hub
+
+One Hub, every cluster: people sign in once, see the clusters their RBAC
+gives them, and open any of them. Each cluster joins with one
+`kubectl apply`, which installs a small agent that connects out to the Hub.
+
+Try it with one container, K3s inside (0.5.0+):
+
+```bash
+docker run -d --name glowpod --restart=unless-stopped --privileged \
+  -p 80:80 -p 443:443 -v glowpod:/var/lib/glowpod \
+  ghcr.io/glowpod-dev/glowpod-hub:0.5.0
+docker exec glowpod glowpod hub bootstrap-password
+```
+
+For production, install it with Helm on a cluster of its own:
+
+```bash
+helm install glowpod oci://ghcr.io/glowpod-dev/charts/glowpod -n glowpod --create-namespace \
+  --set hub.enabled=true --set publicURL=https://glowpod.example.com \
+  --set ingress.enabled=true --set ingress.host=glowpod.example.com
+```
+
+Then open it, sign in as `admin`, and import clusters under **Clusters →
+Import**. The [Hub guide](docs/hub.md) has the details.
 
 ## What it does
 

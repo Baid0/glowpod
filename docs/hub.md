@@ -53,7 +53,7 @@ container and the Hub on it, like Rancher's Docker install. Needs Glowpod
 ```bash
 docker run -d --name glowpod --restart=unless-stopped --privileged \
   -p 80:80 -p 443:443 -v glowpod:/var/lib/glowpod \
-  ghcr.io/glowpod-dev/glowpod-hub
+  ghcr.io/glowpod-dev/glowpod-hub:0.5.0
 ```
 
 - **`--privileged`** is needed to run Kubernetes inside a container, as for
@@ -81,6 +81,17 @@ docker run -d --name glowpod --restart=unless-stopped --privileged \
   Then continue with [First start](#first-start) from step 2. The server URL
   is the address imported clusters reach this server by, such as
   `https://203.0.113.10`.
+
+**Upgrade** by starting the new version on the same volume. Sign-ins and
+imported clusters carry over, and agents reconnect by themselves:
+
+```bash
+docker pull ghcr.io/glowpod-dev/glowpod-hub:<new version>
+docker rm -f glowpod
+docker run -d --name glowpod --restart=unless-stopped --privileged \
+  -p 80:80 -p 443:443 -v glowpod:/var/lib/glowpod \
+  ghcr.io/glowpod-dev/glowpod-hub:<new version>
+```
 
 The cluster inside the container is listed as `local`. It's for trying the
 Hub, or for a small setup: everything depends on one container. For
