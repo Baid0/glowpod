@@ -4,6 +4,49 @@ entries:
   - annotations:
       artifacthub.io/category: monitoring-logging
       artifacthub.io/changes: |
+        - kind: fixed
+          description: "The sign-in page showed two identical username forms when LDAP and Glowpod accounts were both on. Now there's one form at a time: SSO stays the main button, and a Directory account | Glowpod account switch (with Token where tokens are on) picks the form below it."
+      artifacthub.io/images: |
+        - name: glowpod
+          image: ghcr.io/glowpod-dev/glowpod:0.7.1
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Website
+          url: https://glowpod.dev
+        - name: Documentation
+          url: https://glowpod.dev/docs/
+        - name: Install guide
+          url: https://glowpod.dev/docs/install/
+        - name: Sign-in and access
+          url: https://glowpod.dev/docs/authentication/
+        - name: Security policy
+          url: https://github.com/glowpod-dev/glowpod/security/policy
+        - name: Source
+          url: https://github.com/glowpod-dev/glowpod
+    apiVersion: v2
+    appVersion: 0.7.1
+    created: "2026-10-23T16:04:11.345807445Z"
+    description: A Kubernetes dashboard for app developers and platform teams. People
+      sign in and act as themselves.
+    digest: 27248b80fe65b4ce617298bad7cbd2150847ecb64107119eaebe01d41c9bcc85
+    home: https://glowpod.dev
+    icon: https://glowpod.dev/brand/glowpod-icon.png
+    keywords:
+    - kubernetes
+    - dashboard
+    - rbac
+    - sso
+    kubeVersion: '>=1.28.0-0'
+    name: glowpod
+    sources:
+    - https://github.com/glowpod-dev/glowpod
+    type: application
+    urls:
+    - https://github.com/glowpod-dev/glowpod/releases/download/v0.7.1/glowpod-0.7.1.tgz
+    version: 0.7.1
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
         - kind: added
           description: "Backup and restore of a Hub (Hub settings \u2192 Backup and restore): one file with the Glowpod accounts, sign-in settings, server URL and imported clusters, encrypted with a passphrase (AES-256-GCM, Argon2id). Restore it on a Hub in use, or on a new Hub at first start to move there; agents reconnect with the credentials they have (guide)."
         - kind: added
@@ -452,4 +495,4 @@ entries:
     urls:
     - https://github.com/glowpod-dev/glowpod/releases/download/v0.1.1/glowpod-0.1.1.tgz
     version: 0.1.1
-generated: "2026-10-23T15:22:24.785100118Z"
+generated: "2026-10-23T16:04:11.344720444Z"
