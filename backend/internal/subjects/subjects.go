@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,12 +46,22 @@ func (s Set) Includes(user string, groups []string) bool {
 // List reads every binding in the cluster.
 func List(ctx context.Context, kube kubernetes.Interface) (Set, error) {
 	users, groups := map[string]bool{}, map[string]bool{}
-	add := func(subjects []rbacv1.Subject) {
+	add := func(role rbacv1.RoleRef, subjects []rbacv1.Subject, clusterWide bool) {
+		// Kubernetes' own roles (system:discovery, system:basic-user, …) are
+		// bound to every signed-in user in every cluster; they say nothing
+		// about who works there.
+		if strings.HasPrefix(role.Name, "system:") {
+			return
+		}
 		for _, s := range subjects {
-			switch s.Kind {
-			case rbacv1.UserKind:
+			switch {
+			case s.Kind == rbacv1.UserKind:
 				users[s.Name] = true
-			case rbacv1.GroupKind:
+			// Everyone counts only through a cluster-wide grant: tools bind
+			// narrow helper roles to everyone in one namespace (sealed-secrets
+			// lets kubeseal fetch its certificate), which doesn't make the
+			// cluster everyone's.
+			case s.Kind == rbacv1.GroupKind && (s.Name != Everyone || clusterWide):
 				groups[s.Name] = true
 			}
 		}
@@ -66,7 +77,7 @@ func List(ctx context.Context, kube kubernetes.Interface) (Set, error) {
 		return Set{}, fmt.Errorf("list cluster role bindings: %w", err)
 	}
 	for i := range crbs {
-		add(crbs[i].Subjects)
+		add(crbs[i].RoleRef, crbs[i].Subjects, true)
 	}
 	rbs, err := paging.All(ctx, func(ctx context.Context, o metav1.ListOptions) ([]rbacv1.RoleBinding, string, error) {
 		l, err := kube.RbacV1().RoleBindings("").List(ctx, o)
@@ -79,7 +90,7 @@ func List(ctx context.Context, kube kubernetes.Interface) (Set, error) {
 		return Set{}, fmt.Errorf("list role bindings: %w", err)
 	}
 	for i := range rbs {
-		add(rbs[i].Subjects)
+		add(rbs[i].RoleRef, rbs[i].Subjects, false)
 	}
 	return Set{Users: sorted(users), Groups: sorted(groups)}, nil
 }

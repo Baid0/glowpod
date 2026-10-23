@@ -8,11 +8,25 @@ All notable changes to Glowpod. The format follows
 
 ### Added
 
+- **Hub settings** for Hub administrators (account menu): add Glowpod accounts as User or
+  Administrator, reset passwords, change roles, delete accounts (each ends that person's sign-ins
+  and kubeconfigs); set up **SSO (OIDC)** and **LDAP / Active Directory** in the UI, with a
+  **Check** button, taking effect without a restart; change the server URL
+  ([guide](docs/hub.md#hub-settings)). Helm values and flags still win. Glowpod accounts change
+  their own password from the account menu.
 - Members and projects: **Cluster → Members** gives a person or group a role in the whole cluster
   (Owner, Read-only, or any ClusterRole), and **Cluster → Projects** groups namespaces (such as
   `payments-api` + `payments-db`) and gives a team a role in all of them (Owner, Member,
   Read-only) ([guide](docs/members.md)). It's all the cluster's own RBAC, made as you, so you can
   only give what you have; access made with kubectl or GitOps is listed too. Works in every mode.
+
+### Fixed
+
+- On a Hub, every cluster was listed for everyone: Kubernetes binds its own discovery roles to
+  all signed-in users, and those counted as access. Now only real grants count: bindings to
+  `system:` roles don't, and "everyone" counts only through a cluster-wide binding (a tool's
+  narrow role for everyone in one namespace doesn't). Imported clusters need their agent
+  upgraded: choose **Connect** on each and run its command again.
 
 ## [0.6.0] - 2026-10-23
 

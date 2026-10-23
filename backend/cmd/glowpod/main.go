@@ -251,7 +251,7 @@ func setupServer(ctx context.Context, cfg config, opts *api.Options, logger *slo
 	}
 	clusters := cluster.Single(provider)
 	if sc.hub {
-		h, err := newHub(ctx, sc, base, clusters, logger)
+		h, err := newHub(ctx, sc, base, clusters, authCfg.Store, logger)
 		if err != nil {
 			return err
 		}
@@ -263,6 +263,9 @@ func setupServer(ctx context.Context, cfg config, opts *api.Options, logger *slo
 	authn, err := auth.NewServer(authCfg)
 	if err != nil {
 		return err
+	}
+	if h, ok := opts.Hub.(*hub.Hub); ok {
+		h.UseAuth(ctx, authn.SetProviders, hub.FixedAuth{OIDC: authCfg.OIDC, OIDCName: authCfg.OIDCName, LDAP: authCfg.LDAP})
 	}
 	opts.Clusters, opts.Auth = clusters, authn
 	if sc.publicURL != "" {

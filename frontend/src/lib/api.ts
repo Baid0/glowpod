@@ -8,6 +8,11 @@ import type {
   ClusterSummary,
   ImportCommand,
   KubeTokenList,
+  CheckResult,
+  HubSettings,
+  HubUser,
+  LDAPSettings,
+  OIDCSettings,
   ClusterRoleChoice,
   Members,
   ProjectRole,
@@ -215,6 +220,25 @@ export const api = {
         name: s.name,
       }),
     ),
+  hubUsers: (signal?: AbortSignal) =>
+    apiGet<{ users: HubUser[] }>("/api/v1/hub/users", signal).then((r) => r.users),
+  createHubUser: (username: string, role: HubUser["role"], password: string) =>
+    apiSend("POST", "/api/v1/hub/users", { username, role, password }),
+  updateHubUser: (username: string, change: { role?: HubUser["role"]; password?: string }) =>
+    apiSend("PUT", `/api/v1/hub/users/${encodeURIComponent(username)}`, change),
+  deleteHubUser: (username: string) =>
+    apiSend("DELETE", `/api/v1/hub/users/${encodeURIComponent(username)}`),
+  changePassword: (current: string, next: string) =>
+    apiSend("POST", "/api/v1/hub/account/password", { current, new: next }),
+  hubSettings: (signal?: AbortSignal) => apiGet<HubSettings>("/api/v1/hub/settings", signal),
+  setServerURL: (serverURL: string) =>
+    apiSend("PUT", "/api/v1/hub/settings/server-url", { serverURL }),
+  setOIDC: (s: OIDCSettings) => apiSend("PUT", "/api/v1/hub/settings/oidc", s),
+  setLDAP: (s: LDAPSettings) => apiSend("PUT", "/api/v1/hub/settings/ldap", s),
+  checkOIDC: (s: OIDCSettings) =>
+    apiSend<CheckResult>("POST", "/api/v1/hub/settings/oidc/check", s),
+  checkLDAP: (s: LDAPSettings) =>
+    apiSend<CheckResult>("POST", "/api/v1/hub/settings/ldap/check", s),
   removeCluster: (cluster: string) =>
     apiSend<{ cleanup: string }>("DELETE", `/api/v1/hub/clusters/${encodeURIComponent(cluster)}`),
   namespaces: (cluster: string, signal?: AbortSignal) =>

@@ -40,11 +40,22 @@ func (h *Hub) MountAPI(r chi.Router) {
 	r.Get("/kubeconfig/tokens", h.listKubeTokens)
 	r.Delete("/kubeconfig/tokens/{id}", h.revokeKubeToken)
 	r.Get("/shell/{cluster}", h.openShell)
+	r.Post("/account/password", h.changeOwnPassword)
 	r.Group(func(r chi.Router) {
 		r.Use(h.requireAdmin)
 		r.Post("/clusters", h.importCluster)
 		r.Post("/clusters/{cluster}/import", h.reimportCluster)
 		r.Delete("/clusters/{cluster}", h.removeCluster)
+		r.Get("/users", h.listUsers)
+		r.Post("/users", h.createUser)
+		r.Put("/users/{user}", h.updateUser)
+		r.Delete("/users/{user}", h.deleteUser)
+		r.Get("/settings", h.getSettings)
+		r.Put("/settings/server-url", h.setServerURL)
+		r.Put("/settings/oidc", h.setOIDC)
+		r.Put("/settings/ldap", h.setLDAP)
+		r.Post("/settings/oidc/check", h.checkOIDC)
+		r.Post("/settings/ldap/check", h.checkLDAP)
 	})
 }
 

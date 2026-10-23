@@ -1,9 +1,17 @@
-import { IconKey, IconLogout, IconSearch, IconTerminal2 } from "@tabler/icons-react";
+import {
+  IconKey,
+  IconLock,
+  IconLogout,
+  IconSearch,
+  IconSettings,
+  IconTerminal2,
+} from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 
 import { KubeconfigDialog } from "../features/clusters/KubeconfigDialog";
+import { PasswordDialog } from "../features/hub/PasswordDialog";
 import { api } from "../lib/api";
 import { initials } from "../lib/format";
 import { useLive } from "../lib/live";
@@ -154,6 +162,7 @@ function Avatar() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [kubeconfig, setKubeconfig] = useState(false);
+  const [password, setPassword] = useState(false);
   const [error, setError] = useState("");
   const box = useRef<HTMLDivElement>(null);
   const { cluster } = useParams();
@@ -213,6 +222,32 @@ function Avatar() {
               {groups.length > 8 && <li>+{groups.length - 8} more</li>}
             </ul>
           )}
+          {data?.hub?.role === "admin" && (
+            <button
+              type="button"
+              className={styles.menuButton}
+              onClick={() => {
+                setOpen(false);
+                void navigate("/hub/settings");
+              }}
+            >
+              <IconSettings size={16} stroke={1.75} aria-hidden="true" />
+              Hub settings
+            </button>
+          )}
+          {data?.hub && data.method === "password" && (
+            <button
+              type="button"
+              className={styles.menuButton}
+              onClick={() => {
+                setOpen(false);
+                setPassword(true);
+              }}
+            >
+              <IconLock size={16} stroke={1.75} aria-hidden="true" />
+              Change password
+            </button>
+          )}
           {data?.hub && (
             <button
               type="button"
@@ -238,6 +273,13 @@ function Avatar() {
             </p>
           )}
         </div>
+      )}
+      {password && (
+        <PasswordDialog
+          onClose={() => {
+            setPassword(false);
+          }}
+        />
       )}
       {data?.hub && (
         <KubeconfigDialog

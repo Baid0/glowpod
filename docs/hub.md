@@ -165,6 +165,31 @@ If the Hub's certificate comes from a private CA, put that CA in a Secret
    **server URL**, the address agents connect to. Saving deletes the
    bootstrap password.
 
+## Hub settings
+
+Administrators open **Hub settings** from the account menu (Glowpod 0.7.0
+or later).
+
+- **Server:** the server URL. Clusters already imported keep the address
+  they were given; to move one, choose **Connect** on its row and run its
+  command again. The server URL must be reachable from every cluster.
+- **Glowpod accounts:** add people who have no SSO or LDAP, as a **User**
+  (sees the clusters they're given access to) or an **Administrator**
+  (manages accounts, sign-in and clusters; that gives no rights inside a
+  cluster). Reset a password, change a role or delete an account; each
+  ends that person's sign-ins and kubeconfigs at once. `admin`, and your
+  own account, stay administrators. Anyone with a Glowpod account changes
+  their own password from the account menu.
+- **Single sign-on (OIDC)** and **LDAP / Active Directory:** set them up
+  here, with no restart. **Check** tries the settings first: SSO reads the
+  provider's OpenID configuration, LDAP connects and signs in as the bind
+  DN. Register the redirect URL shown with your provider. The client
+  secret and bind password are kept in the Secret `glowpod-auth` in the
+  Hub's namespace and never shown again. Names keep their prefixes:
+  `oidc:` and `ldap:`.
+- SSO or LDAP set with Helm values (`auth.oidc`, `auth.ldap`) or flags
+  wins and is shown as read-only here.
+
 ## Import a cluster
 
 1. Go to **Clusters → Import** and give the cluster a name. Leave **Make me
@@ -303,6 +328,5 @@ kubectl delete namespace glowpod-system && kubectl delete clusterrole glowpod-ag
 
 These come next, in this order:
 
-- More local users, cluster members and projects, and setting up SSO and
-  LDAP in the UI. Until then, `admin` is the only local account; everyone
-  else signs in with SSO or LDAP.
+- Backup and restore of the Hub's state, from Hub settings.
+- Search and "Needs attention" across all clusters.

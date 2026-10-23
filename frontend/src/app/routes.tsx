@@ -18,6 +18,7 @@ import { GenericList } from "../features/resources/GenericList";
 import { ResourceListPage } from "../features/resources/ResourceListPage";
 import { ResourceTypesPage } from "../features/resources/ResourceTypesPage";
 import { ClustersPage } from "../features/clusters/ClustersPage";
+import { HubSettingsPage } from "../features/hub/HubSettingsPage";
 import { ClusterScope, Home, OnCurrentCluster } from "./ClusterScope";
 import { HubSetupPage } from "./HubSetup";
 import { allPages, type NavItem } from "./navigation";
@@ -59,6 +60,7 @@ export const routes: RouteObject[] = [
     element: <Shell home />,
     children: [
       { index: true, element: <Home list={<ClustersPage />} />, handle: handle("Clusters") },
+      { path: "hub/settings", element: <HubSettingsPage />, handle: handle("Hub settings") },
     ],
   },
   {

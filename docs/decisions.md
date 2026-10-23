@@ -313,3 +313,32 @@ doesn't count.
   nothing in `default`, can't create RoleBindings), a binding deleted with
   kubectl shown as missing and applied again, and deleting the project and
   the member leaving no binding or label behind.
+
+## Hub settings (Hub phase 5, second step)
+
+- **Sign-in set in the UI is live:** the sign-in server holds SSO and LDAP
+  behind an atomic pointer and the Hub swaps them on save; the SSO routes
+  are always mounted and answer only while SSO is set up. Settings, client
+  secret and bind password included, are one Secret (`glowpod-auth`); the
+  API never returns the secrets (an empty one on save keeps the kept one).
+  Flags and Helm values win and show as read-only.
+- **Check** builds the provider from the unsaved form: SSO fetches the
+  discovery document; LDAP dials, StartTLSes and binds as the bind DN.
+- **Glowpod accounts** stay one Secret each; a usable name is now also a
+  valid Secret name (no `_`). Hub roles of Glowpod accounts are cached in
+  memory and reloaded on every change. Changing someone's role or password,
+  or deleting them, ends their sessions (memory and Secrets) and deletes
+  their kubeconfig tokens. No "must change password" yet.
+- **Found while testing: every cluster was visible to everyone.** The
+  visibility rule counted bindings to `system:authenticated`, and every
+  cluster binds its discovery roles to it. Bindings to `system:` roles no
+  longer count, and "everyone" counts only through a ClusterRoleBinding
+  (sealed-secrets binds a narrow role to everyone in kube-system). The
+  agent computes this, so imported clusters need their agent upgraded.
+- **Tested** on the Docker Hub with lldap and Dex in containers next to it:
+  LDAP and SSO set up and checked in the UI, signing in as bob through Dex
+  (`oidc:bob@example.com`, `oidc:ops`) and alice through LDAP
+  (`ldap:alice`, `ldap:devs`); bob seeing no clusters until his group was
+  made a member of lab, then seeing it; a Glowpod account made, promoted
+  (its session ended) and deleted (signed out, can't sign in); settings
+  surviving a container restart; the lab's agent upgraded with Connect.

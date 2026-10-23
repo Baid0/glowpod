@@ -27,7 +27,7 @@ const imageRepository = "ghcr.io/glowpod-dev/glowpod"
 
 // newHub starts a Hub on base, Glowpod's own service account in the local
 // cluster, and adds every imported cluster to clusters.
-func newHub(ctx context.Context, sc serverConfig, base *rest.Config, clusters *cluster.Registry, logger *slog.Logger) (*hub.Hub, error) {
+func newHub(ctx context.Context, sc serverConfig, base *rest.Config, clusters *cluster.Registry, sessions *auth.Store, logger *slog.Logger) (*hub.Hub, error) {
 	kube, err := kubernetes.NewForConfig(base)
 	if err != nil {
 		return nil, fmt.Errorf("hub client: %w", err)
@@ -72,6 +72,7 @@ func newHub(ctx context.Context, sc serverConfig, base *rest.Config, clusters *c
 		ShellImage:    shellImage,
 		ShellHubURL:   sc.shellHubURL,
 		ShellCA:       sc.shellCA,
+		EndSessions:   sessions.EndUser,
 		Logger:        logger.With("component", "hub"),
 	})
 	if err := h.Start(ctx); err != nil {

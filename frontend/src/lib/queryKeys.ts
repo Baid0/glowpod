@@ -3,6 +3,8 @@ export const queryKeys = {
   session: ["session"] as const,
   clusters: ["clusters"] as const,
   kubeconfigTokens: ["kubeconfigTokens"] as const,
+  hubUsers: ["hubUsers"] as const,
+  hubSettings: ["hubSettings"] as const,
   clusterSummary: (cluster: string) => ["clusterSummary", cluster] as const,
   namespaces: (cluster: string) => ["namespaces", cluster] as const,
   members: (cluster: string) => ["members", cluster] as const,

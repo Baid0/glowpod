@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/netip"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -56,7 +57,24 @@ type Server struct {
 	cfg     ServerConfig
 	ipLimit *limiter
 	idLimit *limiter
+	// providers are SSO and LDAP as they are now: a Hub can change them
+	// while it runs.
+	providers atomic.Pointer[providers]
 }
+
+type providers struct {
+	oidc     *OIDC
+	oidcName string
+	ldap     *LDAP
+}
+
+// SetProviders replaces SSO and LDAP sign-in at once; nil turns one off.
+// Sign-ins already started with the old SSO settings must start again.
+func (s *Server) SetProviders(o *OIDC, oidcName string, l *LDAP) {
+	s.providers.Store(&providers{oidc: o, oidcName: oidcName, ldap: l})
+}
+
+func (s *Server) current() *providers { return s.providers.Load() }
 
 // NewServer returns a Server; at least one sign-in method must be on.
 func NewServer(cfg ServerConfig) (*Server, error) {
@@ -66,11 +84,13 @@ func NewServer(cfg ServerConfig) (*Server, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.New(slog.DiscardHandler)
 	}
-	return &Server{
+	s := &Server{
 		cfg:     cfg,
 		ipLimit: newLimiter(loginTries*3, loginWindow),
 		idLimit: newLimiter(loginTries, loginWindow),
-	}, nil
+	}
+	s.SetProviders(cfg.OIDC, cfg.OIDCName, cfg.LDAP)
+	return s, nil
 }
 
 // Method is a sign-in option for the sign-in page.
@@ -83,10 +103,11 @@ type Method struct {
 // Methods lists the sign-in options, SSO first.
 func (s *Server) Methods() []Method {
 	var out []Method
-	if s.cfg.OIDC != nil {
-		out = append(out, Method{Type: "oidc", Name: s.cfg.OIDCName})
+	p := s.current()
+	if p.oidc != nil {
+		out = append(out, Method{Type: "oidc", Name: p.oidcName})
 	}
-	if s.cfg.LDAP != nil {
+	if p.ldap != nil {
 		out = append(out, Method{Type: "ldap", Name: "LDAP"})
 	}
 	if s.cfg.Passwords != nil {
@@ -98,12 +119,11 @@ func (s *Server) Methods() []Method {
 	return out
 }
 
-// MountRoot implements Authenticator: the SSO redirects.
+// MountRoot implements Authenticator: the SSO redirects. They're always
+// there, and answer only while SSO is set up.
 func (s *Server) MountRoot(r chi.Router) {
-	if s.cfg.OIDC != nil {
-		r.Get(OIDCLoginPath, s.oidcLogin)
-		r.Get(OIDCCallbackPath, s.oidcCallback)
-	}
+	r.Get(OIDCLoginPath, s.oidcLogin)
+	r.Get(OIDCCallbackPath, s.oidcCallback)
 }
 
 // MountAPI implements Authenticator.
@@ -114,9 +134,7 @@ func (s *Server) MountAPI(r chi.Router) {
 	if s.cfg.Token {
 		r.Post("/auth/token", s.loginToken)
 	}
-	if s.cfg.LDAP != nil {
-		r.Post("/auth/ldap", s.loginLDAP)
-	}
+	r.Post("/auth/ldap", s.loginLDAP)
 	if s.cfg.Passwords != nil {
 		r.Post("/auth/password", s.loginPassword)
 	}

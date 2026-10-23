@@ -11,7 +11,7 @@ import {
 // clusterLinks.tsx has the matching Link, NavLink and Navigate.
 
 /** Paths that aren't one cluster's pages, so they never get a cluster. */
-const OUTSIDE = ["/c/", "/sign-in", "/setup", "/auth/", "/api/", "/dev/"];
+const OUTSIDE = ["/c/", "/sign-in", "/setup", "/hub/", "/auth/", "/api/", "/dev/"];
 
 /** path on cluster: "/workloads" → "/c/kind-lab/workloads". */
 export function clusterHref(cluster: string | undefined, path: string): string {

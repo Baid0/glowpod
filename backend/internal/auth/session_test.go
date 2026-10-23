@@ -206,3 +206,23 @@ func TestStoreCreateFailsWhenItCantSave(t *testing.T) {
 		t.Fatal("a sign-in that would be lost on restart should fail, not half-work")
 	}
 }
+
+func TestStoreEndUser(t *testing.T) {
+	saver := newMemSaver()
+	clock := &testClock{t: time.Now()}
+	s := newSavedStore(saver, clock)
+	bob := &Session{Identity: cluster.UserIdentity("glowpod:bob", nil), Info: SessionInfo{User: "glowpod:bob"}}
+	ann := &Session{Identity: cluster.UserIdentity("glowpod:ann", nil), Info: SessionInfo{User: "glowpod:ann"}}
+	bobID, _ := s.Create(t.Context(), bob)
+	annID, _ := s.Create(t.Context(), ann)
+	s.EndUser(t.Context(), "glowpod:bob")
+	if _, ok := s.Get(t.Context(), bobID); ok {
+		t.Fatal("bob is signed out")
+	}
+	if _, ok := newSavedStore(saver, clock).Get(t.Context(), bobID); ok {
+		t.Fatal("bob's saved session is gone too")
+	}
+	if _, ok := s.Get(t.Context(), annID); !ok {
+		t.Fatal("ann stays signed in")
+	}
+}

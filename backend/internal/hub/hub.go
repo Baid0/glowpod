@@ -84,6 +84,8 @@ type Config struct {
 	// serves from.
 	ShellHubURL string
 	ShellCA     string
+	// EndSessions signs a user out everywhere (the session store's).
+	EndSessions func(ctx context.Context, user string)
 	Logger      *slog.Logger
 }
 
@@ -97,6 +99,12 @@ type Hub struct {
 	mu            sync.Mutex
 	records       map[string]*Record
 	localSubjects subjects.Set
+	// localAdmins are the Glowpod accounts that are Hub administrators.
+	localAdmins map[string]bool
+	// setProviders hands SSO and LDAP to the sign-in server; fixedAuth is
+	// what flags set.
+	setProviders func(*auth.OIDC, string, *auth.LDAP)
+	fixedAuth    FixedAuth
 
 	kubeTokens  kubeTokens
 	upstreams   upstreams
@@ -130,6 +138,9 @@ func (h *Hub) Start(ctx context.Context) error {
 		return err
 	}
 	h.cleanShells(ctx)
+	if err := h.loadRoles(ctx); err != nil {
+		return err
+	}
 	for i := range records {
 		h.add(records[i])
 	}
@@ -352,7 +363,7 @@ func (h *Hub) saveStatus(ctx context.Context, id string) {
 
 // Role is someone's role in the Hub.
 func (h *Hub) Role(info auth.SessionInfo) string {
-	if info.User == UserPrefix+AdminUser {
+	if info.User == UserPrefix+AdminUser || h.localAdmin(info.User) {
 		return RoleAdmin
 	}
 	if slices.Contains(h.cfg.Admins, info.User) {
@@ -412,7 +423,7 @@ func cmp(a, b string) string {
 
 // Local users.
 
-var usernamePattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9._-]{0,62}[a-z0-9])?$`)
+var usernamePattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9.-]{0,62}[a-z0-9])?$`)
 
 // CheckPassword signs in a local user. Before setup, admin's password is
 // the bootstrap password. It returns the name Kubernetes sees.

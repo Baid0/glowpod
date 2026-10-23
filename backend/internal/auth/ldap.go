@@ -160,6 +160,22 @@ func (l *LDAP) Authenticate(ctx context.Context, username, password string) (str
 	return name, groups, nil
 }
 
+// Check connects and signs in as the service account, without anyone's
+// password: a settings page's "Check".
+func (l *LDAP) Check(ctx context.Context) error {
+	conn, err := l.dial(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close() //nolint:errcheck // nothing to do if closing fails
+	if l.cfg.StartTLS {
+		if err := conn.StartTLS(l.cfg.TLS); err != nil {
+			return fmt.Errorf("LDAP StartTLS: %w", err)
+		}
+	}
+	return l.bindService(conn)
+}
+
 func (l *LDAP) bindService(conn ldapConn) error {
 	if l.cfg.BindDN == "" {
 		return nil
@@ -219,6 +235,11 @@ func validUsername(u string) bool {
 
 func (s *Server) loginLDAP(w http.ResponseWriter, r *http.Request) {
 	var req ldapLogin
+	l := s.current().ldap
+	if l == nil {
+		writeJSONError(w, http.StatusNotFound, "not_found", "LDAP sign-in isn't set up.")
+		return
+	}
 	if !s.loginRequest(w, r, &req) {
 		return
 	}
@@ -234,7 +255,7 @@ func (s *Server) loginLDAP(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), loginTimeout)
 	defer cancel()
-	user, groups, err := s.cfg.LDAP.Authenticate(ctx, username, req.Password)
+	user, groups, err := l.Authenticate(ctx, username, req.Password)
 	if errors.Is(err, ErrBadCredentials) {
 		s.idLimit.fail(limitKey)
 		writeJSONError(w, http.StatusUnauthorized, "bad_credentials", "That username and password didn't work.")

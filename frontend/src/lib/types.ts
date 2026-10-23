@@ -522,3 +522,55 @@ export interface Projects {
   projects: Project[];
   unassigned: string[];
 }
+
+/** A Glowpod account on a Hub. */
+export interface HubUser {
+  username: string;
+  role: "admin" | "user";
+  created: string;
+}
+
+export interface OIDCSettings {
+  enabled: boolean;
+  name: string;
+  issuer: string;
+  clientId: string;
+  /** Write-only: empty keeps the kept one. */
+  clientSecret?: string;
+  clientSecretSet: boolean;
+  scopes: string[];
+  usernameClaim: string;
+  groupsClaim: string;
+}
+
+export interface LDAPSettings {
+  enabled: boolean;
+  url: string;
+  bindDN: string;
+  /** Write-only: empty keeps the kept one. */
+  bindPassword?: string;
+  bindPasswordSet: boolean;
+  userBase: string;
+  userFilter: string;
+  usernameAttribute: string;
+  groupBase: string;
+  groupFilter: string;
+  groupAttribute: string;
+  startTLS: boolean;
+  ca: string;
+}
+
+/** GET /api/v1/hub/settings. */
+export interface HubSettings {
+  serverURL: string;
+  auth: { oidc: OIDCSettings; ldap: LDAPSettings };
+  /** Methods set with Helm values or flags, which the UI can't change. */
+  fixed: { oidc: boolean; ldap: boolean };
+  /** What to register with the SSO provider. */
+  redirectURL: string;
+}
+
+export interface CheckResult {
+  ok: boolean;
+  message: string;
+}

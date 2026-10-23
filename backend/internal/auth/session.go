@@ -209,6 +209,29 @@ func (s *Store) forget(ctx context.Context, key string) {
 	_ = s.Saver.DeleteSession(ctx, key) // Prune removes it if this fails
 }
 
+// EndUser ends every session of user, saved or in memory.
+func (s *Store) EndUser(ctx context.Context, user string) {
+	s.mu.Lock()
+	for k, sess := range s.m {
+		if sess.Info.User == user || sess.Identity.User == user {
+			delete(s.m, k)
+		}
+	}
+	s.mu.Unlock()
+	if s.Saver == nil {
+		return
+	}
+	all, err := s.Saver.ListSessions(ctx)
+	if err != nil {
+		return
+	}
+	for key, v := range all {
+		if v.User == user || v.Info.User == user {
+			_ = s.Saver.DeleteSession(ctx, key) // Prune removes it if this fails
+		}
+	}
+}
+
 // Prune deletes saved sessions that have expired. Run it now and then;
 // sessions nobody comes back to are never read again otherwise.
 func (s *Store) Prune(ctx context.Context) error {

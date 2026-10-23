@@ -87,6 +87,13 @@ func NewOIDC(cfg OIDCConfig) (*OIDC, error) {
 	return &OIDC{cfg: cfg, now: time.Now, pending: map[string]pendingLogin{}}, nil
 }
 
+// Check reaches the provider and reads its discovery document: a settings
+// page's "Check".
+func (o *OIDC) Check(ctx context.Context) error {
+	_, _, err := o.setup(ctx)
+	return err
+}
+
 // setup discovers the provider once.
 func (o *OIDC) setup(ctx context.Context) (*oidc.IDTokenVerifier, *oauth2.Config, error) {
 	o.mu.Lock()
@@ -146,7 +153,11 @@ func localPath(p string) string {
 }
 
 func (s *Server) oidcLogin(w http.ResponseWriter, r *http.Request) {
-	o := s.cfg.OIDC
+	o := s.current().oidc
+	if o == nil {
+		redirectSignIn(w, r, "sso_unavailable")
+		return
+	}
 	if !s.ipLimit.allow(clientIP(r, s.cfg.TrustedProxies)) {
 		redirectSignIn(w, r, "too_many_attempts")
 		return
@@ -178,7 +189,11 @@ func (s *Server) oidcLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) oidcCallback(w http.ResponseWriter, r *http.Request) {
-	o := s.cfg.OIDC
+	o := s.current().oidc
+	if o == nil {
+		redirectSignIn(w, r, "sso_unavailable")
+		return
+	}
 	q := r.URL.Query()
 	http.SetCookie(w, &http.Cookie{ //nolint:gosec // clearing the binding cookie
 		Name: oidcCookie, Value: "", Path: "/auth/oidc", MaxAge: -1,
