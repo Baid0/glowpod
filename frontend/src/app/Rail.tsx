@@ -3,7 +3,7 @@ import { Link as RouterLink, useLocation } from "react-router";
 
 import { cx } from "../lib/cx";
 import { usePreferences } from "../lib/preferences";
-import { useClusters } from "../lib/queries";
+import { useClusters, useSession } from "../lib/queries";
 import { Logo } from "./Logo";
 import { usePanel } from "./panel";
 import { sectionFor, sectionHome, sectionsFor, settingsSection, type Section } from "./navigation";
@@ -20,7 +20,9 @@ export function Rail({ home = false }: { home?: boolean }) {
   const { pathname } = useLocation();
   const active = sectionFor(pathInCluster(pathname), mode);
   const { data: clusters } = useClusters();
-  const many = (clusters?.length ?? 0) > 1;
+  const { data: session } = useSession();
+  // A Hub always has a Clusters page to go back to.
+  const many = (clusters?.length ?? 0) > 1 || session?.hub !== undefined;
 
   if (home) {
     return (

@@ -1,4 +1,4 @@
-import { IconKey, IconLogin2 } from "@tabler/icons-react";
+import { IconKey, IconLogin2, IconUser } from "@tabler/icons-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useState } from "react";
 import { useSearchParams } from "react-router";
@@ -23,7 +23,7 @@ const ERRORS: Record<string, string> = {
   cluster_rejected: "The cluster stopped accepting your sign-in. Sign in again.",
 };
 
-/** Sign in with SSO, LDAP or a token, whichever the install allows. */
+/** Sign in with SSO, LDAP, a Hub account or a token, whichever the install allows. */
 export function SignInPage() {
   useEffect(() => {
     document.title = "Sign in · Glowpod";
@@ -76,6 +76,7 @@ export function SignInPage() {
 function Methods({ methods, returnTo }: { methods: AuthMethod[]; returnTo: string }) {
   const oidc = methods.find((m) => m.type === "oidc");
   const ldap = methods.some((m) => m.type === "ldap");
+  const password = methods.some((m) => m.type === "password");
   const token = methods.some((m) => m.type === "token");
   return (
     <div className={styles.methods}>
@@ -85,11 +86,51 @@ function Methods({ methods, returnTo }: { methods: AuthMethod[]; returnTo: strin
           Sign in with {oidc.name ?? "SSO"}
         </a>
       )}
-      {oidc && (ldap || token) && <Divider />}
-      {ldap && <LDAPForm returnTo={returnTo} primary={!oidc} />}
-      {ldap && token && <Divider />}
-      {token && <TokenForm returnTo={returnTo} open={!oidc && !ldap} />}
+      {oidc && (ldap || password || token) && <Divider />}
+      {ldap && (
+        <PasswordForm
+          returnTo={returnTo}
+          primary={!oidc}
+          label="Sign in with your directory account"
+          signIn={api.signInLDAP}
+        />
+      )}
+      {ldap && (password || token) && <Divider />}
+      {password && <AccountForm returnTo={returnTo} open={!oidc && !ldap} />}
+      {password && token && <Divider />}
+      {token && <TokenForm returnTo={returnTo} open={!oidc && !ldap && !password} />}
     </div>
+  );
+}
+
+/** A Hub's local accounts; admin's first password is the bootstrap one. */
+function AccountForm({ returnTo, open }: { returnTo: string; open: boolean }) {
+  const [shown, setShown] = useState(open);
+  if (!shown) {
+    return (
+      <Button
+        icon={<IconUser size={16} stroke={1.75} />}
+        onClick={() => {
+          setShown(true);
+        }}
+      >
+        Sign in with a Glowpod account
+      </Button>
+    );
+  }
+  return (
+    <>
+      <PasswordForm
+        returnTo={returnTo}
+        primary={open}
+        label="Sign in with a Glowpod account"
+        signIn={api.signInPassword}
+      />
+      <p className={styles.hint}>
+        First time? Sign in as <code>admin</code> with the bootstrap password. The Hub's log says
+        how to read it.
+      </p>
+    </>
   );
 }
 
@@ -123,7 +164,17 @@ function useSignIn(returnTo: string) {
   return { busy, error, run };
 }
 
-function LDAPForm({ returnTo, primary }: { returnTo: string; primary: boolean }) {
+function PasswordForm({
+  returnTo,
+  primary,
+  label,
+  signIn,
+}: {
+  returnTo: string;
+  primary: boolean;
+  label: string;
+  signIn: (username: string, password: string) => Promise<void>;
+}) {
   const { busy, error, run } = useSignIn(returnTo);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -134,9 +185,9 @@ function LDAPForm({ returnTo, primary }: { returnTo: string; primary: boolean })
       className={styles.form}
       onSubmit={(e) => {
         e.preventDefault();
-        void run(() => api.signInLDAP(username, password));
+        void run(() => signIn(username, password));
       }}
-      aria-label="Sign in with your directory account"
+      aria-label={label}
     >
       <label htmlFor={userId} className={styles.label}>
         Username

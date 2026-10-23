@@ -17,6 +17,7 @@ import { ResourceListPage } from "../features/resources/ResourceListPage";
 import { ResourceTypesPage } from "../features/resources/ResourceTypesPage";
 import { ClustersPage } from "../features/clusters/ClustersPage";
 import { ClusterScope, Home, OnCurrentCluster } from "./ClusterScope";
+import { HubSetupPage } from "./HubSetup";
 import { allPages, type NavItem } from "./navigation";
 import { Shell, type RouteHandle } from "./Shell";
 import { SignInPage } from "./SignIn";
@@ -48,6 +49,7 @@ const pages: RouteObject[] = allPages()
 
 export const routes: RouteObject[] = [
   { path: "/sign-in", element: <SignInPage /> },
+  { path: "/setup", element: <HubSetupPage /> },
   {
     path: "/",
     element: <Shell home />,

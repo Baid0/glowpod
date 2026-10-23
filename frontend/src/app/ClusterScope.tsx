@@ -57,10 +57,16 @@ function SignInAgainIfRejected() {
   return null;
 }
 
-/** "/": the Clusters page, or straight into the only cluster there is. */
+/**
+ * "/": the Clusters page, or straight into the only cluster there is. A Hub
+ * always shows the page, as Rancher does: it's where clusters are imported.
+ */
 export function Home({ list }: { list: React.ReactNode }) {
-  const { data: clusters } = useClusters();
-  const only = clusters?.length === 1 ? clusters[0] : undefined;
+  const clusters = useClusters();
+  const session = useSession();
+  // Decide once both are known, so the list doesn't flash before a redirect.
+  if (!clusters.isFetched || !session.isFetched) return null;
+  const only = !session.data?.hub && clusters.data?.length === 1 ? clusters.data[0] : undefined;
   if (only) return <Navigate to={`/c/${encodeURIComponent(only.id)}/`} replace />;
   return list;
 }

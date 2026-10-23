@@ -6,6 +6,7 @@ import type {
   AppSummary,
   ClusterInfo,
   ClusterSummary,
+  ImportCommand,
   CreateResult,
   DrainPlan,
   DrainResult,
@@ -149,6 +150,16 @@ export const api = {
     apiGet<{ clusters: ClusterInfo[] }>("/api/v1/clusters", signal).then((r) => r.clusters),
   clusterSummary: (cluster: string, signal?: AbortSignal) =>
     apiGet<ClusterSummary>(clusterPath(cluster, "summary", {}), signal),
+  hubSetup: (password: string, serverURL: string) =>
+    apiSend<undefined>("POST", "/api/v1/hub/setup", { password, serverURL }),
+  importCluster: (name: string, owner: boolean) =>
+    apiSend<ImportCommand>("POST", "/api/v1/hub/clusters", { name, owner }),
+  reimportCluster: (cluster: string, owner: boolean) =>
+    apiSend<ImportCommand>("POST", `/api/v1/hub/clusters/${encodeURIComponent(cluster)}/import`, {
+      owner,
+    }),
+  removeCluster: (cluster: string) =>
+    apiSend<{ cleanup: string }>("DELETE", `/api/v1/hub/clusters/${encodeURIComponent(cluster)}`),
   namespaces: (cluster: string, signal?: AbortSignal) =>
     apiGet<NamespaceList>(clusterPath(cluster, "namespaces", {}), signal),
   authMethods: (signal?: AbortSignal) =>
@@ -156,6 +167,8 @@ export const api = {
   signInToken: (token: string) => signIn("/api/v1/auth/token", { token }),
   signInLDAP: (username: string, password: string) =>
     signIn("/api/v1/auth/ldap", { username, password }),
+  signInPassword: (username: string, password: string) =>
+    signIn("/api/v1/auth/password", { username, password }),
   signOut: async () => {
     await apiSend("POST", "/api/v1/auth/logout");
     csrfToken = "";

@@ -153,3 +153,11 @@
   color: var(--muted);
   text-align: center;
 }
+
+.import {
+  margin-left: auto;
+}
+
+.actions > * + * {
+  margin-left: var(--space-2);
+}

@@ -126,6 +126,7 @@ const METHOD_WORDS: Record<SignInMethod, string> = {
   token: "Signed in with a token",
   oidc: "Signed in with SSO",
   ldap: "Signed in with your directory account",
+  password: "Signed in with a Glowpod account",
 };
 
 /** Who you are, how you signed in, and Sign out. */

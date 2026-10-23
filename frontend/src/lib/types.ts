@@ -8,6 +8,10 @@ export interface ClusterInfo {
   server: string;
   /** The cluster to open first. */
   current?: boolean;
+  /** On a Hub, an imported cluster's agent: not connected yet, connected or gone. */
+  state?: "pending" | "connected" | "disconnected";
+  /** When state last changed. */
+  since?: string;
 }
 
 /** One row of the Clusters page: the same numbers as the cluster's Overview. */
@@ -20,7 +24,7 @@ export interface ClusterSummary {
   generatedAt: string;
 }
 
-export type SignInMethod = "kubeconfig" | "token" | "oidc" | "ldap";
+export type SignInMethod = "kubeconfig" | "token" | "oidc" | "ldap" | "password";
 
 export interface Session {
   /** Glowpod's version, e.g. 0.1.0. */
@@ -30,6 +34,24 @@ export interface Session {
   /** Sent back in X-CSRF-Token on every write. */
   csrfToken: string;
   user: { username: string; groups?: string[] };
+  /** Set on a Glowpod Hub. */
+  hub?: HubSession;
+}
+
+export interface HubSession {
+  role: "admin" | "user";
+  /** admin signed in with the bootstrap password and must finish first start. */
+  setupRequired?: boolean;
+  /** For admins: the address agents connect to. */
+  serverURL?: string;
+}
+
+/** POST /api/v1/hub/clusters: how to install the agent. */
+export interface ImportCommand {
+  cluster: ClusterInfo;
+  command: string;
+  insecureCommand: string;
+  expiresAt: string;
 }
 
 /** no-access: the signed-in user may not read what the gauge needs. */
@@ -433,7 +455,7 @@ export interface ResourceMap {
 
 /** GET /api/v1/auth/methods: how people can sign in (server mode). */
 export interface AuthMethod {
-  type: "oidc" | "ldap" | "token";
+  type: "oidc" | "ldap" | "password" | "token";
   name?: string;
 }
 

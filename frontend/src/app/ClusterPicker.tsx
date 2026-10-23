@@ -86,7 +86,7 @@ export function ClusterPicker() {
             })}
           </ul>
           {current && <p className={styles.note}>{current.server}</p>}
-          {clusters.length > 1 ? (
+          {clusters.length > 1 || session?.hub ? (
             <RouterLink
               to="/"
               className={styles.all}

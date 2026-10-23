@@ -65,12 +65,13 @@ export function useClusterId(): string {
   return useParams().cluster ?? DEFAULT_CLUSTER;
 }
 
-/** Every cluster this Glowpod serves. */
-export function useClusters() {
+/** Every cluster this Glowpod serves (on a Hub, the ones you may see). */
+export function useClusters({ refetchInterval }: { refetchInterval?: number } = {}) {
   return useQuery({
     queryKey: queryKeys.clusters,
     queryFn: ({ signal }) => api.clusters(signal),
-    staleTime: 60_000,
+    staleTime: refetchInterval ?? 30_000,
+    refetchInterval: refetchInterval ?? 30_000,
   });
 }
 
@@ -78,12 +79,13 @@ export function useClusters() {
 export const SUMMARY_REFRESH_MS = 30_000;
 
 /** One row of the Clusters page. A cluster that's down doesn't retry for long. */
-export function useClusterSummary(cluster: string) {
+export function useClusterSummary(cluster: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.clusterSummary(cluster),
     queryFn: ({ signal }) => api.clusterSummary(cluster, signal),
     refetchInterval: SUMMARY_REFRESH_MS,
     retry: false,
+    enabled,
   });
 }
 

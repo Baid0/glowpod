@@ -78,7 +78,8 @@ export function Shell({ home = false, children }: { home?: boolean; children?: R
   const here = location.pathname + location.search;
   if (session.error instanceof ApiError && session.error.status === 401) {
     return <Navigate to={`/sign-in?return=${encodeURIComponent(here)}`} replace />;
-  }
+  } // A Hub's first start comes before anything else.
+  if (session.data?.hub?.setupRequired) return <Navigate to="/setup" replace />;
 
   const layout = home ? "collapsed" : panel.overlay ? "drawer" : panel.open ? "open" : "collapsed";
   return (
