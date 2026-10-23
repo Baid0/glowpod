@@ -119,7 +119,7 @@ Try it with one container, K3s inside (0.5.0+):
 ```bash
 docker run -d --name glowpod --restart=unless-stopped --privileged \
   -p 80:80 -p 443:443 -v glowpod:/var/lib/glowpod \
-  ghcr.io/glowpod-dev/glowpod-hub:0.7.1
+  ghcr.io/glowpod-dev/glowpod-hub:0.8.0
 docker exec glowpod glowpod hub bootstrap-password
 ```
 

@@ -6,6 +6,8 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-23
+
 ### Added
 
 - **Needs attention across clusters** on the Clusters page: every cluster's problems in one list,
@@ -15,6 +17,8 @@ All notable changes to Glowpod. The format follows
   deployments, services, secrets (names only) and more in every cluster at once, as each cluster's
   user. Words narrow it (`deploy web`, `payments api`); Enter opens the object in its cluster.
 - The Clusters page's top bar has the Glance / Deep tabs and ⌘K.
+- The images are also on Docker Hub: `glowpod/glowpod`, `glowpod/glowpod-hub` and
+  `glowpod/glowpod-shell`, with the same tags, digests and signatures as on GHCR.
 
 ### Fixed
 
@@ -274,7 +278,8 @@ First release.
   restricted security context; multi-arch image (amd64, arm64).
 - Light and dark themes, settings for thresholds, density and refresh.
 
-[Unreleased]: https://github.com/glowpod-dev/glowpod/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/glowpod-dev/glowpod/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/glowpod-dev/glowpod/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/glowpod-dev/glowpod/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/glowpod-dev/glowpod/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/glowpod-dev/glowpod/compare/v0.5.0...v0.6.0
