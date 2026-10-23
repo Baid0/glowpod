@@ -212,6 +212,8 @@ func setupServer(ctx context.Context, cfg config, opts *api.Options, logger *slo
 			return err
 		}
 		authCfg.Passwords = h
+		authCfg.Store.Saver = h.Sessions()
+		go pruneSessions(ctx, authCfg.Store, logger)
 		opts.Hub = h
 	}
 	authn, err := auth.NewServer(authCfg)

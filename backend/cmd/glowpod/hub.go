@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -16,6 +17,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"glowpod/internal/agent"
+	"glowpod/internal/auth"
 	"glowpod/internal/cluster"
 	"glowpod/internal/hub"
 )
@@ -111,4 +113,21 @@ func runAgent(ctx context.Context, args []string, stderr io.Writer) error {
 	}
 	logger.Info("starting glowpod agent", "version", version, "secret", *namespace+"/"+*secret)
 	return agent.Run(ctx, agent.Config{Namespace: *namespace, Secret: *secret, Upstream: upstream, Kube: kube, Logger: logger})
+}
+
+// pruneSessions deletes the Hub's expired sign-ins now and then: a session
+// nobody comes back to is never read again otherwise.
+func pruneSessions(ctx context.Context, store *auth.Store, logger *slog.Logger) {
+	t := time.NewTicker(10 * time.Minute)
+	defer t.Stop()
+	for {
+		if err := store.Prune(ctx); err != nil && ctx.Err() == nil {
+			logger.Warn("couldn't delete expired sessions", "err", err)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+	}
 }

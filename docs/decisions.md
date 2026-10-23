@@ -173,9 +173,19 @@ doesn't count.
   passwords are Argon2id (19 MiB, 2 passes), in one Secret per user, not in
   a User CRD as the design first said: password hashes belong in Secrets.
   The bootstrap password is in a Secret and never in the log.
-- **One Hub replica:** sessions are in memory and each agent keeps one
-  tunnel to one pod. The chart refuses `replicaCount` above 1 with
-  `hub.enabled`.
+- **One Hub replica:** each agent keeps one tunnel to one pod, so a second
+  pod couldn't reach that cluster. The chart refuses `replicaCount` above 1
+  with `hub.enabled`. Running several needs pods to pass requests to the pod
+  holding the tunnel, as Rancher's do.
+- **Sign-ins survive a restart:** a Hub saves each session in a
+  Secret, `glowpod-session-<SHA-256 of the cookie>`, holding the name,
+  groups, CSRF token and times as JSON, never the cookie. Memory stays the
+  cache; last-seen is written at most once a minute; expired ones are
+  deleted when found and every 10 minutes. Only sessions that act by name
+  are saved: a session holding a person's own token (token sign-in,
+  `-oidc-pass-token`) stays in memory, so in-cluster Glowpod still signs
+  those out on restart rather than storing tokens. A sign-in fails if its
+  Secret can't be written, instead of silently ending at the next restart.
 - **Cluster list:** the agent answers `/glowpod/status` itself (version and
   the subjects of every binding, cached 15 s); the Hub asks every 30 s and
   on connect. A Hub always shows the Clusters page at `/`, even with one

@@ -128,7 +128,7 @@ func (s *Server) Require(next http.Handler) http.Handler {
 		var sess *Session
 		ok := false
 		if err == nil {
-			sess, ok = s.cfg.Store.Get(c.Value)
+			sess, ok = s.cfg.Store.Get(r.Context(), c.Value)
 		}
 		if !ok {
 			writeJSONError(w, http.StatusUnauthorized, "unauthenticated", "Sign in to continue.")
@@ -138,7 +138,7 @@ func (s *Server) Require(next http.Handler) http.Handler {
 		if sess.refresh != nil {
 			fresh, err := sess.refresh()
 			if err != nil {
-				s.cfg.Store.Delete(c.Value)
+				s.cfg.Store.Delete(r.Context(), c.Value)
 				writeJSONError(w, http.StatusUnauthorized, "unauthenticated", "Your sign-in expired. Sign in again.")
 				return
 			}
@@ -153,7 +153,7 @@ func (s *Server) Require(next http.Handler) http.Handler {
 
 // begin starts a session for a signed-in user and sets its cookie.
 func (s *Server) begin(w http.ResponseWriter, r *http.Request, sess *Session) error {
-	id, err := s.cfg.Store.Create(sess)
+	id, err := s.cfg.Store.Create(r.Context(), sess)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func (s *Server) begin(w http.ResponseWriter, r *http.Request, sess *Session) er
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	if c, err := r.Cookie(CookieName); err == nil {
-		if sess, ok := s.cfg.Store.Delete(c.Value); ok {
+		if sess, ok := s.cfg.Store.Delete(r.Context(), c.Value); ok {
 			s.cfg.Logger.Info("signed out", "identity", sess.Identity.Key)
 			if s.cfg.Forget != nil && sess.Identity.Token != "" {
 				s.cfg.Forget(sess.Identity)

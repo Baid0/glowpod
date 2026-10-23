@@ -85,8 +85,10 @@ The chart adds the following:
 | ClusterRoleBinding `<release>-local-admin` | `glowpod:admin` is cluster-admin on `local`, as in Rancher. Set `hub.localAdmin: false` to leave it out |
 
 The Hub keeps its state as Kubernetes objects in its own namespace. There's
-no database, and your cluster backups cover it. Keep one replica: each agent
-keeps its tunnel to one Hub pod.
+no database, and your cluster backups cover it. Sign-ins are kept there too,
+so restarting or upgrading the Hub doesn't sign anyone out; agents reconnect
+by themselves within seconds. Keep one replica: each agent keeps its tunnel
+to one Hub pod.
 
 If the Hub's certificate comes from a private CA, put that CA in a Secret
 (`ca.crt`) and set `hub.caSecret`, so agents trust it.

@@ -169,26 +169,26 @@ func TestStoreExpiry(t *testing.T) {
 	s := NewStore(time.Hour, 3*time.Hour)
 	now := time.Date(2026, 10, 22, 0, 0, 0, 0, time.UTC)
 	s.now = func() time.Time { return now }
-	id, err := s.Create(&Session{Identity: cluster.UserIdentity("alice", nil)})
+	id, err := s.Create(t.Context(), &Session{Identity: cluster.UserIdentity("alice", nil)})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := s.Get("not-it"); ok {
+	if _, ok := s.Get(t.Context(), "not-it"); ok {
 		t.Fatal("unknown id")
 	}
 	for range 4 { // used every 50 minutes: idle never runs out
 		now = now.Add(50 * time.Minute)
-		if _, ok := s.Get(id); !ok && now.Sub(time.Date(2026, 10, 22, 0, 0, 0, 0, time.UTC)) <= 3*time.Hour {
+		if _, ok := s.Get(t.Context(), id); !ok && now.Sub(time.Date(2026, 10, 22, 0, 0, 0, 0, time.UTC)) <= 3*time.Hour {
 			t.Fatalf("session ended early at %v", now)
 		}
 	}
-	if _, ok := s.Get(id); ok {
+	if _, ok := s.Get(t.Context(), id); ok {
 		t.Fatal("the absolute limit ends it")
 	}
 
-	id2, _ := s.Create(&Session{})
+	id2, _ := s.Create(t.Context(), &Session{})
 	now = now.Add(61 * time.Minute)
-	if _, ok := s.Get(id2); ok {
+	if _, ok := s.Get(t.Context(), id2); ok {
 		t.Fatal("idle sessions end")
 	}
 	for k := range s.m {

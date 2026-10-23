@@ -6,6 +6,12 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Restarting or upgrading a Hub no longer signs everyone out: it keeps sign-ins in Secrets in its
+  namespace (names and groups only, under a hash of the cookie), and deletes them when they
+  expire or you sign out.
+
 ## [0.4.0] - 2026-10-23
 
 ### Added

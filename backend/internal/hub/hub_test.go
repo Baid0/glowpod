@@ -362,3 +362,35 @@ func subjectsOf(users, groups []string) subjects.Set {
 	slices.Sort(groups)
 	return subjects.Set{Users: users, Groups: groups}
 }
+
+func TestSessionsSurviveARestart(t *testing.T) {
+	th := newTestHub(t)
+	before := auth.NewStore(time.Hour, 12*time.Hour)
+	before.Saver = th.Sessions()
+	id, err := before.Create(t.Context(), &auth.Session{
+		Identity: cluster.UserIdentity("glowpod:admin", nil),
+		Info:     auth.SessionInfo{Mode: "in-cluster", Method: "password", User: "glowpod:admin"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	secrets, err := th.kube.CoreV1().Secrets(ns).List(t.Context(), metav1.ListOptions{LabelSelector: "hub.glowpod.dev/kind=session"})
+	if err != nil || len(secrets.Items) != 1 {
+		t.Fatalf("want one session Secret, got %v, %v", secrets, err)
+	}
+	sec := secrets.Items[0]
+	if !strings.HasPrefix(sec.Name, sessionSecretPrefix) || strings.Contains(sec.Name, id) || bytes.Contains(sec.Data[keySession], []byte(id)) {
+		t.Fatal("the Secret is named by a hash and never holds the cookie")
+	}
+
+	after := auth.NewStore(time.Hour, 12*time.Hour) // a new Hub process
+	after.Saver = th.Sessions()
+	sess, ok := after.Get(t.Context(), id)
+	if !ok || sess.Info.User != "glowpod:admin" || sess.Identity.User != "glowpod:admin" {
+		t.Fatalf("got %+v, %v; want admin still signed in", sess, ok)
+	}
+	after.Delete(t.Context(), id)
+	if left, _ := th.kube.CoreV1().Secrets(ns).List(t.Context(), metav1.ListOptions{LabelSelector: "hub.glowpod.dev/kind=session"}); len(left.Items) != 0 {
+		t.Fatal("signing out deletes the Secret")
+	}
+}
