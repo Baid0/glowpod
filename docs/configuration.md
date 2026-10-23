@@ -77,6 +77,7 @@ LDAP is on when `-ldap-url` is set (Helm: `auth.ldap.enabled`).
 | `-ldap-user-base` | | `auth.ldap.userBase` | Where to search for users (required) |
 | `-ldap-user-filter` | `(uid={username})` | `auth.ldap.userFilter` | Filter that finds exactly one user |
 | `-ldap-username-attribute` | `uid` | `auth.ldap.usernameAttribute` | Attribute used as the Kubernetes username |
+| `-ldap-username-prefix` | (Hub: `ldap:`) | `auth.ldap.usernamePrefix` | Prefix for usernames |
 | `-ldap-group-base` | no groups | `auth.ldap.groupBase` | Where to search for groups |
 | `-ldap-group-filter` | `(member={dn})` | `auth.ldap.groupFilter` | Filter for the user's groups; `{dn}` and `{username}` |
 | `-ldap-group-attribute` | `cn` | `auth.ldap.groupAttribute` | Attribute used as the group name |
@@ -84,6 +85,25 @@ LDAP is on when `-ldap-url` is set (Helm: `auth.ldap.enabled`).
 | `-ldap-start-tls` | `false` | `auth.ldap.startTLS` | Upgrade `ldap://` with StartTLS |
 | `-ldap-ca-file` | system roots | `auth.ldap.caSecret` (Secret with `ca.crt`) | CA bundle for the directory's certificate |
 | `-ldap-insecure-skip-verify` | `false` | `auth.ldap.insecureSkipVerify` | Don't check the certificate. **Testing only** |
+
+## Glowpod Hub
+
+See [Glowpod Hub](hub.md). With `-hub`, token sign-in is off and SSO and
+LDAP names always get the `oidc:` and `ldap:` prefixes, the only ones agents
+impersonate.
+
+| Flag | Default | Helm value | What it does |
+| --- | --- | --- | --- |
+| `-hub` | `false` | `hub.enabled` | Run as a Hub: local accounts, and clusters imported with `kubectl apply` |
+| `-hub-namespace` | `$POD_NAMESPACE`, else `glowpod` | the release namespace | Where the Hub keeps its Secrets and settings |
+| `-hub-admins` | | `hub.admins` (list) | Users or groups, as Kubernetes sees them (`oidc:platform`), who are Hub administrators besides `admin` |
+| `-hub-ca-file` | | `hub.caSecret` (Secret with `ca.crt`) | CA that agents should trust for the Hub's address |
+| `-agent-image` | this version's image | `hub.agentImage` | Image the agent runs in imported clusters |
+| | | `hub.localAdmin` (`true`) | Make `glowpod:admin` cluster-admin on the Hub's own cluster |
+
+`glowpod agent` runs in imported clusters; the import manifest sets it up.
+Its flags (`-namespace`, `-secret`, `-kubeconfig`, `-log-format`) are only
+for testing it outside a cluster.
 
 ## Helm-only values
 

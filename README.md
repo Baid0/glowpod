@@ -23,13 +23,14 @@ Glance mode; it only shows less at once.
 **[Try the demo](https://glowpod.dev/demo/)**: the real app on a sample cluster, in your
 browser. Nothing to install.
 
-## Three ways to run it
+## Four ways to run it
 
 | | For | Runs on | Signs in with | Start |
 | --- | --- | --- | --- | --- |
 | **Local dashboard** | You, in the browser | Your machine (127.0.0.1 only) | Your kubeconfig | [`glowpod`](#run-it-on-your-machine) |
 | **Terminal app** | You, in a terminal or over SSH | Your machine | Your kubeconfig | [`glowpod term`](#in-the-terminal) |
 | **In the cluster** | Your team | The cluster, with Helm | SSO, LDAP or a token, each person as themselves | [Install it in a cluster](#install-it-in-a-cluster) |
+| **Hub** (0.4.0+) | Your company, many clusters | One cluster, with Helm; others connect with an agent, like Rancher | A Glowpod account, SSO or LDAP | [Glowpod Hub](docs/hub.md) |
 
 The first two are the same `glowpod` program and need nothing in the cluster.
 

@@ -201,11 +201,13 @@ In its own namespace, as Kubernetes objects (in the Docker install, on the
 K3s inside the container). There is no separate database.
 
 - **CRDs** in `hub.glowpod.dev`:
-  - `Cluster`: name, labels, agent status, last seen, version, subjects;
-  - `User`: username, display name, Hub role, password hash for local users;
-  - `AuthConfig`: OIDC and LDAP settings; their secrets go in Secrets.
-- **Secrets:** hashes of import tokens and agent credentials, the session
-  signing key, kubeconfig token hashes.
+  - `Cluster`: name, agent status, last seen, version, subjects;
+  - `AuthConfig` (phase 5): OIDC and LDAP settings; their secrets go in Secrets.
+- **Secrets:** one per local user (Argon2id password hash and Hub role;
+  built as Secrets rather than a `User` CRD, since they hold credentials),
+  hashes of import tokens and agent credentials, the bootstrap password,
+  kubeconfig token hashes.
+- **ConfigMap** `glowpod-hub`: the server URL, and whether first start is done.
 
 `kubectl get clusters.hub.glowpod.dev` works, and backups are the cluster's
 own backups.

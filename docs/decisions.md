@@ -152,3 +152,35 @@ doesn't count.
   app still opens one context (`:ctx` is planned); the live dot can say Live
   for a cluster whose watches are failing, because the stream reports ready
   before its first list.
+
+## Glowpod Hub (Hub phase 2)
+
+- **Tunnel:** the agent opens one WebSocket to the Hub (`/v3/connect`) and
+  both sides run yamux over it (`hashicorp/yamux`, MPL-2.0). The Hub opens a
+  stream per request and speaks plain HTTP on it; the WebSocket is the TLS.
+  client-go works unchanged through a custom `rest.Config.Dial`.
+- **Shells through the tunnel use SPDY.** client-go's WebSocket executor
+  ignores a custom dialer, so when a config has `Dial` set, `terminal.Remote`
+  speaks SPDY over that dialer (`UpgradeTransport`). The agent sends
+  upgrades over HTTP/1.1.
+- **The agent's guard:** exactly one `Impersonate-User` with a Glowpod
+  prefix (`glowpod:`, `oidc:`, `ldap:`), prefixed groups or
+  `system:authenticated`, and no other `Impersonate-*` header. Its own token
+  replaces any `Authorization` the Hub sent. A Hub therefore forces those
+  prefixes, turns token sign-in off and refuses `-oidc-pass-token`.
+- **Secrets:** an import token and an agent credential are
+  `<cluster>.<32 random bytes>`; the Hub stores only their SHA-256. Local
+  passwords are Argon2id (19 MiB, 2 passes), in one Secret per user, not in
+  a User CRD as the design first said: password hashes belong in Secrets.
+  The bootstrap password is in a Secret and never in the log.
+- **One Hub replica:** sessions are in memory and each agent keeps one
+  tunnel to one pod. The chart refuses `replicaCount` above 1 with
+  `hub.enabled`.
+- **Cluster list:** the agent answers `/glowpod/status` itself (version and
+  the subjects of every binding, cached 15 s); the Hub asks every 30 s and
+  on connect. A Hub always shows the Clusters page at `/`, even with one
+  cluster, because that's where clusters are imported.
+- **Tested** with the Hub on a laptop against the lab as `local`, the import
+  manifest applied to the lab with kubectl, and the agent run with its own
+  service account's token (so with exactly the manifest's rights). Not yet
+  tested: the agent's image in a cluster; that needs a release.

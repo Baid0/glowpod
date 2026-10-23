@@ -8,6 +8,17 @@ All notable changes to Glowpod. The format follows
 
 ### Added
 
+- **Glowpod Hub**: one Glowpod for many clusters, the way Rancher works ([guide](docs/hub.md)).
+  Install the chart with `hub.enabled: true`; at first start, sign in as `admin` with the
+  bootstrap password and set your own. Import a cluster under **Clusters → Import**: one
+  `kubectl apply` installs `glowpod-agent`, which connects out to the Hub (the cluster needs no
+  inbound access). Overview, lists, YAML, logs and pod shells all work through the agent, which
+  can only impersonate the person signed in and refuses `system:` names. Each person sees the
+  clusters where they or their groups are bound; Hub administrators see all of them and can
+  remove a cluster, which revokes its agent.
+- Sign in with a Glowpod account (the Hub's `admin`), next to SSO and LDAP.
+- `-ldap-username-prefix` (`auth.ldap.usernamePrefix`), for usernames such as `ldap:bob`.
+
 - Many clusters in local mode. Every context in your kubeconfig is a cluster: `glowpod` opens
   your current context (or the one given with `-context`), and a new **Clusters** page lists
   them all with their state (connected, unreachable, credentials refused), Kubernetes version,
