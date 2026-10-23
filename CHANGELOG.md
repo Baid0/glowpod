@@ -6,6 +6,12 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Needs attention across clusters** on the Clusters page: every cluster's problems in one list,
+  most severe and newest first, each with its cluster and a **View** link into it. It follows the
+  cluster filter and Glance / Deep mode.
+
 ## [0.7.1] - 2026-10-23
 
 ### Fixed

@@ -68,6 +68,7 @@ function hub(session: Session, extra: Partial<Record<string, () => Response>> = 
           gauges: { cpu: o.gauges.cpu, memory: o.gauges.memory, pods: o.gauges.pods },
           health: o.health,
           problemCount: 0,
+          problems: [],
           thresholds: o.thresholds,
           generatedAt: o.generatedAt,
         });

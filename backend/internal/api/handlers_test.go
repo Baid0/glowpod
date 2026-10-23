@@ -145,14 +145,31 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			name: "summary", path: "/api/v1/clusters/default/summary", wantStatus: 200,
+			setup: func(k *fake.Clientset) {
+				crashing := &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{Namespace: "alpha", Name: "worker-1", UID: "u2"},
+					Spec:       corev1.PodSpec{NodeName: "w1", Containers: []corev1.Container{{Name: "app", Image: "worker:v1"}}},
+					Status: corev1.PodStatus{Phase: corev1.PodRunning, ContainerStatuses: []corev1.ContainerStatus{{
+						Name: "app", RestartCount: 7,
+						State: corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{Reason: "CrashLoopBackOff"}},
+					}}},
+				}
+				if err := k.Tracker().Add(crashing); err != nil {
+					panic(err)
+				}
+			},
 			check: func(t *testing.T, body []byte) {
 				var s clusterSummary
 				mustDecode(t, body, &s)
 				if s.Cluster.Name != "lab" || s.Cluster.Nodes != 1 || s.Gauges.Pods.Max != 110 || s.Thresholds[1] != 0.85 {
 					t.Fatalf("summary = %+v", s)
 				}
-				if strings.Contains(string(body), "network") || strings.Contains(string(body), "problems\"") {
-					t.Fatalf("summary has more than one row needs: %s", body)
+				// The rows for "Needs attention" across clusters.
+				if s.ProblemCount != 1 || len(s.Problems) != 1 || s.Problems[0].Name != "worker-1" || s.Problems[0].Reason != "CrashLoopBackOff" {
+					t.Fatalf("problems = %d %+v", s.ProblemCount, s.Problems)
+				}
+				if strings.Contains(string(body), "network") || strings.Contains(string(body), "topConsumers") {
+					t.Fatalf("summary has more than the Clusters page needs: %s", body)
 				}
 			},
 		},

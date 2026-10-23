@@ -186,6 +186,7 @@ export class DemoServer {
           gauges: { cpu: o.gauges.cpu, memory: o.gauges.memory, pods: o.gauges.pods },
           health: o.health,
           problemCount: o.problemCount,
+          problems: o.problems,
           thresholds: o.thresholds,
           generatedAt: o.generatedAt,
         });

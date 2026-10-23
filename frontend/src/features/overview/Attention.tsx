@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Badge } from "../../components/Badge";
 import { ButtonLink } from "../../components/Button";
 import { Card } from "../../components/Card";
+import { clusterHref } from "../../lib/clusterPaths";
 import { usePreferences } from "../../lib/preferences";
 import { formatAge, useNow } from "../../lib/time";
 import type { Overview, Problem } from "../../lib/types";
@@ -57,11 +58,7 @@ export function NeedsAttention({ data }: { data: Overview | undefined }) {
               key={`${p.kind}/${p.namespace ?? ""}/${p.name}/${p.reason}`}
               className={styles.problem}
             >
-              {mode === "deep" ? (
-                <DeepRow p={p} age={formatAge(now - Date.parse(p.since))} />
-              ) : (
-                <GlanceRow p={p} age={formatAge(now - Date.parse(p.since))} />
-              )}
+              <ProblemRow p={p} deep={mode === "deep"} age={formatAge(now - Date.parse(p.since))} />
             </li>
           ))}
         </ul>
@@ -81,40 +78,55 @@ function healthyLine(data: Overview): string {
   return `All ${pods} ${pods === 1 ? "pod looks" : "pods look"} healthy.`;
 }
 
-function DeepRow({ p, age }: { p: Problem; age: string }) {
+/**
+ * One problem: Deep shows the reason code, Glance the plain words and a hint.
+ * With cluster (the list across clusters), it says which cluster and links there.
+ */
+export function ProblemRow({
+  p,
+  deep,
+  age,
+  cluster,
+}: {
+  p: Problem;
+  deep: boolean;
+  age: string;
+  cluster?: { id: string; name: string };
+}) {
+  const to = cluster ? clusterHref(cluster.id, problemPath(p)) : problemPath(p);
+  const label = cluster ? `View ${p.name} on ${cluster.name}` : `View ${p.name}`;
   return (
     <>
-      <span className={styles.problemBadge}>
-        <Badge tone={p.severity}>{p.reason}</Badge>
-      </span>
-      <span className={styles.problemText}>
-        <span className={styles.problemName}>{p.name}</span>
-        <span className={styles.problemDetail}>
-          {[p.namespace ?? p.kind.toLowerCase(), p.detail].filter(Boolean).join(" · ")}
-        </span>
-      </span>
+      {deep ? (
+        <>
+          <span className={styles.problemBadge}>
+            <Badge tone={p.severity}>{p.reason}</Badge>
+          </span>
+          <span className={styles.problemText}>
+            <span className={styles.problemName}>{p.name}</span>
+            <span className={styles.problemDetail}>
+              {[cluster?.name, p.namespace ?? p.kind.toLowerCase(), p.detail]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          </span>
+        </>
+      ) : (
+        <>
+          <span className={styles.problemDot} data-tone={p.severity} aria-hidden="true" />
+          <span className={styles.problemText}>
+            <span className={styles.problemTitle}>
+              {p.title} <span className={styles.term}>({p.reason})</span>
+            </span>
+            <span className={styles.problemDetail}>
+              <span className={styles.mono}>{p.name}</span> in {p.namespace}
+              {cluster && <> on {cluster.name}</>}. {p.hint}
+            </span>
+          </span>
+        </>
+      )}
       <span className={styles.age}>{age}</span>
-      <ButtonLink to={problemPath(p)} size="sm" aria-label={`View ${p.name}`}>
-        View
-      </ButtonLink>
-    </>
-  );
-}
-
-function GlanceRow({ p, age }: { p: Problem; age: string }) {
-  return (
-    <>
-      <span className={styles.problemDot} data-tone={p.severity} aria-hidden="true" />
-      <span className={styles.problemText}>
-        <span className={styles.problemTitle}>
-          {p.title} <span className={styles.term}>({p.reason})</span>
-        </span>
-        <span className={styles.problemDetail}>
-          <span className={styles.mono}>{p.name}</span> in {p.namespace}. {p.hint}
-        </span>
-      </span>
-      <span className={styles.age}>{age}</span>
-      <ButtonLink to={problemPath(p)} size="sm" aria-label={`View ${p.name}`}>
+      <ButtonLink to={to} size="sm" aria-label={label}>
         View
       </ButtonLink>
     </>

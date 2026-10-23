@@ -20,6 +20,8 @@ export interface ClusterSummary {
   gauges: { cpu: Gauge; memory: Gauge; pods: Gauge };
   health: { running: number; pending: number; failing: number };
   problemCount: number;
+  /** The Overview's "Needs attention" rows (the first 50). */
+  problems: Problem[];
   thresholds: [number, number];
   generatedAt: string;
 }

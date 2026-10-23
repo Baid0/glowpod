@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { samePage } from "../../app/navigation";
 import { clusterHref, pathInCluster } from "../../lib/clusterPaths";
-import type { ClusterInfo, ClusterSummary } from "../../lib/types";
+import type { ClusterInfo, ClusterSummary, Problem } from "../../lib/types";
 import * as fx from "../../test/fixtures";
 import { renderApp } from "../../test/renderApp";
 
@@ -15,13 +15,27 @@ const clusters: ClusterInfo[] = [
   { id: "expired", name: "expired", server: "198.51.100.7:6443" },
 ];
 
+/** kind-lab's one problem: critical and the newest, so it comes first. */
+const pullError: Problem = {
+  severity: "critical",
+  reason: "ImagePullBackOff",
+  title: "Can't download its image",
+  detail: "web:v2 not found",
+  hint: "Check the image name and tag.",
+  kind: "Pod",
+  namespace: "shop",
+  name: "web-5c8d7-q4x2z",
+  since: new Date(Date.now() - 60_000).toISOString(),
+};
+
 function summary(id: string): ClusterSummary {
   const o = fx.overview();
   return {
     cluster: { ...o.cluster, id, name: id, nodes: 3, nodesReady: id === "prod-eu-1" ? 2 : 3 },
     gauges: { cpu: o.gauges.cpu, memory: o.gauges.memory, pods: o.gauges.pods },
     health: o.health,
-    problemCount: id === "prod-eu-1" ? 4 : 0,
+    problemCount: id === "prod-eu-1" ? 4 : id === "kind-lab" ? 1 : 0,
+    problems: id === "prod-eu-1" ? fx.problems() : id === "kind-lab" ? [pullError] : [],
     thresholds: o.thresholds,
     generatedAt: o.generatedAt,
   };
@@ -78,7 +92,7 @@ describe("Clusters page", () => {
     expect(row("prod-eu-1")).toHaveTextContent("4");
     expect(within(row("prod-eu-1")).getAllByRole("meter")).toHaveLength(3);
     expect(row("kind-lab")).toHaveTextContent("current");
-    expect(row("kind-lab")).toHaveTextContent("None");
+    expect(row("kind-lab")).toHaveTextContent("1");
     expect(row("kind-lab")).toHaveTextContent("3 ready");
     await waitFor(() => {
       expect(within(row("old-staging")).getByText("Unreachable")).toBeInTheDocument();
@@ -103,6 +117,69 @@ describe("Clusters page", () => {
     });
     // Inside a cluster, the rail leads back to all of them.
     expect(await screen.findByRole("link", { name: "All clusters" })).toHaveAttribute("href", "/");
+  });
+
+  it("lists what needs attention in every cluster, most severe and newest first", async () => {
+    renderApp("/", respond, { home: true });
+    const card = await screen.findByRole("region", { name: "Needs attention" });
+    await waitFor(() => {
+      expect(within(card).getAllByRole("listitem")).toHaveLength(5);
+    });
+    const items = within(card).getAllByRole("listitem");
+    // Critical first, newest first within each severity; each says its cluster.
+    expect(items.map((li) => within(li).getByRole("link").getAttribute("aria-label"))).toEqual([
+      "View web-5c8d7-q4x2z on kind-lab",
+      "View payments-api-7d9f6b-x2kq9 on prod-eu-1",
+      "View checkout-web-6f4b9-m8zr2 on prod-eu-1",
+      "View search-indexer-0 on prod-eu-1",
+      "View ip-10-0-2-14 on prod-eu-1",
+    ]);
+    expect(items[0]).toHaveTextContent("ImagePullBackOff");
+    expect(items[0]).toHaveTextContent("kind-lab · shop · web:v2 not found");
+    // View opens the object on its own cluster.
+    expect(
+      within(card).getByRole("link", { name: "View web-5c8d7-q4x2z on kind-lab" }),
+    ).toHaveAttribute("href", "/c/kind-lab/workloads/pods/shop/web-5c8d7-q4x2z");
+    expect(
+      within(card).getByRole("link", { name: "View ip-10-0-2-14 on prod-eu-1" }),
+    ).toHaveAttribute("href", "/c/prod-eu-1/nodes/ip-10-0-2-14");
+    // The two that didn't answer are named in the table, and counted here.
+    expect(await within(card).findByText(/2 clusters couldn't be checked/)).toBeInTheDocument();
+  });
+
+  it("follows the cluster filter and Glance mode", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem("glowpod.mode", "glance");
+    renderApp("/", respond, { home: true });
+    const card = await screen.findByRole("region", { name: "Needs attention" });
+    // Glance: pods only, in plain words, with where they are.
+    await waitFor(() => {
+      expect(within(card).getAllByRole("listitem")).toHaveLength(4);
+    });
+    expect(card).toHaveTextContent("Can't download its image (ImagePullBackOff)");
+    expect(card).toHaveTextContent("web-5c8d7-q4x2z in shop on kind-lab.");
+    expect(card).not.toHaveTextContent("ip-10-0-2-14");
+
+    await user.type(screen.getByRole("searchbox", { name: "Filter clusters" }), "kind");
+    expect(within(card).getAllByRole("listitem")).toHaveLength(1);
+    expect(card).not.toHaveTextContent(/couldn't be checked/);
+  });
+
+  it("says when nothing needs attention", async () => {
+    renderApp(
+      "/",
+      (url) =>
+        url.pathname === "/api/v1/clusters"
+          ? Response.json({ clusters: clusters.slice(0, 2) })
+          : url.pathname.endsWith("/summary")
+            ? Response.json({ ...summary("x"), problemCount: 0, problems: [] })
+            : undefined,
+      { home: true },
+    );
+    const card = await screen.findByRole("region", { name: "Needs attention" });
+    expect(
+      await within(card).findByText("Nothing needs attention in 2 clusters."),
+    ).toBeInTheDocument();
   });
 
   it("goes straight into the only cluster", async () => {

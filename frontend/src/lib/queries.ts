@@ -1,4 +1,4 @@
-import { QueryCache, QueryClient, useQuery } from "@tanstack/react-query";
+import { QueryCache, QueryClient, useQueries, useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router";
 
 import { api, ApiError, DEFAULT_CLUSTER } from "./api";
@@ -79,14 +79,21 @@ export function useClusters({ refetchInterval }: { refetchInterval?: number } = 
 export const SUMMARY_REFRESH_MS = 30_000;
 
 /** One row of the Clusters page. A cluster that's down doesn't retry for long. */
+const summaryQuery = (cluster: string, enabled: boolean) => ({
+  queryKey: queryKeys.clusterSummary(cluster),
+  queryFn: ({ signal }: { signal: AbortSignal }) => api.clusterSummary(cluster, signal),
+  refetchInterval: SUMMARY_REFRESH_MS,
+  retry: false,
+  enabled,
+});
+
 export function useClusterSummary(cluster: string, enabled = true) {
-  return useQuery({
-    queryKey: queryKeys.clusterSummary(cluster),
-    queryFn: ({ signal }) => api.clusterSummary(cluster, signal),
-    refetchInterval: SUMMARY_REFRESH_MS,
-    retry: false,
-    enabled,
-  });
+  return useQuery(summaryQuery(cluster, enabled));
+}
+
+/** Several clusters' summaries at once; shares the cache with useClusterSummary. */
+export function useClusterSummaries(clusters: { id: string; enabled: boolean }[]) {
+  return useQueries({ queries: clusters.map((c) => summaryQuery(c.id, c.enabled)) });
 }
 
 export function useNamespaces() {

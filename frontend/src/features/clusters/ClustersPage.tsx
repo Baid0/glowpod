@@ -10,6 +10,8 @@ import { usePreferences } from "../../lib/preferences";
 import { useClusters, useClusterSummary, useSession } from "../../lib/queries";
 import { formatAge, useNow } from "../../lib/time";
 import type { ClusterInfo, ClusterSummary, Gauge } from "../../lib/types";
+import { agentDown } from "./agent";
+import { AttentionAcross } from "./AttentionAcross";
 import { ImportDialog, RemoveDialog } from "./HubDialogs";
 import styles from "./ClustersPage.module.css";
 
@@ -123,6 +125,7 @@ export function ClustersPage() {
           )}
         </div>
       )}
+      {shown.length > 0 && <AttentionAcross clusters={shown} />}
       <ImportDialog
         open={importing !== undefined}
         onClose={() => {
@@ -153,16 +156,15 @@ function ClusterRow({
   onRemove?: () => void;
 }) {
   const navigate = useNavigate();
-  // A Hub's imported cluster without its agent has nothing to ask.
-  const agentDown = cluster.state === "pending" || cluster.state === "disconnected";
-  const summary = useClusterSummary(cluster.id, !agentDown);
+  const down = agentDown(cluster);
+  const summary = useClusterSummary(cluster.id, !down);
   const { data, error } = summary;
-  const isPending = summary.isPending && !agentDown;
+  const isPending = summary.isPending && !down;
   const { thresholdsFor } = usePreferences();
   const now = useNow(30_000);
   const href = `/c/${encodeURIComponent(cluster.id)}/`;
   const thresholds = thresholdsFor(cluster.id) ?? data?.thresholds;
-  const state = agentDown ? agentState(cluster, now) : rowState(data, error, isPending);
+  const state = down ? agentState(cluster, now) : rowState(data, error, isPending);
 
   return (
     <tr
@@ -191,7 +193,7 @@ function ClusterRow({
       {(["cpu", "memory", "pods"] as const).map((kind) => (
         <td key={kind} className={styles.gaugeCell}>
           {/* A cluster that didn't answer has no load to show; the state says why. */}
-          {(error || agentDown) && !data ? (
+          {(error || down) && !data ? (
             dash(false)
           ) : (
             <MiniGauge
@@ -206,7 +208,7 @@ function ClusterRow({
       <td className={styles.num}>{data ? attention(data.problemCount) : dash(isPending)}</td>
       {admin && (
         <td className={styles.actions}>
-          {onConnect && agentDown && (
+          {onConnect && down && (
             <Button size="sm" onClick={onConnect}>
               Connect
             </Button>

@@ -187,6 +187,12 @@ version, ready nodes, CPU, memory and pods, and what needs attention. Each
 cluster acts as the user its context names, exactly as `kubectl --context`
 would.
 
+Below the table, **Needs attention** lists the problems of every cluster in
+one place, the same rows as each cluster's Overview: most severe and newest
+first, each with the cluster it's on and a **View** link into that cluster.
+It follows the filter above the table and the Glance / Deep mode, and says
+how many clusters couldn't be checked.
+
 | State | What it means |
 | --- | --- |
 | Connected | The cluster answered as that context's user |

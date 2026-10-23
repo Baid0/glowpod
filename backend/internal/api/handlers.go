@@ -213,8 +213,11 @@ type clusterSummary struct {
 	Gauges       summaryGauges        `json:"gauges"`
 	Health       overview.Health      `json:"health"`
 	ProblemCount int                  `json:"problemCount"`
-	Thresholds   [2]float64           `json:"thresholds"`
-	GeneratedAt  time.Time            `json:"generatedAt"`
+	// Problems are the Overview's "Needs attention" rows, for the Clusters
+	// page's list across clusters.
+	Problems    []summary.Problem `json:"problems"`
+	Thresholds  [2]float64        `json:"thresholds"`
+	GeneratedAt time.Time         `json:"generatedAt"`
 }
 
 type summaryGauges struct {
@@ -260,6 +263,7 @@ func (s *server) summary(w http.ResponseWriter, r *http.Request) {
 		Gauges:       summaryGauges{CPU: resp.Gauges.CPU, Memory: resp.Gauges.Memory, Pods: resp.Gauges.Pods},
 		Health:       resp.Health,
 		ProblemCount: resp.ProblemCount,
+		Problems:     resp.Problems,
 		Thresholds:   resp.Thresholds,
 		GeneratedAt:  resp.GeneratedAt,
 	})

@@ -385,3 +385,23 @@ doesn't count.
   release goes to GHCR only and says so in its summary, like Homebrew and
   Scoop without `PACKAGES_TOKEN`. Once set, a failed Docker Hub push fails
   the release, so the two never drift apart silently.
+
+## Needs attention across clusters (Hub phase 6, first step)
+
+- **On the Clusters page, below the table.** It's the home for many
+  clusters, and the same order as the Overview: numbers first, then what
+  needs attention.
+- **No new request:** each cluster's summary, which the table's row
+  already loads every 30 s as the signed-in user, now carries the
+  Overview's problem rows (the first 50). The list merges them in the
+  browser, so it can't show anything the person couldn't see in that
+  cluster, and a slow cluster only delays its own rows.
+- **Same rows as the Overview**, plus the cluster: Deep shows the reason
+  code, Glance the plain words and only pods. Critical first, then newest.
+  Past 50 in a cluster, it says so and points into the cluster.
+- **Clusters that don't answer** aren't guessed at: the list counts them
+  and the table's state column says why.
+- **Tested** with local mode on the lab under two context names and an
+  unreachable third: rows from both, View opening the pod on the right
+  cluster, Glance, and phone width.
+
