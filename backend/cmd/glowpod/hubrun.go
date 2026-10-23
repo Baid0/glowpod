@@ -83,11 +83,17 @@ func runHubServer(ctx context.Context, args []string, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
+	ip, err := quickstart.HostIP()
+	if err != nil {
+		return err
+	}
 	serverArgs := []string{
 		"-mode=server", "-hub",
 		"-kubeconfig", paths.Kubeconfig(),
 		"-hub-namespace", quickstart.Namespace,
 		"-addr", *httpsAddr,
+		"-shell-hub-url", fmt.Sprintf("https://%s:%d", ip, quickstart.ShellPort),
+		"-shell-addr", fmt.Sprintf(":%d", quickstart.ShellPort),
 	}
 	if caFile != "" {
 		serverArgs = append(serverArgs, "-hub-ca-file", caFile)
@@ -105,6 +111,9 @@ func runHubServer(ctx context.Context, args []string, stderr io.Writer) error {
 		return err
 	}
 	if err := quickstart.WriteManifests(paths); err != nil {
+		return err
+	}
+	if err := quickstart.WriteShellPolicy(paths, ip); err != nil {
 		return err
 	}
 	ctx, cancel := context.WithCancel(ctx)

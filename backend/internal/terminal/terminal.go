@@ -109,10 +109,16 @@ func Remote(cfg *rest.Config, kube kubernetes.Interface) Starter {
 }
 
 // spdyOver is an exec executor that dials with cfg.Dial and adds cfg's
-// credentials and impersonation, as every other request does.
+// credentials and impersonation, as every other request does. Its TLS is
+// cfg's own, client certificate included: a kubeconfig's dialer only adds a
+// connect timeout, and HTTPS still needs it.
 func spdyOver(cfg *rest.Config, u *url.URL) (remotecommand.Executor, error) {
+	tlsCfg, err := rest.TLSConfigFor(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("exec TLS: %w", err)
+	}
 	upgrader, err := spdy.NewRoundTripperWithConfig(spdy.RoundTripperConfig{
-		UpgradeTransport: &http.Transport{DialContext: cfg.Dial},
+		UpgradeTransport: &http.Transport{DialContext: cfg.Dial, TLSClientConfig: tlsCfg, Proxy: cfg.Proxy},
 		PingPeriod:       5 * time.Second,
 	})
 	if err != nil {
@@ -215,10 +221,22 @@ func Serve(w http.ResponseWriter, r *http.Request, start Starter, req Request, c
 	_ = conn.Close(websocket.StatusNormalClosure, "")
 }
 
+// Failure is an error a Starter explains itself; the browser shows its
+// message as it is.
+type Failure struct {
+	Code    string
+	Message string
+}
+
+func (f *Failure) Error() string { return f.Message }
+
 // exitMessage says how the shell ended, in plain words.
 func exitMessage(err error) Message {
 	var exit utilexec.CodeExitError
+	var failure *Failure
 	switch {
+	case errors.As(err, &failure):
+		return Message{Type: "error", Code: failure.Code, Message: failure.Message}
 	case err == nil:
 		code := 0
 		return Message{Type: "exit", Exit: &code, Message: "The shell exited."}

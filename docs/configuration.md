@@ -100,6 +100,9 @@ impersonate.
 | `-hub-ca-file` | | `hub.caSecret` (Secret with `ca.crt`) | CA that agents should trust for the Hub's address |
 | `-agent-image` | this version's image | `hub.agentImage` | Image the agent runs in imported clusters |
 | `-kubeconfig-ttl` | `8h` | `hub.kubeconfigTTL` | How long a kubeconfig downloaded from the Hub works (1m to 720h) |
+| `-shell-image` | this version's `glowpod-shell` image | `hub.shell.image` | Image for browser shells; `hub.shell.enabled: false` turns shells off |
+| `-shell-addr` | | set by the chart (`:8443`) | Also serve kubectl's proxy here over HTTPS, for shell pods, from a CA made at start |
+| `-shell-hub-url` | the server URL | set by the chart (the `<release>-shell` Service) | The `https://` address shell pods reach `-shell-addr` by |
 | | | `hub.localAdmin` (`true`) | Make `glowpod:admin` cluster-admin on the Hub's own cluster |
 
 ### The `glowpod-hub` image

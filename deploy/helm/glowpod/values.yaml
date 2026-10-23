@@ -40,6 +40,12 @@ hub:
   # How long a kubeconfig downloaded from the Hub works (account menu,
   # Kubeconfig). People can revoke theirs sooner.
   kubeconfigTTL: 8h
+  # Browser shells (the Shell button): a short-lived pod per person and
+  # cluster in this namespace, with kubectl and helm acting as them.
+  shell:
+    enabled: true
+    # Empty = this chart's image repository with -shell, at the same tag.
+    image: ""
   # A Secret with ca.crt that agents should trust for publicURL, when the
   # Hub's certificate comes from a private CA.
   caSecret: ""

@@ -1,4 +1,4 @@
-import { IconKey, IconLogout, IconSearch } from "@tabler/icons-react";
+import { IconKey, IconLogout, IconSearch, IconTerminal2 } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
@@ -23,10 +23,13 @@ export function TopBar({
   title,
   home = false,
   onSearch,
+  onShell,
 }: {
   title: string;
   home?: boolean;
   onSearch: () => void;
+  /** On a Hub: opens a shell for the cluster on screen. */
+  onShell?: () => void;
 }) {
   if (home) {
     return (
@@ -51,6 +54,18 @@ export function TopBar({
         <span className={styles.divider} aria-hidden="true" />
         <ModeTabs />
         <span className={styles.divider} aria-hidden="true" />
+        {onShell && (
+          <button
+            type="button"
+            className={styles.search}
+            aria-label="Open a shell for this cluster"
+            title="kubectl, helm and friends, as you"
+            onClick={onShell}
+          >
+            <IconTerminal2 size={18} stroke={1.75} aria-hidden="true" />
+            <span className={styles.kbd}>Shell</span>
+          </button>
+        )}
         <button
           type="button"
           className={styles.search}

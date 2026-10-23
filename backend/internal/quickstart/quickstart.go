@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -86,6 +87,58 @@ func WriteManifests(p Paths) error {
 	}
 	if err := os.WriteFile(filepath.Join(dir, "glowpod-hub.yaml"), manifests, 0o600); err != nil {
 		return fmt.Errorf("write the Hub's manifests: %w", err)
+	}
+	return nil
+}
+
+// ShellPort is where shell pods reach the Hub's /k8s proxy inside the
+// container, over HTTPS from a CA made at start; it isn't published.
+const ShellPort = 8081
+
+// HostIP is the container's own address, which K3s uses as its node's:
+// pods reach the Hub there.
+func HostIP() (string, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", fmt.Errorf("read the container's addresses: %w", err)
+	}
+	for _, a := range addrs {
+		if n, ok := a.(*net.IPNet); ok && !n.IP.IsLoopback() && n.IP.To4() != nil {
+			return n.IP.String(), nil
+		}
+	}
+	return "", errors.New("the container has no IPv4 address")
+}
+
+// WriteShellPolicy lets shell pods reach only the Hub, at ip: a
+// NetworkPolicy in K3s's auto-deploy folder, rewritten at every start since
+// the container's address can change.
+func WriteShellPolicy(p Paths, ip string) error {
+	doc := fmt.Sprintf(`# Shell pods may reach the Hub's /k8s proxy and nothing else.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: glowpod-shell
+  namespace: %s
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: glowpod-shell
+  policyTypes: [Ingress, Egress]
+  egress:
+    - to:
+        - ipBlock:
+            cidr: %s/32
+      ports:
+        - protocol: TCP
+          port: %d
+`, Namespace, ip, ShellPort)
+	dir := filepath.Join(p.K3s(), "server", "manifests")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return fmt.Errorf("make %s: %w", dir, err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "glowpod-shell.yaml"), []byte(doc), 0o600); err != nil {
+		return fmt.Errorf("write the shell policy: %w", err)
 	}
 	return nil
 }

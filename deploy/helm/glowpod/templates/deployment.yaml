@@ -73,6 +73,14 @@ spec:
               value: {{ .Values.hub.agentImage | default (include "glowpod.image" .) | quote }}
             - name: GLOWPOD_KUBECONFIG_TTL
               value: {{ .Values.hub.kubeconfigTTL | quote }}
+            {{- if .Values.hub.shell.enabled }}
+            - name: GLOWPOD_SHELL_IMAGE
+              value: {{ .Values.hub.shell.image | default (include "glowpod.shellImage" .) | quote }}
+            - name: GLOWPOD_SHELL_ADDR
+              value: ":8443"
+            - name: GLOWPOD_SHELL_HUB_URL
+              value: {{ printf "https://%s-shell.%s.svc:8443" (include "glowpod.fullname" .) .Release.Namespace | quote }}
+            {{- end }}
             {{- if .Values.hub.caSecret }}
             - name: GLOWPOD_HUB_CA_FILE
               value: /etc/glowpod/hub-ca/ca.crt
@@ -169,6 +177,11 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
+            {{- if and .Values.hub.enabled .Values.hub.shell.enabled }}
+            - name: shell
+              containerPort: 8443
+              protocol: TCP
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /healthz

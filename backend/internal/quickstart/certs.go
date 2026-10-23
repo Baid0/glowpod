@@ -69,14 +69,44 @@ func LoadOrCreateCA(dir string) (*CA, error) {
 func CAPath(dir string) string { return filepath.Join(dir, caCertFile) }
 
 func createCA(dir string) (*CA, error) {
+	ca, key, err := newCA("Glowpod Hub CA")
+	if err != nil {
+		return nil, err
+	}
+	keyDER, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return nil, fmt.Errorf("encode the CA key: %w", err)
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return nil, fmt.Errorf("make %s: %w", dir, err)
+	}
+	// The key first: a CA certificate without its key would be read back as
+	// a broken CA.
+	if err := os.WriteFile(filepath.Join(dir, caKeyFile), pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER}), 0o600); err != nil {
+		return nil, fmt.Errorf("save the CA key: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, caCertFile), ca.PEM, 0o600); err != nil {
+		return nil, fmt.Errorf("save the CA: %w", err)
+	}
+	return ca, nil
+}
+
+// NewMemoryCA is a CA that lives only in this process, for something that
+// ends with it, such as the Hub's browser shells.
+func NewMemoryCA(name string) (*CA, error) {
+	ca, _, err := newCA(name)
+	return ca, err
+}
+
+func newCA(name string) (*CA, *ecdsa.PrivateKey, error) {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		return nil, fmt.Errorf("make the CA key: %w", err)
+		return nil, nil, fmt.Errorf("make the CA key: %w", err)
 	}
 	now := time.Now()
 	tmpl := &x509.Certificate{
 		SerialNumber:          serial(),
-		Subject:               pkix.Name{CommonName: "Glowpod Hub CA"},
+		Subject:               pkix.Name{CommonName: name},
 		NotBefore:             now.Add(-backdate),
 		NotAfter:              now.AddDate(10, 0, 0),
 		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
@@ -86,29 +116,13 @@ func createCA(dir string) (*CA, error) {
 	}
 	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
 	if err != nil {
-		return nil, fmt.Errorf("make the CA: %w", err)
+		return nil, nil, fmt.Errorf("make the CA: %w", err)
 	}
 	cert, err := x509.ParseCertificate(der)
 	if err != nil {
-		return nil, fmt.Errorf("read the new CA: %w", err)
+		return nil, nil, fmt.Errorf("read the new CA: %w", err)
 	}
-	keyDER, err := x509.MarshalPKCS8PrivateKey(key)
-	if err != nil {
-		return nil, fmt.Errorf("encode the CA key: %w", err)
-	}
-	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return nil, fmt.Errorf("make %s: %w", dir, err)
-	}
-	// The key first: a CA certificate without its key would be read back as
-	// a broken CA.
-	if err := os.WriteFile(filepath.Join(dir, caKeyFile), pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER}), 0o600); err != nil {
-		return nil, fmt.Errorf("save the CA key: %w", err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, caCertFile), certPEM, 0o600); err != nil {
-		return nil, fmt.Errorf("save the CA: %w", err)
-	}
-	return &CA{PEM: certPEM, cert: cert, key: key}, nil
+	return &CA{PEM: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), cert: cert, key: key}, key, nil
 }
 
 func serial() *big.Int {

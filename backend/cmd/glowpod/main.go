@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	"glowpod/internal/auth"
 	"glowpod/internal/cluster"
 	"glowpod/internal/hub"
+	"glowpod/internal/quickstart"
 	"glowpod/internal/web"
 )
 
@@ -95,6 +97,16 @@ func serve(ctx context.Context, cfg config, logger *slog.Logger, stderr io.Write
 		Logger:        logger,
 	}
 	var afterStart func()
+	var shells *quickstart.Certs
+	if cfg.mode == "server" && cfg.server.hub && cfg.server.shellAddr != "" {
+		ca, err := quickstart.NewMemoryCA("Glowpod Hub shells")
+		if err != nil {
+			return err
+		}
+		u, _ := url.Parse(cfg.server.shellHubURL) // checked in parseFlags
+		shells = &quickstart.Certs{CA: ca, Names: func() []string { return []string{u.Hostname()} }}
+		cfg.server.shellCA = string(ca.PEM)
+	}
 	if cfg.mode == "server" {
 		err = setupServer(ctx, cfg, &opts, logger)
 		afterStart = func() {
@@ -120,6 +132,24 @@ func serve(ctx context.Context, cfg config, logger *slog.Logger, stderr io.Write
 
 	errc := make(chan error, 1)
 	go func() { errc <- srv.Serve(ln) }()
+	if shells != nil {
+		// Shell pods reach kubectl's proxy here, over TLS from a CA made at
+		// start: shells end with this process, so it never needs saving.
+		inner := &http.Server{
+			Addr:              cfg.server.shellAddr,
+			Handler:           onlyPrefix(hub.KubeAPIPrefix, srv.Handler),
+			ReadHeaderTimeout: 10 * time.Second,
+			BaseContext:       srv.BaseContext,
+			ErrorLog:          srv.ErrorLog,
+			TLSConfig:         &tls.Config{MinVersion: tls.VersionTLS12, GetCertificate: shells.GetCertificate},
+		}
+		go func() {
+			if err := inner.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				logger.Warn("the shells' address stopped", "err", err)
+			}
+		}()
+		defer inner.Close() //nolint:errcheck // shutting down
+	}
 
 	select {
 	case err := <-errc:
@@ -270,4 +300,15 @@ func newLogger(cfg config, w io.Writer) *slog.Logger {
 		return slog.New(slog.NewJSONHandler(w, o))
 	}
 	return slog.New(slog.NewTextHandler(w, o))
+}
+
+// onlyPrefix serves paths under prefix and nothing else.
+func onlyPrefix(prefix string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, prefix) {
+			http.NotFound(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

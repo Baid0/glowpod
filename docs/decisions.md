@@ -253,3 +253,36 @@ doesn't count.
   imported: `auth whoami` (and `--as system:admin` ignored), nodes on `lab`
   and `local`, discovery, `exec` and `port-forward` through the agent,
   `logs`, `get -w`, and revoke ending kubectl at once with the message.
+
+## Browser shell (Hub phase 4, second half)
+
+- **A pod per shell,** in the Hub's namespace, from `glowpod-shell` (Alpine
+  3.24, kubectl and Helm checked against their published checksums, jq, yq,
+  glowpod). The Hub creates it with its own identity and opens bash in it
+  through pods/exec, the same terminal WebSocket as pod shells; people get
+  no rights in that namespace. Locked down to the restricted Pod Security
+  profile, 12-hour deadline, 30 minutes idle, deleted when the WebSocket
+  ends; a restart deletes leftovers, since shells don't survive one.
+- **Its kubeconfig** holds a token scoped to one cluster and marked as a
+  shell's (not listed or capped with downloaded kubeconfigs), in a Secret
+  owned by the pod. It goes through the same `/k8s` proxy.
+- **The proxy inside the cluster is HTTPS:** kubectl won't send a token to a
+  plain-HTTP server. The Hub makes a CA in memory at start and serves the
+  proxy on `-shell-addr` with certificates from it (the chart's
+  `<release>-shell` ClusterIP Service on 8443; the container's own address
+  on 8081 in Docker). Shells end with the process, so the CA never needs
+  saving.
+- **NetworkPolicy:** shell pods may reach only that port (and DNS, in the
+  chart). Tested on K3s, which enforces it; the lab's flannel doesn't.
+- **A bug found on the way:** a kubeconfig's config has a dialer (for its
+  10-second connect timeout), and exec then took the tunnel path, whose
+  upgrade transport had no TLS settings, so a client certificate was never
+  sent and the API server answered Unauthorized. Pod shells in local mode
+  with certificate kubeconfigs had failed since 0.4.0. The transport now
+  takes the config's TLS; a test sends exec to an HTTPS server that checks
+  for the certificate.
+- **Tested** on the Docker Hub (K3s, mkcert certificate, lab imported) and
+  on the lab's Helm Hub: whoami, nodes, `helm list`, `kubectl exec` from
+  inside the shell, no service-account token, K3s's API refused by the
+  NetworkPolicy, the token refused on another cluster, read-only root,
+  uid 1000, and closing the drawer deleting pod, Secret and token.

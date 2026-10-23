@@ -57,6 +57,11 @@ type serverConfig struct {
 	hubCAFile     string
 	agentImage    string
 	kubeconfigTTL time.Duration
+	shellImage    string
+	shellHubURL   string
+	shellAddr     string
+	// shellCA is the PEM CA of -shell-addr, made at start; not a flag.
+	shellCA string
 	// bootstrapHint tells how to read the bootstrap password; not a flag.
 	bootstrapHint string
 
@@ -118,6 +123,9 @@ func parseFlags(args []string, stderr io.Writer) (config, error) {
 	fs.StringVar(&s.hubCAFile, "hub-ca-file", "", "hub: CA bundle agents should trust for the Hub's address (a private CA)")
 	fs.StringVar(&s.agentImage, "agent-image", "", "hub: image for glowpod-agent in imported clusters (default: this version's image)")
 	fs.DurationVar(&s.kubeconfigTTL, "kubeconfig-ttl", 8*time.Hour, "hub: how long a downloaded kubeconfig works")
+	fs.StringVar(&s.shellImage, "shell-image", "", "hub: image for browser shells (default: this version's glowpod-shell image)")
+	fs.StringVar(&s.shellHubURL, "shell-hub-url", "", "hub: how shell pods reach -shell-addr inside the cluster, such as https://glowpod.glowpod.svc:8443 (default: the server URL)")
+	fs.StringVar(&s.shellAddr, "shell-addr", "", "hub: also serve kubectl's proxy here over HTTPS from a CA made at start, for shell pods (with -shell-hub-url)")
 
 	fs.StringVar(&s.oidcIssuer, "oidc-issuer", "", "server: OpenID Connect issuer URL; turns on SSO")
 	fs.StringVar(&s.oidcClientID, "oidc-client-id", "", "server: OIDC client ID")
@@ -245,6 +253,9 @@ func (s *serverConfig) check() error {
 		}
 	} else if !s.token && s.oidcIssuer == "" && s.ldapURL == "" {
 		return errors.New("turn on a sign-in method: -auth-token, -oidc-issuer or -ldap-url")
+	}
+	if s.shellAddr != "" && !strings.HasPrefix(s.shellHubURL, "https://") {
+		return errors.New("-shell-addr needs -shell-hub-url, the https:// address shell pods reach it by")
 	}
 	if s.kubeconfigTTL < time.Minute || s.kubeconfigTTL > 30*24*time.Hour {
 		return errors.New("-kubeconfig-ttl must be between 1m and 720h")

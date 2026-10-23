@@ -247,6 +247,11 @@ export const api = {
         container,
       }),
     ),
+  /** A Hub's browser shell for a cluster, starting in namespace. */
+  shellURL: (cluster: string, namespace: string) =>
+    wsURL(
+      `/api/v1/hub/shell/${encodeURIComponent(cluster)}${namespace ? `?namespace=${encodeURIComponent(namespace)}` : ""}`,
+    ),
   logsDownloadURL: (cluster: string, namespace: string, pod: string, opts: LogOptions) =>
     logsPath(cluster, namespace, pod, "/download", opts),
   getResource: (

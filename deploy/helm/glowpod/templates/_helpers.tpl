@@ -44,6 +44,11 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 {{- end -}}
 
+{{/* The browser shell's image: the same repository and tag, with -shell. */}}
+{{- define "glowpod.shellImage" -}}
+{{ .Values.image.repository }}-shell:{{ .Values.image.tag | default .Chart.AppVersion }}
+{{- end -}}
+
 {{- define "glowpod.secretName" -}}
 {{- printf "%s-auth" (include "glowpod.fullname" .) -}}
 {{- end -}}

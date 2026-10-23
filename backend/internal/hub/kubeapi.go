@@ -103,7 +103,7 @@ func (h *Hub) kubeAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	who := tokenSession(tok)
-	if !h.Visible(who, id) {
+	if !tok.reaches(id) || !h.Visible(who, id) {
 		writeStatus(w, http.StatusNotFound, metav1.StatusReasonNotFound, fmt.Sprintf("Glowpod Hub has no cluster %q that you can see.", id))
 		return
 	}

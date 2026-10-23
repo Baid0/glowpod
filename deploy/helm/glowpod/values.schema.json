@@ -31,6 +31,14 @@
         },
         "agentImage": { "type": "string" },
         "kubeconfigTTL": { "type": "string", "pattern": "^([0-9]+(h|m))+$" },
+        "shell": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "image": { "type": "string" }
+          }
+        },
         "caSecret": { "type": "string" },
         "localAdmin": { "type": "boolean" }
       }

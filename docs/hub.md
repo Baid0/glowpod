@@ -241,6 +241,28 @@ kubectl --kubeconfig ~/Downloads/glowpod-kubeconfig.yaml get pods --context prod
 - If the Hub's certificate comes from a private CA (its own, in the Docker
   install), the file carries that CA, so kubectl trusts it.
 
+## Shell in the browser
+
+On any cluster page, **Shell** in the top bar opens a terminal along the
+bottom of the page, with `kubectl`, `helm`, `jq`, `yq` and `glowpod term`
+set up for that cluster, as you. kubectl starts in the namespace you picked,
+and `k` is short for `kubectl`.
+
+- The shell is a short-lived pod in the Hub's namespace, from the
+  `glowpod-shell` image. It runs as non-root with a read-only root
+  filesystem and no service-account token, and a NetworkPolicy lets it
+  reach only the Hub. (The NetworkPolicy needs a network plugin that
+  enforces it, such as Calico or Cilium; K3s's does.)
+- Its kubeconfig acts as you on that one cluster only, through the same
+  proxy as your downloaded kubeconfig, so the cluster's RBAC decides what
+  you can do. You get no rights in the Hub's namespace.
+- Closing the drawer, or 30 minutes without typing, deletes the pod and its
+  token. Files you make there go with it. A shell lives 12 hours at most.
+- The first shell on a node waits for the image to download, about a
+  minute.
+- Turn shells off with `hub.shell.enabled: false`. For a private registry,
+  set `hub.shell.image`.
+
 ## States on the Clusters page
 
 | State | What it means |
@@ -269,6 +291,7 @@ kubectl delete namespace glowpod-system && kubectl delete clusterrole glowpod-ag
 | The agent's pod logs "certificate has expired or is not yet valid" | That cluster's clock is off: a certificate made just now looks like it's from the future. Turn on time sync on its nodes (`timedatectl set-ntp true`) |
 | "Waiting for agent" stays | `kubectl -n glowpod-system logs deploy/glowpod-agent` in that cluster; check it can reach the server URL over HTTPS |
 | Someone signed in but sees no clusters | Bind their `oidc:`/`ldap:` name or group in a cluster; it appears within 30 seconds |
+| The shell says it "couldn't download the shell image" | The Hub's cluster can't pull `ghcr.io/glowpod-dev/glowpod-shell`: allow it, or mirror it and set `hub.shell.image` |
 | kubectl says "This kubeconfig expired or was revoked" | Download a new one: account menu, **Kubeconfig** |
 | kubectl says "Glowpod Hub has no cluster … that you can see" | The context's cluster was removed, or you have no binding in it any more |
 | `admin` can't sign in with the bootstrap password | Setup is already done; the bootstrap password stopped working then |
@@ -278,9 +301,6 @@ kubectl delete namespace glowpod-system && kubectl delete clusterrole glowpod-ag
 
 These come next, in this order:
 
-- A `kubectl` shell in the browser for each cluster, with `kubectl` and
-  `helm` ready. Pod shells already work through the Hub, and so does
-  kubectl on your machine (see [Use kubectl](#use-kubectl)).
 - More local users, cluster members and projects, and setting up SSO and
   LDAP in the UI. Until then, `admin` is the only local account; everyone
   else signs in with SSO or LDAP.

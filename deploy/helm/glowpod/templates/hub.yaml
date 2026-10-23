@@ -89,6 +89,16 @@ rules:
   - apiGroups: [""]
     resources: [secrets, configmaps]
     verbs: [get, list, create, update, delete]
+  {{- if .Values.hub.shell.enabled }}
+  # Browser shells: a short-lived pod per person and cluster, which the Hub
+  # opens bash in. People get no rights in this namespace.
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, watch, create, delete]
+  - apiGroups: [""]
+    resources: [pods/exec]
+    verbs: [get, create]
+  {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -104,6 +114,54 @@ subjects:
   - kind: ServiceAccount
     name: {{ include "glowpod.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
+{{- if .Values.hub.shell.enabled }}
+---
+# Browser shells reach kubectl's proxy here, inside the cluster only.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "glowpod.fullname" . }}-shell
+  labels:
+    {{- include "glowpod.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "glowpod.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: shell
+      port: 8443
+      targetPort: shell
+      protocol: TCP
+---
+# Shell pods may reach the Hub's shell port, and DNS, and nothing else.
+# Needs a network plugin that enforces NetworkPolicy.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "glowpod.fullname" . }}-shell
+  labels:
+    {{- include "glowpod.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: glowpod-shell
+  policyTypes: [Ingress, Egress]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "glowpod.selectorLabels" . | nindent 14 }}
+      ports:
+        - port: 8443
+          protocol: TCP
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+{{- end }}
 {{- if .Values.hub.localAdmin }}
 ---
 # The Hub's admin owns the cluster the Hub runs in, as in Rancher. The Hub

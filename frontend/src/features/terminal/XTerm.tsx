@@ -34,11 +34,14 @@ export default function XTerm({
   csrf,
   label,
   onStatus,
+  className,
 }: {
   url: string;
   csrf: string;
   label: string;
   onStatus: (status: TerminalStatus, message?: string) => void;
+  /** Sizes the screen instead of the pod page's default height. */
+  className?: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const terminal = useRef<Terminal | null>(null);
@@ -149,5 +152,5 @@ export default function XTerm({
     };
   }, [resolvedTheme]);
 
-  return <div ref={host} className={styles.screen} />;
+  return <div ref={host} className={className ?? styles.screen} />;
 }

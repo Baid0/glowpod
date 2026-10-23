@@ -84,3 +84,10 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: false
           cache-from: type=gha
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: shell
+          platforms: linux/amd64,linux/arm64
+          push: false
+          cache-from: type=gha

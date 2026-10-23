@@ -39,6 +39,7 @@ func (h *Hub) MountAPI(r chi.Router) {
 	r.Post("/kubeconfig", h.downloadKubeconfig)
 	r.Get("/kubeconfig/tokens", h.listKubeTokens)
 	r.Delete("/kubeconfig/tokens/{id}", h.revokeKubeToken)
+	r.Get("/shell/{cluster}", h.openShell)
 	r.Group(func(r chi.Router) {
 		r.Use(h.requireAdmin)
 		r.Post("/clusters", h.importCluster)

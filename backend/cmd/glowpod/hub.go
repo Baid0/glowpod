@@ -48,6 +48,10 @@ func newHub(ctx context.Context, sc serverConfig, base *rest.Config, clusters *c
 	if image == "" {
 		image = imageRepository + ":" + strings.TrimPrefix(version, "v")
 	}
+	shellImage := sc.shellImage
+	if shellImage == "" {
+		shellImage = imageRepository + "-shell:" + strings.TrimPrefix(version, "v")
+	}
 	var admins []string
 	for _, a := range strings.Split(sc.hubAdmins, ",") {
 		if a = strings.TrimSpace(a); a != "" {
@@ -65,12 +69,15 @@ func newHub(ctx context.Context, sc serverConfig, base *rest.Config, clusters *c
 		Admins:        admins,
 		BootstrapHint: sc.bootstrapHint,
 		KubeconfigTTL: sc.kubeconfigTTL,
+		ShellImage:    shellImage,
+		ShellHubURL:   sc.shellHubURL,
+		ShellCA:       sc.shellCA,
 		Logger:        logger.With("component", "hub"),
 	})
 	if err := h.Start(ctx); err != nil {
 		return nil, fmt.Errorf("start the Hub: %w", err)
 	}
-	logger.Info("glowpod hub", "namespace", sc.hubNamespace, "agent_image", image)
+	logger.Info("glowpod hub", "namespace", sc.hubNamespace, "agent_image", image, "shell_image", shellImage)
 	return h, nil
 }
 

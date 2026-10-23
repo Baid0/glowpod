@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Outlet, useLocation, useMatches, type Params } from "react-router";
+import { Outlet, useLocation, useMatches, useParams, type Params } from "react-router";
 
+import { ClusterShell } from "../features/clusters/ClusterShell";
 import { ApiError } from "../lib/api";
 import { useMediaQuery } from "../lib/media";
 import { usePreferences } from "../lib/preferences";
@@ -36,7 +37,10 @@ function usePageTitle(): string {
  */
 export function Shell({ home = false, children }: { home?: boolean; children?: ReactNode }) {
   const location = useLocation();
-  const { panelCollapsed, setPanelCollapsed } = usePreferences();
+  const { panelCollapsed, setPanelCollapsed, namespaces } = usePreferences();
+  const { cluster } = useParams();
+  // A Hub's shell for the cluster on screen; another cluster closes it.
+  const [shellFor, setShellFor] = useState<string | undefined>();
   const narrow = useMediaQuery(DRAWER_QUERY);
   const [drawer, setDrawer] = useState(false);
   const panel = useMemo<PanelState>(
@@ -118,10 +122,26 @@ export function Shell({ home = false, children }: { home?: boolean; children?: R
             onSearch={() => {
               setPaletteOpen(true);
             }}
+            onShell={
+              session.data?.hub && cluster
+                ? () => {
+                    setShellFor(cluster);
+                  }
+                : undefined
+            }
           />
           <main id="main" className={styles.content} tabIndex={-1}>
             {children ?? <Outlet />}
           </main>
+          {shellFor && shellFor === cluster && (
+            <ClusterShell
+              cluster={cluster}
+              namespace={namespaces.length === 1 ? (namespaces[0] ?? "") : ""}
+              onClose={() => {
+                setShellFor(undefined);
+              }}
+            />
+          )}
         </div>
         {!home && (
           <CommandPalette

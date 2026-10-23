@@ -77,7 +77,14 @@ type Config struct {
 	// KubeconfigTTL is how long a downloaded kubeconfig works; 0 means
 	// DefaultKubeconfigTTL.
 	KubeconfigTTL time.Duration
-	Logger        *slog.Logger
+	// ShellImage runs browser shells; empty turns them off.
+	ShellImage string
+	// ShellHubURL is how shell pods reach the Hub from inside its cluster
+	// (its Service); empty means the server URL. ShellCA is the PEM CA it
+	// serves from.
+	ShellHubURL string
+	ShellCA     string
+	Logger      *slog.Logger
 }
 
 // Hub runs the Hub's side: its store, the tunnels and the routes.
@@ -91,8 +98,9 @@ type Hub struct {
 	records       map[string]*Record
 	localSubjects subjects.Set
 
-	kubeTokens kubeTokens
-	upstreams  upstreams
+	kubeTokens  kubeTokens
+	upstreams   upstreams
+	localAccess localAccess
 }
 
 // New returns a Hub. Call Start before serving.
@@ -121,6 +129,7 @@ func (h *Hub) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	h.cleanShells(ctx)
 	for i := range records {
 		h.add(records[i])
 	}

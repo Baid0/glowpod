@@ -8,6 +8,13 @@ All notable changes to Glowpod. The format follows
 
 ### Added
 
+- A shell in the browser on Glowpod Hub: **Shell** in the top bar opens a terminal with `kubectl`,
+  `helm`, `jq`, `yq` and `glowpod term` set up for the cluster on screen, as you
+  ([guide](docs/hub.md#shell-in-the-browser)). Each shell is a short-lived, locked-down pod in the
+  Hub's namespace (non-root, read-only, no service-account token, a NetworkPolicy that lets it reach
+  only the Hub) from the new `ghcr.io/glowpod-dev/glowpod-shell` image; closing it, or 30 minutes
+  without typing, deletes it. `hub.shell.enabled` and `hub.shell.image` in the chart.
+
 - kubectl through Glowpod Hub: the account menu's **Kubeconfig** downloads a kubeconfig with a
   context for every cluster you can see ([guide](docs/hub.md#use-kubectl)). kubectl reaches each
   cluster through the Hub (and its agent), as you, with your RBAC; `exec`, `logs -f`, watches and
@@ -24,6 +31,12 @@ All notable changes to Glowpod. The format follows
   format at debug level, instead of as raw lines.
 - An agent whose import command is run again (for a new CA, say) keeps its credential and
   removes the import token it no longer needs from its Secret.
+
+### Fixed
+
+- Pod shells failed ("The terminal connection broke off") in local mode with a kubeconfig that signs
+  in with a client certificate, such as kubeadm's admin.conf, and on the Docker Hub's `local`
+  cluster, since 0.4.0. The connection now carries the kubeconfig's certificate.
 
 ## [0.5.0] - 2026-10-23
 

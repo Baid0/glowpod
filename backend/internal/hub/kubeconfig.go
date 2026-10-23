@@ -46,6 +46,23 @@ type KubeToken struct {
 	Created  time.Time  `json:"created"`
 	Expires  time.Time  `json:"expires"`
 	LastUsed *time.Time `json:"lastUsed,omitempty"`
+	// Clusters, when set, are the only clusters the token reaches.
+	Clusters []string `json:"clusters,omitempty"`
+	// Shell marks a browser shell's token: it lives and dies with the
+	// shell, and isn't listed with your kubeconfigs.
+	Shell bool `json:"shell,omitempty"`
+}
+
+// reaches reports whether the token may be used for cluster id.
+func (t KubeToken) reaches(id string) bool {
+	return len(t.Clusters) == 0 || slices.Contains(t.Clusters, id)
+}
+
+// tokenScope limits a new token.
+type tokenScope struct {
+	clusters []string
+	shell    bool
+	ttl      time.Duration
 }
 
 type storedKubeToken struct {
@@ -102,7 +119,7 @@ func (s *store) saveKubeToken(ctx context.Context, t storedKubeToken) error {
 }
 
 // newKubeToken stores a token acting as info and returns it once.
-func (h *Hub) newKubeToken(ctx context.Context, info auth.SessionInfo) (string, KubeToken, error) {
+func (h *Hub) newKubeToken(ctx context.Context, info auth.SessionInfo, scope tokenScope) (string, KubeToken, error) {
 	id, err := randomHex(6)
 	if err != nil {
 		return "", KubeToken{}, err
@@ -111,27 +128,44 @@ func (h *Hub) newKubeToken(ctx context.Context, info auth.SessionInfo) (string, 
 	if err != nil {
 		return "", KubeToken{}, err
 	}
+	ttl := scope.ttl
+	if ttl == 0 {
+		ttl = h.kubeconfigTTL()
+	}
 	now := h.now().UTC()
 	t := storedKubeToken{
-		KubeToken: KubeToken{ID: id, User: info.User, Groups: info.Groups, Created: now, Expires: now.Add(h.kubeconfigTTL())},
-		Hash:      hash,
+		KubeToken: KubeToken{
+			ID: id, User: info.User, Groups: info.Groups, Created: now, Expires: now.Add(ttl),
+			Clusters: scope.clusters, Shell: scope.shell,
+		},
+		Hash: hash,
 	}
-	// Past the limit, the oldest of this person's tokens goes.
-	mine, err := h.myKubeTokens(ctx, info.User)
-	if err != nil {
-		return "", KubeToken{}, err
-	}
-	for len(mine) >= maxKubeTokens {
-		if err := h.store.deleteSecret(ctx, kubeTokenSecretPrefix+mine[0].ID); err != nil {
+	if !scope.shell {
+		// Past the limit, the oldest of this person's kubeconfigs goes.
+		mine, err := h.myKubeTokens(ctx, info.User)
+		if err != nil {
 			return "", KubeToken{}, err
 		}
-		mine = mine[1:]
+		for len(mine) >= maxKubeTokens {
+			if err := h.store.deleteSecret(ctx, kubeTokenSecretPrefix+mine[0].ID); err != nil {
+				return "", KubeToken{}, err
+			}
+			mine = mine[1:]
+		}
 	}
 	if err := h.store.saveKubeToken(ctx, t); err != nil {
 		return "", KubeToken{}, err
 	}
-	h.cfg.Logger.Info("kubeconfig token made", "user", info.User, "token_id", id, "expires", t.Expires)
+	if !scope.shell {
+		h.cfg.Logger.Info("kubeconfig token made", "user", info.User, "token_id", id, "expires", t.Expires)
+	}
 	return secret, t.KubeToken, nil
+}
+
+// deleteKubeToken ends a token at once.
+func (h *Hub) deleteKubeToken(ctx context.Context, id string) error {
+	h.forgetKubeToken(id)
+	return h.store.deleteSecret(ctx, kubeTokenSecretPrefix+id)
 }
 
 func (h *Hub) kubeconfigTTL() time.Duration {
@@ -150,7 +184,7 @@ func (h *Hub) myKubeTokens(ctx context.Context, user string) ([]KubeToken, error
 	now := h.now()
 	var out []KubeToken
 	for _, t := range all {
-		if t.User == user && now.Before(t.Expires) {
+		if t.User == user && !t.Shell && now.Before(t.Expires) {
 			out = append(out, t.KubeToken)
 		}
 	}
@@ -255,13 +289,13 @@ func (h *Hub) downloadKubeconfig(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "no_clusters", "You have no clusters yet, so there's nothing to put in a kubeconfig.")
 		return
 	}
-	secret, t, err := h.newKubeToken(ctx, info)
+	secret, t, err := h.newKubeToken(ctx, info, tokenScope{})
 	if err != nil {
 		h.cfg.Logger.Warn("couldn't make a kubeconfig token", "err", err)
 		writeError(w, http.StatusInternalServerError, "kubeconfig_failed", "Couldn't make a kubeconfig. Try again in a moment.")
 		return
 	}
-	raw, err := kubeconfigFor(serverURL, []byte(h.cfg.HubCA), ids, req.Current, secret)
+	raw, err := kubeconfigFor(serverURL, []byte(h.cfg.HubCA), ids, req.Current, "", secret)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "kubeconfig_failed", "Couldn't make a kubeconfig.")
 		return
@@ -273,8 +307,9 @@ func (h *Hub) downloadKubeconfig(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(raw)
 }
 
-// kubeconfigFor has one context per cluster, named by its ID.
-func kubeconfigFor(serverURL string, ca []byte, ids []string, current, token string) ([]byte, error) {
+// kubeconfigFor has one context per cluster, named by its ID; the current
+// one starts in namespace, when given.
+func kubeconfigFor(serverURL string, ca []byte, ids []string, current, namespace, token string) ([]byte, error) {
 	cfg := clientcmdapi.NewConfig()
 	const user = "glowpod"
 	cfg.AuthInfos[user] = &clientcmdapi.AuthInfo{Token: token}
@@ -289,6 +324,7 @@ func kubeconfigFor(serverURL string, ca []byte, ids []string, current, token str
 	if slices.Contains(ids, current) {
 		cfg.CurrentContext = current
 	}
+	cfg.Contexts[cfg.CurrentContext].Namespace = namespace
 	raw, err := clientcmd.Write(*cfg)
 	if err != nil {
 		return nil, fmt.Errorf("write the kubeconfig: %w", err)

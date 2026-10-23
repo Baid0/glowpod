@@ -41,6 +41,42 @@ VOLUME /var/lib/glowpod
 EXPOSE 80 443
 ENTRYPOINT ["/bin/glowpod", "hub", "run"]
 
+# kubectl and helm for the Hub's browser shell, checked against their
+# published checksums. Fetched on the build machine for the target arch.
+FROM --platform=$BUILDPLATFORM alpine:3.24.3 AS shell-tools
+ARG TARGETARCH
+ARG KUBECTL_VERSION=v1.37.1
+ARG HELM_VERSION=v4.3.1
+RUN apk add --no-cache curl
+WORKDIR /tools
+RUN curl -fsSLo kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl" \
+ && echo "$(curl -fsSL "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl.sha256")  kubectl" | sha256sum -c - \
+ && curl -fsSLo helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-${TARGETARCH}.tar.gz" \
+ && echo "$(curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-${TARGETARCH}.tar.gz.sha256sum" | cut -d' ' -f1)  helm.tgz" | sha256sum -c - \
+ && tar -xzf helm.tgz --strip-components=1 "linux-${TARGETARCH}/helm" \
+ && chmod 0755 kubectl helm && rm helm.tgz
+
+# The Hub's browser shell: a short-lived pod per person and cluster, with
+# kubectl, helm, jq, yq and glowpod set up to act as them. Runs as non-root
+# with a read-only root filesystem. Build it with --target shell.
+FROM alpine:3.24.3 AS shell
+ARG VERSION
+LABEL org.opencontainers.image.title="Glowpod shell" \
+      org.opencontainers.image.description="kubectl, helm and friends for Glowpod Hub's browser shell" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.source="https://github.com/glowpod-dev/glowpod"
+RUN apk add --no-cache bash bash-completion ca-certificates jq yq less ncurses \
+ && adduser -D -u 1000 -h /home/shell shell
+COPY --from=shell-tools /tools/kubectl /tools/helm /usr/local/bin/
+COPY --from=api /glowpod /usr/local/bin/glowpod
+COPY deploy/shell/glowpod.sh /etc/bash/glowpod.sh
+ENV HOME=/home/shell KUBECONFIG=/etc/glowpod/kubeconfig KUBE_EDITOR=vi
+USER 1000:1000
+WORKDIR /home/shell
+# The pod only waits; the Hub opens bash in it with exec.
+CMD ["sleep", "infinity"]
+
 # The default image. No shell, no package manager: the binary and CA
 # certificates only.
 FROM gcr.io/distroless/static-debian12:nonroot

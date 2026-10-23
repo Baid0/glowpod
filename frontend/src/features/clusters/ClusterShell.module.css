@@ -1,0 +1,50 @@
+/* A drawer along the bottom of the page; the page above stays usable. */
+.drawer {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  height: min(45vh, 480px);
+  min-height: 240px;
+  border-top: 1px solid var(--hairline);
+  background: var(--canvas);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+  color: var(--ink);
+}
+
+.title {
+  margin: 0;
+  font: var(--text-body-sm-strong);
+}
+
+.cluster {
+  margin-left: var(--space-1);
+  color: var(--body);
+  font: 400 13px / 20px var(--font-mono);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.message {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  color: var(--body);
+  font: var(--text-body-sm);
+}
+
+.screen {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--canvas);
+}
