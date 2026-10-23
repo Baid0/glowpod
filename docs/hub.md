@@ -67,6 +67,9 @@ docker run -d --name glowpod --restart=unless-stopped --privileged \
   browsers show a warning until you bring your own certificate:
   `-v /path/to/certs:/etc/glowpod/tls:ro`, with `tls.crt` and `tls.key`,
   plus `ca.crt` if a private CA signed them. Port 80 redirects to HTTPS.
+  Agents keep trusting the CA they were imported with, so after changing
+  the certificate, choose **Connect** on each cluster and run its command
+  again: the agent gets the new CA and keeps its credential.
 - **Settings** go in `GLOWPOD_` variables, as with the binary:
   `-e GLOWPOD_PUBLIC_URL=https://glowpod.example.com`,
   `-e GLOWPOD_HUB_ADMINS=oidc:platform`, or SSO with `GLOWPOD_OIDC_ISSUER`
@@ -236,7 +239,8 @@ kubectl delete namespace glowpod-system && kubectl delete clusterrole glowpod-ag
 | You see | Do this |
 | --- | --- |
 | The agent's pod logs "the Hub refused this cluster" | The cluster was removed from the Hub, or its first-contact token expired. Import it again, or remove the agent |
-| The agent's pod logs "connect to the Hub: … certificate" | The Hub's certificate isn't trusted: set `hub.caSecret`, then make a new import command |
+| The agent's pod logs "connect to the Hub: … certificate" | The Hub's certificate isn't trusted: set `hub.caSecret` (or, for Docker, mount `ca.crt`), then choose **Connect** and run the command again |
+| The agent's pod logs "certificate has expired or is not yet valid" | That cluster's clock is off: a certificate made just now looks like it's from the future. Turn on time sync on its nodes (`timedatectl set-ntp true`) |
 | "Waiting for agent" stays | `kubectl -n glowpod-system logs deploy/glowpod-agent` in that cluster; check it can reach the server URL over HTTPS |
 | Someone signed in but sees no clusters | Bind their `oidc:`/`ldap:` name or group in a cluster; it appears within 30 seconds |
 | `admin` can't sign in with the bootstrap password | Setup is already done; the bootstrap password stopped working then |
