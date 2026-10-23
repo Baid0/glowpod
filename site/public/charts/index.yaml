@@ -5,6 +5,67 @@ entries:
       artifacthub.io/category: monitoring-logging
       artifacthub.io/changes: |
         - kind: added
+          description: "Glowpod Hub: one Glowpod for many clusters, the way Rancher works (guide). Install the chart with hub.enabled: true; at first start, sign in as admin with the bootstrap password and set your own. Import a cluster under Clusters \u2192 Import: one kubectl apply installs glowpod-agent, which connects out to the Hub (the cluster needs no inbound access). Overview, lists, YAML, logs and pod shells all work through the agent, which can only impersonate the person signed in and refuses system: names. Each person sees the clusters where they or their groups are bound; Hub administrators see all of them and can remove a cluster, which revokes its agent."
+        - kind: added
+          description: "Sign in with a Glowpod account (the Hub's admin), next to SSO and LDAP."
+        - kind: added
+          description: "-ldap-username-prefix (auth.ldap.usernamePrefix), for usernames such as ldap:bob."
+        - kind: added
+          description: "Many clusters in local mode. Every context in your kubeconfig is a cluster: glowpod opens your current context (or the one given with -context), and a new Clusters page lists them all with their state (connected, unreachable, credentials refused), Kubernetes version, ready nodes, CPU, memory and pod gauges, and what needs attention. The cluster picker switches between them and keeps you on the same kind of page; \u2318K lists them too. Picked namespaces are remembered per cluster."
+        - kind: added
+          description: "Page addresses carry the cluster: /c/<cluster>/workloads/pods. Links from before (such as /workloads/pods) open on the current cluster."
+        - kind: added
+          description: "API: GET /api/v1/clusters lists the clusters; GET /api/v1/clusters/{cluster}/summary is one row of the Clusters page."
+        - kind: changed
+          description: "A cluster that doesn't answer shows an error within about 10 seconds instead of loading for a minute: connecting gives up after 10 seconds, the Overview stops as soon as nodes or pods fail, and the browser doesn't retry a cluster that timed out."
+        - kind: changed
+          description: "GET /api/v1/session no longer lists clusters; use GET /api/v1/clusters."
+        - kind: fixed
+          description: "A local launch link (glowpod -no-browser) opens the cluster it was started for."
+        - kind: fixed
+          description: "In-cluster Glowpod refuses Microsoft's shared sign-in addresses (common, organizations, consumers) at startup and says to use the tenant ID."
+      artifacthub.io/images: |
+        - name: glowpod
+          image: ghcr.io/glowpod-dev/glowpod:0.4.0
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Website
+          url: https://glowpod.dev
+        - name: Documentation
+          url: https://glowpod.dev/docs/
+        - name: Install guide
+          url: https://glowpod.dev/docs/install/
+        - name: Sign-in and access
+          url: https://glowpod.dev/docs/authentication/
+        - name: Security policy
+          url: https://github.com/glowpod-dev/glowpod/security/policy
+        - name: Source
+          url: https://github.com/glowpod-dev/glowpod
+    apiVersion: v2
+    appVersion: 0.4.0
+    created: "2026-10-23T09:04:40.201720502Z"
+    description: A Kubernetes dashboard for app developers and platform teams. People
+      sign in and act as themselves.
+    digest: eb82d1e081edd04602fc44c3b5d155a7fdf30942c810d3a2afd2f3876ebc3346
+    home: https://glowpod.dev
+    icon: https://glowpod.dev/brand/glowpod-icon.png
+    keywords:
+    - kubernetes
+    - dashboard
+    - rbac
+    - sso
+    kubeVersion: '>=1.28.0-0'
+    name: glowpod
+    sources:
+    - https://github.com/glowpod-dev/glowpod
+    type: application
+    urls:
+    - https://github.com/glowpod-dev/glowpod/releases/download/v0.4.0/glowpod-0.4.0.tgz
+    version: 0.4.0
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
           description: "glowpod term: Glowpod in the terminal. It starts on Glance (half-gauges drawn in the terminal, what needs attention in plain words, recent events); Tab goes to Deep, with the API server's columns for any resource or CRD, / filter, namespace switching, live updates and a : command palette. Pods open to live logs (warnings orange, errors red), events and YAML. Scale, restart, delete (type the name) and shell show only when RBAC allows them."
         - kind: added
           description: "Install with one command: brew install glowpod-dev/tap/glowpod on macOS and Linux, and scoop install glowpod (after scoop bucket add glowpod https://github.com/glowpod-dev/scoop-bucket) on Windows. Every release updates both."
@@ -242,4 +303,4 @@ entries:
     urls:
     - https://github.com/glowpod-dev/glowpod/releases/download/v0.1.1/glowpod-0.1.1.tgz
     version: 0.1.1
-generated: "2026-10-22T19:21:14.356994269Z"
+generated: "2026-10-23T09:04:40.200896333Z"
