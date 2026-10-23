@@ -7,6 +7,8 @@ import type {
   PodSummary,
   Problem,
   ResourceTable,
+  SearchHit,
+  SearchResult,
   Session,
 } from "../lib/types";
 
@@ -413,5 +415,51 @@ export function appDetail(): AppDetail {
         at: ago(20),
       },
     ],
+  };
+}
+
+const searchable: SearchHit[] = [
+  {
+    group: "",
+    version: "v1",
+    resource: "pods",
+    kind: "Pod",
+    namespace: "payments",
+    name: "payments-api-7d9f6b-x2kq9",
+  },
+  {
+    group: "apps",
+    version: "v1",
+    resource: "deployments",
+    kind: "Deployment",
+    namespace: "payments",
+    name: "payments-api",
+  },
+  {
+    group: "",
+    version: "v1",
+    resource: "services",
+    kind: "Service",
+    namespace: "payments",
+    name: "payments-api",
+  },
+  {
+    group: "",
+    version: "v1",
+    resource: "secrets",
+    kind: "Secret",
+    namespace: "payments",
+    name: "payments-db",
+  },
+  { group: "", version: "v1", resource: "nodes", kind: "Node", name: "ip-10-0-2-14" },
+];
+
+/** GET /search: the fixture objects whose name or namespace has every word. */
+export function search(query: string): SearchResult {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return {
+    hits: searchable.filter((h) =>
+      words.every((w) => `${h.name} ${h.namespace ?? ""}`.toLowerCase().includes(w)),
+    ),
   };
 }

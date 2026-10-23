@@ -65,7 +65,6 @@ export function Shell({ home = false, children }: { home?: boolean; children?: R
   }, [title]);
 
   useEffect(() => {
-    if (home) return;
     const onKey = (e: globalThis.KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -76,7 +75,7 @@ export function Shell({ home = false, children }: { home?: boolean; children?: R
     return () => {
       window.removeEventListener("keydown", onKey);
     };
-  }, [home]);
+  }, []);
 
   // The session ended (sign-out elsewhere, expiry, a restart): sign in again.
   const here = location.pathname + location.search;
@@ -143,14 +142,13 @@ export function Shell({ home = false, children }: { home?: boolean; children?: R
             />
           )}
         </div>
-        {!home && (
-          <CommandPalette
-            open={paletteOpen}
-            onClose={() => {
-              setPaletteOpen(false);
-            }}
-          />
-        )}
+        <CommandPalette
+          open={paletteOpen}
+          home={home}
+          onClose={() => {
+            setPaletteOpen(false);
+          }}
+        />
       </div>
     </PanelContext>
   );

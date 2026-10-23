@@ -405,3 +405,35 @@ doesn't count.
   unreachable third: rows from both, View opening the pod on the right
   cluster, Glance, and phone width.
 
+## Search across clusters (Hub phase 6, last step)
+
+- **In the ⌘K palette**, which now also opens on the Clusters page (with
+  clusters and objects; pages need a cluster). From two letters, every
+  cluster that can answer is asked at once; the cluster on screen comes
+  first, then the rest in list order. Each cluster's hits arrive on their
+  own; one that fails or is slow doesn't hold up the others.
+- **Names only, as the signed-in user:** each cluster lists metadata
+  (`PartialObjectMetadataList`) of 13 common kinds, never a spec or a
+  Secret's data, through the same clients as every other request. No
+  label or content search; Kubernetes can't filter names by substring, so
+  the server lists and matches.
+- **A short index per person and cluster:** the first search builds it
+  (up to 10,000 objects per kind; past that the kind is searched in part),
+  the next ones for 30 s reuse it. It's keyed by cluster and identity, so
+  no one sees another's results, and its build outlives the request that
+  started it, so typing (which cancels each request) doesn't restart it.
+- **Matching:** every word must be in the name or namespace, or name the
+  kind (`deploy`, `svc`, `pvc`). Exact names first, then names that start
+  with the query, then the rest; shorter names before longer, then by kind.
+  20 hits per cluster; past that it asks for more of the name.
+- **People who can't list across namespaces** are searched in the
+  namespaces they picked in that cluster (and a service account's own);
+  when there are none, the palette asks them to pick one, instead of
+  finding nothing in silence.
+- **Tested** with local mode on the lab under three context names (one a
+  service account that may view one namespace) and an unreachable fourth:
+  hits from each, the found Secret opening with its values hidden, the
+  restricted context told to pick its namespace and then finding its
+  objects but not the Secret its role can't list. The first search built
+  the lab's index in about 30 ms; the next ones answered in about 2 ms.
+

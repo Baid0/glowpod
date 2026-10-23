@@ -6,6 +6,8 @@ export const queryKeys = {
   hubUsers: ["hubUsers"] as const,
   hubSettings: ["hubSettings"] as const,
   clusterSummary: (cluster: string) => ["clusterSummary", cluster] as const,
+  search: (cluster: string, query: string, namespace: string) =>
+    ["search", cluster, query, namespace] as const,
   namespaces: (cluster: string) => ["namespaces", cluster] as const,
   members: (cluster: string) => ["members", cluster] as const,
   projects: (cluster: string) => ["projects", cluster] as const,

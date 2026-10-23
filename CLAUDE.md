@@ -176,7 +176,7 @@ Then Glowpod Hub (`docs/design/multi-cluster.md`):
 9. **Docker quick start:** `glowpod-hub` image with K3s inside. ✅
 10. **Cluster shell and kubeconfig download.** ✅
 11. **Members, projects, Hub settings** (SSO/LDAP in the UI), backup and restore. ✅
-12. **Across clusters:** search and "Needs attention" over all clusters.
+12. **Across clusters:** search and "Needs attention" over all clusters. ✅
 
 Finish and test each phase before starting the next.
 

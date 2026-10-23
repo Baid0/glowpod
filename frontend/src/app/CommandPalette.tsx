@@ -19,8 +19,9 @@ import styles from "./CommandPalette.module.css";
 import { allPages, deepSections, glanceSections, settingsSection } from "./navigation";
 import { usePanel } from "./panel";
 import { useNavigate } from "../lib/clusterPaths";
+import { hitIcon, hitPath, MIN_QUERY, useDebounced, useSearch } from "../features/search/search";
 
-function useCommands(): Command[] {
+function useCommands(home: boolean): Command[] {
   const navigate = useNavigate();
   const { mode, setMode, setNamespace, resolvedTheme, setTheme } = usePreferences();
   const panel = usePanel();
@@ -98,7 +99,7 @@ function useCommands(): Command[] {
       },
     }));
     const others: Command[] = (clusters ?? [])
-      .filter((c) => c.id !== clusterId)
+      .filter((c) => home || c.id !== clusterId)
       .map((c) => ({
         id: "cluster:" + c.id,
         label: c.name,
@@ -107,8 +108,11 @@ function useCommands(): Command[] {
         keywords: `switch context ${c.server}`,
         run: () => void navigate(`/c/${encodeURIComponent(c.id)}/`),
       }));
+    // The Clusters page has no cluster: only other clusters and the theme.
+    if (home) return [...others, ...actions.filter((a) => a.id === "theme")];
     return [...pages, ...actions, ...ns, ...others];
   }, [
+    home,
     navigate,
     mode,
     setMode,
@@ -122,14 +126,77 @@ function useCommands(): Command[] {
   ]);
 }
 
-/** ⌘K palette: go to any page, switch mode, panel or namespace. */
-export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
+/**
+ * Objects whose names match query, in every cluster: the one on screen first.
+ * Returns them as commands that open each object, and a status line.
+ */
+function useFound(query: string, open: boolean): { hits: Command[]; status: string } {
+  const navigate = useNavigate();
+  const { data: clusters } = useClusters();
+  const clusterId = useClusterId();
+  const ordered = [...(clusters ?? [])].sort(
+    (a, b) => Number(b.id === clusterId) - Number(a.id === clusterId),
+  );
+  const searches = useSearch(open ? ordered : [], useDebounced(query));
+  const many = (clusters?.length ?? 0) > 1;
+
+  const hits = searches.flatMap(({ cluster, data }) =>
+    (data?.hits ?? []).map((h): Command => ({
+      id: `hit:${cluster.id}:${h.group}/${h.resource}/${h.namespace ?? ""}/${h.name}`,
+      label: h.name,
+      detail: [h.namespace, many ? cluster.name : undefined].filter(Boolean).join(" · "),
+      group: h.kind,
+      icon: hitIcon(h),
+      run: () => void navigate(hitPath(cluster.id, h)),
+    })),
+  );
+
+  const pending = searches.filter((s) => s.pending).length;
+  const failed = searches.filter((s) => s.error && !s.data).map((s) => s.cluster.name);
+  const more = searches.filter((s) => s.data?.more).map((s) => s.cluster.name);
+  // People who can't list across namespaces are searched in the ones they picked.
+  const denied = searches.filter((s) => s.data?.denied).map((s) => s.cluster.name);
+  const status = [
+    pending > 0 &&
+      (many
+        ? `Searching ${String(pending)} ${pending === 1 ? "cluster" : "clusters"}…`
+        : "Searching…"),
+    failed.length > 0 && `Couldn't search ${failed.join(", ")}.`,
+    denied.length > 0 &&
+      `To search ${denied.join(", ")}, open ${denied.length === 1 ? "it" : "each"} and pick your namespace first.`,
+    more.length > 0 &&
+      (many
+        ? `More matches in ${more.join(", ")}: type more of the name.`
+        : "More matches: type more of the name."),
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return { hits, status };
+}
+
+/**
+ * ⌘K palette: go to any page, switch mode, panel or namespace, and find
+ * objects by name in every cluster. On the Clusters page (home) there's no
+ * cluster to go into, so it offers clusters and objects.
+ */
+export function CommandPalette({
+  open,
+  onClose,
+  home = false,
+}: {
+  open: boolean;
+  onClose: () => void;
+  home?: boolean;
+}) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const commands = useCommands();
+  const commands = useCommands(home);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const listId = useId();
-  const results = filterCommands(commands, query);
+  const statusId = useId();
+  const found = useFound(query, open);
+  const searching = query.trim().length >= MIN_QUERY;
+  const results = [...filterCommands(commands, query), ...(searching ? found.hits : [])];
   const current = results[Math.min(active, results.length - 1)];
 
   useEffect(() => {
@@ -180,12 +247,17 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             <input
               className={styles.input}
               role="combobox"
-              aria-label="Search pages and commands"
+              aria-label="Search pages, commands and objects"
               aria-expanded="true"
               aria-controls={listId}
               aria-autocomplete="list"
               aria-activedescendant={current ? `${listId}-${current.id}` : undefined}
-              placeholder="Go to a page, switch mode or namespace…"
+              aria-describedby={statusId}
+              placeholder={
+                home
+                  ? "Find a pod, service, secret… or a cluster"
+                  : "Go to a page, or find an object by name…"
+              }
               autoFocus
               value={query}
               onChange={(e) => {
@@ -205,6 +277,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                   key={c.id}
                   id={`${listId}-${c.id}`}
                   role="option"
+                  aria-label={[c.label, c.detail, c.group].filter(Boolean).join(", ")}
                   aria-selected={selected}
                   className={cx(styles.option, selected && styles.selected)}
                   onMouseMove={() => {
@@ -215,13 +288,21 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                   }}
                 >
                   {Icon && <Icon size={16} stroke={1.75} aria-hidden="true" />}
-                  <span className={styles.label}>{c.label}</span>
+                  <span className={styles.label}>
+                    {c.label}
+                    {c.detail && <span className={styles.detail}> {c.detail}</span>}
+                  </span>
                   <span className={styles.group}>{c.group}</span>
                 </li>
               );
             })}
           </ul>
-          {results.length === 0 && <p className={styles.empty}>Nothing matches “{query}”.</p>}
+          {results.length === 0 && !(searching && found.status.startsWith("Searching")) && (
+            <p className={styles.empty}>Nothing matches “{query}”.</p>
+          )}
+          <p id={statusId} className={styles.status} role="status">
+            {searching ? found.status : ""}
+          </p>
         </div>
       )}
     </dialog>

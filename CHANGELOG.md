@@ -11,6 +11,10 @@ All notable changes to Glowpod. The format follows
 - **Needs attention across clusters** on the Clusters page: every cluster's problems in one list,
   most severe and newest first, each with its cluster and a **View** link into it. It follows the
   cluster filter and Glance / Deep mode.
+- **Search across clusters** with ⌘K, on the Clusters page too: type part of a name to find pods,
+  deployments, services, secrets (names only) and more in every cluster at once, as each cluster's
+  user. Words narrow it (`deploy web`, `payments api`); Enter opens the object in its cluster.
+- The Clusters page's top bar has the Glance / Deep tabs and ⌘K.
 
 ## [0.7.1] - 2026-10-23
 

@@ -286,4 +286,4 @@ Each phase ships on its own and is tested on the lab before the next starts.
 4. ✅ **Shell and kubeconfig download.**
 5. ✅ **Members, projects and Hub settings:** SSO and LDAP set up in the UI,
    backup and restore.
-6. **Across clusters:** search and "Needs attention" over all clusters.
+6. ✅ **Across clusters:** search and "Needs attention" over all clusters.

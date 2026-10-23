@@ -583,3 +583,23 @@ export interface RestoreResult {
   users: number;
   clusters: number;
 }
+
+/** One object found by GET /clusters/{cluster}/search. */
+export interface SearchHit {
+  group: string;
+  version: string;
+  resource: string;
+  kind: string;
+  namespace?: string;
+  name: string;
+}
+
+export interface SearchResult {
+  hits: SearchHit[];
+  /** More objects matched than were returned. */
+  more?: boolean;
+  /** Resources that weren't searched in full (no right to list them, or too many). */
+  skipped?: string[];
+  /** Nothing could be listed in all namespaces, and no namespace was given to look in. */
+  denied?: boolean;
+}

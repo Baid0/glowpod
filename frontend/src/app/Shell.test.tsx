@@ -195,14 +195,16 @@ describe("Command palette", () => {
     renderApp("/");
     await user.keyboard("{Meta>}k{/Meta}");
 
-    const input = await screen.findByRole("combobox", { name: "Search pages and commands" });
+    const input = await screen.findByRole("combobox", {
+      name: "Search pages, commands and objects",
+    });
     await user.type(input, "nodes");
     expect(screen.getByRole("option", { name: /Nodes/ })).toHaveAttribute("aria-selected", "true");
     await user.keyboard("{Enter}");
 
     expect(await screen.findByRole("heading", { level: 1, name: "Nodes" })).toBeInTheDocument();
     expect(
-      screen.queryByRole("combobox", { name: "Search pages and commands" }),
+      screen.queryByRole("combobox", { name: "Search pages, commands and objects" }),
     ).not.toBeInTheDocument();
   });
 
@@ -214,13 +216,16 @@ describe("Command palette", () => {
     });
 
     await user.click(screen.getByRole("button", { name: "Search and commands" }));
-    await user.type(screen.getByRole("combobox", { name: "Search pages and commands" }), "glance");
+    await user.type(
+      screen.getByRole("combobox", { name: "Search pages, commands and objects" }),
+      "glance",
+    );
     await user.keyboard("{Enter}");
     expect(screen.getByRole("button", { name: "Glance" })).toHaveAttribute("aria-pressed", "true");
 
     await user.keyboard("{Control>}k{/Control}");
     await user.type(
-      screen.getByRole("combobox", { name: "Search pages and commands" }),
+      screen.getByRole("combobox", { name: "Search pages, commands and objects" }),
       "namespace sea",
     );
     await user.keyboard("{ArrowDown}{ArrowUp}{Enter}");
@@ -233,7 +238,10 @@ describe("Command palette", () => {
     const user = userEvent.setup();
     renderApp("/");
     await user.keyboard("{Meta>}k{/Meta}");
-    await user.type(screen.getByRole("combobox", { name: "Search pages and commands" }), "zzzz");
+    await user.type(
+      screen.getByRole("combobox", { name: "Search pages, commands and objects" }),
+      "zzzz",
+    );
     expect(screen.getByText("Nothing matches “zzzz”.")).toBeInTheDocument();
   });
 });

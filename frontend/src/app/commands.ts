@@ -3,6 +3,8 @@ import type { Icon } from "@tabler/icons-react";
 export interface Command {
   id: string;
   label: string;
+  /** A muted line after the label, e.g. where a found object is. */
+  detail?: string;
   group: string;
   icon?: Icon;
   /** Extra words that should match, e.g. the Kubernetes term. */

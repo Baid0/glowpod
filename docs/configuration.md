@@ -193,6 +193,17 @@ first, each with the cluster it's on and a **View** link into that cluster.
 It follows the filter above the table and the Glance / Deep mode, and says
 how many clusters couldn't be checked.
 
+**⌘K** (Ctrl+K), on the Clusters page or inside a cluster, also finds
+objects by name in every cluster at once: type two letters or more of a
+name. It looks through pods, deployments, stateful sets, daemon sets, jobs,
+cron jobs, services, ingresses, config maps, secrets (names only),
+volume claims, namespaces and nodes, as each cluster's user. Words narrow it:
+`deploy web` finds deployments with "web" in the name, `payments api` objects
+named "api" in the namespace payments. The cluster on screen comes first.
+People who may not list a kind in all namespaces are searched in the
+namespaces they picked in that cluster; the palette says when a cluster
+needs one picked.
+
 | State | What it means |
 | --- | --- |
 | Connected | The cluster answered as that context's user |

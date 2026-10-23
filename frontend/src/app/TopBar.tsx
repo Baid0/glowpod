@@ -26,7 +26,7 @@ import { useNavigate } from "../lib/clusterPaths";
 /** How old data may get before the live dot goes grey. */
 const STALE_MS = 60_000;
 
-/** home: the Clusters page, with only the title and who you are. */
+/** home: the Clusters page: the title, the mode, search and who you are. */
 export function TopBar({
   title,
   home = false,
@@ -46,6 +46,9 @@ export function TopBar({
           <h1 className={styles.title}>{title}</h1>
         </div>
         <div className={styles.right}>
+          <ModeTabs />
+          <span className={styles.divider} aria-hidden="true" />
+          <SearchButton onClick={onSearch} />
           <Avatar />
         </div>
       </header>
@@ -74,21 +77,27 @@ export function TopBar({
             <span className={styles.kbd}>Shell</span>
           </button>
         )}
-        <button
-          type="button"
-          className={styles.search}
-          aria-label="Search and commands"
-          aria-keyshortcuts="Meta+K Control+K"
-          onClick={onSearch}
-        >
-          <IconSearch size={18} stroke={1.75} aria-hidden="true" />
-          <kbd className={styles.kbd} aria-hidden="true">
-            ⌘K
-          </kbd>
-        </button>
+        <SearchButton onClick={onSearch} />
         <Avatar />
       </div>
     </header>
+  );
+}
+
+function SearchButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className={styles.search}
+      aria-label="Search and commands"
+      aria-keyshortcuts="Meta+K Control+K"
+      onClick={onClick}
+    >
+      <IconSearch size={18} stroke={1.75} aria-hidden="true" />
+      <kbd className={styles.kbd} aria-hidden="true">
+        ⌘K
+      </kbd>
+    </button>
   );
 }
 

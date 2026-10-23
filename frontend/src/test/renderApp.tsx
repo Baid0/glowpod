@@ -60,6 +60,8 @@ export function defaultResponder(url: URL): Response | undefined {
       return Response.json({ apps: fx.overview(ns).apps });
     case "/api/v1/clusters/default/events":
       return Response.json({ events: fx.events() });
+    case "/api/v1/clusters/default/search":
+      return Response.json(fx.search(url.searchParams.get("q") ?? ""));
     default:
       return undefined;
   }

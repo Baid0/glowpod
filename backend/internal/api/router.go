@@ -21,6 +21,7 @@ import (
 	"glowpod/internal/metrics"
 	"glowpod/internal/overview"
 	"glowpod/internal/pods"
+	"glowpod/internal/search"
 	"glowpod/internal/stream"
 	"glowpod/internal/terminal"
 )
@@ -78,8 +79,9 @@ type Hub interface {
 }
 
 type server struct {
-	opts  Options
-	proms *metrics.PromCache
+	opts     Options
+	proms    *metrics.PromCache
+	searches *search.Cache
 }
 
 // NewRouter returns the root HTTP handler.
@@ -105,7 +107,7 @@ func NewRouter(opts Options) http.Handler {
 	if opts.Metrics == nil {
 		opts.Metrics = func(kube kubernetes.Interface) overview.MetricsSource { return metrics.NewReader(kube) }
 	}
-	s := &server{opts: opts, proms: metrics.NewPromCache(promDiscoveryTTL)}
+	s := &server{opts: opts, proms: metrics.NewPromCache(promDiscoveryTTL), searches: search.NewCache(searchTTL)}
 
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
@@ -137,6 +139,7 @@ func NewRouter(opts Options) http.Handler {
 						r.Get("/overview", s.overview)
 						r.Get("/summary", s.summary)
 						r.Get("/namespaces", s.namespaces)
+						r.Get("/search", s.search)
 						r.Get("/events", s.events)
 						r.Method(http.MethodGet, "/stream", &stream.Handler{Clients: clientsFrom, Logger: opts.Logger})
 						r.Get("/apps", s.listApps)

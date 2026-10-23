@@ -145,6 +145,9 @@ Import**. The [Hub guide](docs/hub.md) has the details.
   server-side dry-run diff, scale, restart, delete (type the name), cordon
   and drain nodes. Buttons appear only for what you're allowed to do.
 - Helm releases (never their values), a resource map per namespace.
+- Many clusters: one table of all of them, what needs attention in every
+  one, and ⌘K to find any pod, deployment, service or secret by name across
+  them all.
 
 ## Develop
 

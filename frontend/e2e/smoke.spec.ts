@@ -13,6 +13,7 @@ async function fakeBackend(page: Page) {
       "/api/v1/clusters/default/namespaces": { namespaces: fx.namespaces },
       "/api/v1/clusters/default/overview": fx.overview(ns),
       "/api/v1/clusters/default/events": { events: fx.events() },
+      "/api/v1/clusters/default/search": fx.search(url.searchParams.get("q") ?? ""),
     };
     // Any resource list gets a small table, so list pages render too.
     const json =
@@ -61,9 +62,17 @@ test("Overview renders, switches to Glance and navigates with ⌘K", async ({ pa
 
   // ⌘K palette.
   await page.keyboard.press("ControlOrMeta+k");
-  await page.getByRole("combobox", { name: "Search pages and commands" }).fill("nodes");
+  await page.getByRole("combobox", { name: "Search pages, commands and objects" }).fill("nodes");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { level: 1, name: "Nodes" })).toBeVisible();
+
+  // ⌘K finds objects by name too, and opens them.
+  await page.keyboard.press("ControlOrMeta+k");
+  await page
+    .getByRole("combobox", { name: "Search pages, commands and objects" })
+    .fill("payments-api");
+  await page.getByRole("option", { name: "payments-api, payments, Deployment" }).click();
+  await expect(page).toHaveURL(/\/c\/default\/workloads\/deployments\/payments\/payments-api$/);
 
   // A live list page: kubectl's columns and status pills.
   await page.goto("/workloads/pods");

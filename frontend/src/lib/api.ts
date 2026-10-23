@@ -6,6 +6,7 @@ import type {
   AppSummary,
   ClusterInfo,
   ClusterSummary,
+  SearchResult,
   ImportCommand,
   KubeTokenList,
   CheckResult,
@@ -172,6 +173,9 @@ export const api = {
     apiGet<{ clusters: ClusterInfo[] }>("/api/v1/clusters", signal).then((r) => r.clusters),
   clusterSummary: (cluster: string, signal?: AbortSignal) =>
     apiGet<ClusterSummary>(clusterPath(cluster, "summary", {}), signal),
+  /** Objects whose names match query; namespace is where to look if all of them can't be listed. */
+  search: (cluster: string, query: string, namespace: string, signal?: AbortSignal) =>
+    apiGet<SearchResult>(clusterPath(cluster, "search", { q: query, namespace }), signal),
   hubSetup: (password: string, serverURL: string) =>
     apiSend<undefined>("POST", "/api/v1/hub/setup", { password, serverURL }),
   importCluster: (name: string, owner: boolean) =>
