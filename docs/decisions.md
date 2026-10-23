@@ -286,3 +286,30 @@ doesn't count.
   inside the shell, no service-account token, K3s's API refused by the
   NetworkPolicy, the token refused on another cluster, read-only root,
   uid 1000, and closing the drawer deleting pod, Secret and token.
+
+## Members and projects (Hub phase 5, first step)
+
+- **RBAC only,** no Glowpod store: a cluster member is a ClusterRoleBinding,
+  a project member a RoleBinding in each of the project's namespaces, a
+  project a namespace label. Works in every mode, not only on a Hub.
+- **Made as the person**, through their impersonated clients (through the
+  agent on a Hub), so Kubernetes' escalation rules decide what they may
+  grant; the UI hides what a SelfSubjectAccessReview says they can't do.
+- **Cluster roles are Owner, Read-only and Custom.** The design also had
+  "Member" (view, plus edit in projects), but its binding would have been
+  identical to Read-only's; project roles carry the difference.
+- **Bindings are named by a hash** of the subject (names like
+  `oidc:ann@example.com` can't be in a binding's name), with the subject in
+  annotations and the role in a label. A role change deletes and recreates
+  the binding, since a role ref is immutable. Bindings Glowpod didn't make
+  are never changed, even with a matching name.
+- **Projects copy, they don't watch:** adding a namespace through Glowpod
+  copies the project's bindings; one labelled by hand shows each member as
+  "Not in …" with a button to apply it. A controller would need an identity
+  of its own in the cluster, which Glowpod avoids.
+- **Tested** on the lab through the Docker Hub and the agent: a Read-only
+  member (can list pods, can't delete them), a change to a custom `edit`
+  role, a project over two namespaces with a group as Member (edit in both,
+  nothing in `default`, can't create RoleBindings), a binding deleted with
+  kubectl shown as missing and applied again, and deleting the project and
+  the member leaving no binding or label behind.

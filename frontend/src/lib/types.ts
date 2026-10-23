@@ -481,3 +481,44 @@ export interface NamespaceList {
   /** The user may not list namespaces; these are guesses and others can be typed. */
   restricted?: boolean;
 }
+
+/** A person or group as Kubernetes sees them, prefix included. */
+export interface Subject {
+  kind: "User" | "Group";
+  name: string;
+}
+
+export type ClusterRoleChoice = "owner" | "read-only" | "custom";
+export type ProjectRole = "owner" | "member" | "read-only";
+
+/** Someone's access to the whole cluster. */
+export interface Member extends Subject {
+  /** Set for members Glowpod manages; absent for access made elsewhere. */
+  role?: ClusterRoleChoice;
+  clusterRole: string;
+  binding: string;
+}
+
+/** GET .../members: Glowpod's members, and access made with kubectl or GitOps. */
+export interface Members {
+  members: Member[];
+  others: Member[];
+}
+
+export interface ProjectMember extends Subject {
+  role: ProjectRole;
+  /** The project's namespaces where this member's binding is missing. */
+  missing?: string[];
+}
+
+export interface Project {
+  name: string;
+  namespaces: string[];
+  members: ProjectMember[];
+}
+
+/** GET .../projects. */
+export interface Projects {
+  projects: Project[];
+  unassigned: string[];
+}

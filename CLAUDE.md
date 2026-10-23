@@ -175,7 +175,7 @@ Then Glowpod Hub (`docs/design/multi-cluster.md`):
 8. **Hub and agent:** Helm `hub.enabled`, bootstrap password, local users, `kubectl apply` import, outbound tunnel, impersonation guards, `local` cluster, cluster list from RBAC subjects. ✅
 9. **Docker quick start:** `glowpod-hub` image with K3s inside. ✅
 10. **Cluster shell and kubeconfig download.** ✅
-11. **Members, projects, Hub settings** (SSO/LDAP in the UI), backup and restore.
+11. **Members, projects, Hub settings** (SSO/LDAP in the UI), backup and restore. (members and projects ✅)
 12. **Across clusters:** search and "Needs attention" over all clusters.
 
 Finish and test each phase before starting the next.

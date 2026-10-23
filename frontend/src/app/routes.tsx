@@ -1,6 +1,8 @@
 import { lazy, Suspense } from "react";
 import type { RouteObject } from "react-router";
 
+import { MembersPage } from "../features/access/MembersPage";
+import { ProjectsPage } from "../features/access/ProjectsPage";
 import { AppPage } from "../features/apps/AppPage";
 import { AppsPage, LogsPage } from "../features/apps/AppsPage";
 import { OverviewPage } from "../features/overview/OverviewPage";
@@ -36,6 +38,8 @@ function pageElement(p: NavItem) {
   if (p.path === "/settings") return <SettingsPage />;
   if (p.path === "/extensions/helm") return <HelmReleasesPage />;
   if (p.path === "/logs") return <LogsPage />;
+  if (p.path === "/members") return <MembersPage />;
+  if (p.path === "/projects") return <ProjectsPage />;
   // key: a fresh page (search, sort) per resource.
   if (p.resource) return <ResourceListPage key={p.path} resource={p.resource} />;
   if (p.types)

@@ -196,8 +196,10 @@ keeps it in the Secret. The Hub keeps only a hash of it.
 
 ## Give people access
 
-Access is the cluster's own RBAC, as with in-cluster Glowpod. Bind the
-names the Hub uses:
+Access is the cluster's own RBAC, as with in-cluster Glowpod. The easiest
+way is **Cluster → Members** and **Cluster → Projects** in Glowpod (see
+[Members and projects](members.md)); kubectl and GitOps work as well. Bind
+the names the Hub uses:
 
 | Signed in with | Kubernetes sees | Example |
 | --- | --- | --- |

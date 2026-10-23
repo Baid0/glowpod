@@ -6,6 +6,14 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Members and projects: **Cluster → Members** gives a person or group a role in the whole cluster
+  (Owner, Read-only, or any ClusterRole), and **Cluster → Projects** groups namespaces (such as
+  `payments-api` + `payments-db`) and gives a team a role in all of them (Owner, Member,
+  Read-only) ([guide](docs/members.md)). It's all the cluster's own RBAC, made as you, so you can
+  only give what you have; access made with kubectl or GitOps is listed too. Works in every mode.
+
 ## [0.6.0] - 2026-10-23
 
 ### Added

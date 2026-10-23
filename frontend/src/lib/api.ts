@@ -8,6 +8,11 @@ import type {
   ClusterSummary,
   ImportCommand,
   KubeTokenList,
+  ClusterRoleChoice,
+  Members,
+  ProjectRole,
+  Projects,
+  Subject,
   CreateResult,
   DrainPlan,
   DrainResult,
@@ -178,6 +183,38 @@ export const api = {
     apiGet<KubeTokenList>("/api/v1/hub/kubeconfig/tokens", signal),
   revokeKubeconfigToken: (id: string) =>
     apiSend("DELETE", `/api/v1/hub/kubeconfig/tokens/${encodeURIComponent(id)}`),
+  members: (cluster: string, signal?: AbortSignal) =>
+    apiGet<Members>(clusterPath(cluster, "members", {}), signal),
+  setMember: (
+    cluster: string,
+    member: Subject & { role: ClusterRoleChoice; clusterRole?: string },
+  ) => apiSend("PUT", clusterPath(cluster, "members", {}), member),
+  removeMember: (cluster: string, s: Subject) =>
+    apiSend("DELETE", clusterPath(cluster, "members", { kind: s.kind, name: s.name })),
+  projects: (cluster: string, signal?: AbortSignal) =>
+    apiGet<Projects>(clusterPath(cluster, "projects", {}), signal),
+  createProject: (cluster: string, name: string, namespaces: string[]) =>
+    apiSend("POST", clusterPath(cluster, "projects", {}), { name, namespaces }),
+  setProjectNamespaces: (cluster: string, project: string, namespaces: string[]) =>
+    apiSend("PUT", clusterPath(cluster, `projects/${encodeURIComponent(project)}/namespaces`, {}), {
+      namespaces,
+    }),
+  deleteProject: (cluster: string, project: string) =>
+    apiSend("DELETE", clusterPath(cluster, `projects/${encodeURIComponent(project)}`, {})),
+  setProjectMember: (cluster: string, project: string, member: Subject & { role: ProjectRole }) =>
+    apiSend(
+      "PUT",
+      clusterPath(cluster, `projects/${encodeURIComponent(project)}/members`, {}),
+      member,
+    ),
+  removeProjectMember: (cluster: string, project: string, s: Subject) =>
+    apiSend(
+      "DELETE",
+      clusterPath(cluster, `projects/${encodeURIComponent(project)}/members`, {
+        kind: s.kind,
+        name: s.name,
+      }),
+    ),
   removeCluster: (cluster: string) =>
     apiSend<{ cleanup: string }>("DELETE", `/api/v1/hub/clusters/${encodeURIComponent(cluster)}`),
   namespaces: (cluster: string, signal?: AbortSignal) =>

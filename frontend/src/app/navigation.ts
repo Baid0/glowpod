@@ -70,6 +70,8 @@ export const deepSections: Section[] = [
         resource: { group: "", version: "v1", resource: "namespaces" },
         count: "namespaces",
       },
+      { label: "Members", path: "/members" },
+      { label: "Projects", path: "/projects" },
       eventsItem,
     ],
   },

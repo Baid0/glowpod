@@ -14,6 +14,7 @@ export const DOC_PAGES = [
   { slug: "terminal", source: "docs/terminal.md", nav: "Glowpod in the terminal" },
   { slug: "install", source: "docs/install.md", nav: "Install in a cluster" },
   { slug: "hub", source: "docs/hub.md", nav: "Glowpod Hub" },
+  { slug: "members", source: "docs/members.md", nav: "Members and projects" },
   { slug: "authentication", source: "docs/authentication.md", nav: "Sign-in and access" },
   { slug: "sso-demo", source: "deploy/examples/sso-demo/README.md", nav: "Try SSO in ten minutes" },
   { slug: "configuration", source: "docs/configuration.md", nav: "Configuration" },
