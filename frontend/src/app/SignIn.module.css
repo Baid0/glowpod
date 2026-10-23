@@ -87,6 +87,25 @@
   margin-top: var(--space-2);
 }
 
+.formHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.formTitle {
+  margin: 0;
+  color: var(--ink);
+  font: var(--text-title-sm);
+}
+
+.formHint {
+  margin: 0;
+  color: var(--muted);
+  font: var(--text-caption);
+}
+
 .label {
   color: var(--body);
   font: var(--text-body-sm-strong);

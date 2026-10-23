@@ -6,6 +6,11 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- The sign-in page showed two identical username forms when LDAP and Glowpod accounts were both on.
+  Each is now titled: **Directory account** (LDAP) and **Glowpod account**.
+
 ## [0.7.0] - 2026-10-23
 
 ### Added

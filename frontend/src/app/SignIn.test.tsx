@@ -208,3 +208,16 @@ describe("safeReturn", () => {
     expect(safeReturn(input)).toBe(want);
   });
 });
+
+describe("sign-in with LDAP and Glowpod accounts", () => {
+  it("titles each username form, so they can't be mixed up", async () => {
+    const user = userEvent.setup();
+    serverMode([{ type: "oidc", name: "Dex" }, { type: "ldap" }, { type: "password" }]);
+    const ldap = await screen.findByRole("form", { name: "Sign in with your directory account" });
+    expect(within(ldap).getByText("Directory account")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Sign in with a Glowpod account" }));
+    const account = await screen.findByRole("form", { name: "Sign in with a Glowpod account" });
+    expect(within(account).getByText("Glowpod account")).toBeInTheDocument();
+    expect(within(account).queryByText("Directory account")).not.toBeInTheDocument();
+  });
+});

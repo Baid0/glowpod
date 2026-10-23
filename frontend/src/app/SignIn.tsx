@@ -100,6 +100,8 @@ function Methods({ methods, returnTo }: { methods: AuthMethod[]; returnTo: strin
           returnTo={returnTo}
           primary={!oidc}
           label="Sign in with your directory account"
+          title="Directory account"
+          hint="Your company username and password (LDAP)."
           signIn={api.signInLDAP}
         />
       )}
@@ -132,6 +134,8 @@ function AccountForm({ returnTo, open }: { returnTo: string; open: boolean }) {
         returnTo={returnTo}
         primary={open}
         label="Sign in with a Glowpod account"
+        title="Glowpod account"
+        hint="An account made on this Hub, such as admin."
         signIn={api.signInPassword}
       />
       <p className={styles.hint}>
@@ -176,11 +180,16 @@ function PasswordForm({
   returnTo,
   primary,
   label,
+  title,
+  hint,
   signIn,
 }: {
   returnTo: string;
   primary: boolean;
   label: string;
+  /** Shown above the fields, so two username forms can't be mixed up. */
+  title: string;
+  hint: string;
   signIn: (username: string, password: string) => Promise<void>;
 }) {
   const { busy, error, run } = useSignIn(returnTo);
@@ -197,6 +206,10 @@ function PasswordForm({
       }}
       aria-label={label}
     >
+      <div className={styles.formHead}>
+        <p className={styles.formTitle}>{title}</p>
+        <p className={styles.formHint}>{hint}</p>
+      </div>
       <label htmlFor={userId} className={styles.label}>
         Username
       </label>
