@@ -4,6 +4,59 @@ entries:
   - annotations:
       artifacthub.io/category: monitoring-logging
       artifacthub.io/changes: |
+        - kind: added
+          description: "Needs attention across clusters on the Clusters page: every cluster's problems in one list, most severe and newest first, each with its cluster and a View link into it. It follows the cluster filter and Glance / Deep mode."
+        - kind: added
+          description: "Search across clusters with \u2318K, on the Clusters page too: type part of a name to find pods, deployments, services, secrets (names only) and more in every cluster at once, as each cluster's user. Words narrow it (deploy web, payments api); Enter opens the object in its cluster."
+        - kind: added
+          description: "The Clusters page's top bar has the Glance / Deep tabs and \u2318K."
+        - kind: added
+          description: "The images are also on Docker Hub: glowpod/glowpod, glowpod/glowpod-hub and glowpod/glowpod-shell, with the same tags, digests and signatures as on GHCR."
+        - kind: fixed
+          description: "People who may see some namespaces only (a project member, a namespaced service account) no longer get \"No access\" on the Clusters page and errors on the Overview. Glowpod uses the namespaces it can tell are theirs (a service account's own, the kubeconfig context's, and on a Hub the ones their RoleBindings are in, from agents 0.8.0 on) or the ones they picked; when it can't tell, it asks them to pick one, without an error."
+        - kind: fixed
+          description: "No \"0 ready\" nodes or \"0 namespaces\" for people who may not list them: those counts are left out."
+      artifacthub.io/images: |
+        - name: glowpod
+          image: ghcr.io/glowpod-dev/glowpod:0.8.0
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Website
+          url: https://glowpod.dev
+        - name: Documentation
+          url: https://glowpod.dev/docs/
+        - name: Install guide
+          url: https://glowpod.dev/docs/install/
+        - name: Sign-in and access
+          url: https://glowpod.dev/docs/authentication/
+        - name: Security policy
+          url: https://github.com/glowpod-dev/glowpod/security/policy
+        - name: Source
+          url: https://github.com/glowpod-dev/glowpod
+    apiVersion: v2
+    appVersion: 0.8.0
+    created: "2026-10-23T18:17:36.556189218Z"
+    description: A Kubernetes dashboard for app developers and platform teams. People
+      sign in and act as themselves.
+    digest: f6903e77acc49a4da3685ee663c52cac676ac9e3316ac9a5d5612c4ce680e006
+    home: https://glowpod.dev
+    icon: https://glowpod.dev/brand/glowpod-icon.png
+    keywords:
+    - kubernetes
+    - dashboard
+    - rbac
+    - sso
+    kubeVersion: '>=1.28.0-0'
+    name: glowpod
+    sources:
+    - https://github.com/glowpod-dev/glowpod
+    type: application
+    urls:
+    - https://github.com/glowpod-dev/glowpod/releases/download/v0.8.0/glowpod-0.8.0.tgz
+    version: 0.8.0
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
         - kind: fixed
           description: "The sign-in page showed two identical username forms when LDAP and Glowpod accounts were both on. Now there's one form at a time: SSO stays the main button, and a Directory account | Glowpod account switch (with Token where tokens are on) picks the form below it."
       artifacthub.io/images: |
@@ -495,4 +548,4 @@ entries:
     urls:
     - https://github.com/glowpod-dev/glowpod/releases/download/v0.1.1/glowpod-0.1.1.tgz
     version: 0.1.1
-generated: "2026-10-23T16:04:11.344720444Z"
+generated: "2026-10-23T18:17:36.555446897Z"
