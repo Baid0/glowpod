@@ -57,6 +57,7 @@ func newLDAP(s serverConfig) (*auth.LDAP, error) {
 		UserBase:          s.ldapUserBase,
 		UserFilter:        s.ldapUserFilter,
 		UsernameAttribute: s.ldapUsernameAttribute,
+		UsernamePrefix:    s.ldapUsernamePrefix,
 		GroupBase:         s.ldapGroupBase,
 		GroupFilter:       s.ldapGroupFilter,
 		GroupAttribute:    s.ldapGroupAttribute,

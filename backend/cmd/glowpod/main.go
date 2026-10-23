@@ -24,6 +24,7 @@ import (
 	"glowpod/internal/api"
 	"glowpod/internal/auth"
 	"glowpod/internal/cluster"
+	"glowpod/internal/hub"
 	"glowpod/internal/web"
 )
 
@@ -51,6 +52,9 @@ func main() {
 func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	if len(args) > 0 && args[0] == "term" {
 		return runTerm(ctx, args[1:], stderr)
+	}
+	if len(args) > 0 && args[0] == "agent" {
+		return runAgent(ctx, args[1:], stderr)
 	}
 	cfg, err := parseFlags(args, stderr)
 	if errors.Is(err, flag.ErrHelp) {
@@ -175,8 +179,11 @@ func setupServer(ctx context.Context, cfg config, opts *api.Options, logger *slo
 	if err != nil {
 		return err
 	}
-	provider := cluster.NewServer(base, info)
 	sc := cfg.server
+	if sc.hub {
+		info.ID, info.Name = hub.LocalID, hub.LocalID
+	}
+	provider := cluster.NewServer(base, info)
 	proxies, _ := parsePrefixes(sc.trustedProxies) // checked in parseFlags
 	authCfg := auth.ServerConfig{
 		Store:          auth.NewStore(sc.sessionIdle, sc.sessionTTL),
@@ -198,11 +205,20 @@ func setupServer(ctx context.Context, cfg config, opts *api.Options, logger *slo
 			return err
 		}
 	}
+	clusters := cluster.Single(provider)
+	if sc.hub {
+		h, err := newHub(ctx, sc, base, clusters, logger)
+		if err != nil {
+			return err
+		}
+		authCfg.Passwords = h
+		opts.Hub = h
+	}
 	authn, err := auth.NewServer(authCfg)
 	if err != nil {
 		return err
 	}
-	opts.Clusters, opts.Auth = cluster.Single(provider), authn
+	opts.Clusters, opts.Auth = clusters, authn
 	if sc.publicURL != "" {
 		u, _ := url.Parse(sc.publicURL) // checked in parseFlags
 		opts.Hosts = []string{u.Host}

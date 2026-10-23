@@ -38,6 +38,8 @@ type LDAPConfig struct {
 	// UserFilter finds one user; {username} is replaced, escaped.
 	UserFilter        string
 	UsernameAttribute string
+	// UsernamePrefix is put before the username, e.g. ldap: (a Hub needs one).
+	UsernamePrefix string
 	// GroupBase empty means no groups are looked up.
 	GroupBase string
 	// GroupFilter finds the user's groups; {dn} and {username} are replaced, escaped.
@@ -146,6 +148,7 @@ func (l *LDAP) Authenticate(ctx context.Context, username, password string) (str
 	if name == "" {
 		name = username
 	}
+	name = l.cfg.UsernamePrefix + name
 
 	groups, err := l.groups(conn, user.DN, username)
 	if err != nil {

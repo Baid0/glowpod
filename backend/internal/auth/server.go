@@ -39,6 +39,8 @@ type ServerConfig struct {
 	Token bool
 	OIDC  *OIDC
 	LDAP  *LDAP
+	// Passwords signs in a Hub's local users.
+	Passwords PasswordChecker
 	// OIDCName labels the SSO button, e.g. "Okta".
 	OIDCName string
 	// TrustedProxies are the proxies (the ingress controller) whose
@@ -56,7 +58,7 @@ type Server struct {
 
 // NewServer returns a Server; at least one sign-in method must be on.
 func NewServer(cfg ServerConfig) (*Server, error) {
-	if !cfg.Token && cfg.OIDC == nil && cfg.LDAP == nil {
+	if !cfg.Token && cfg.OIDC == nil && cfg.LDAP == nil && cfg.Passwords == nil {
 		return nil, errors.New("turn on at least one sign-in method: token, OIDC or LDAP")
 	}
 	if cfg.Logger == nil {
@@ -71,7 +73,7 @@ func NewServer(cfg ServerConfig) (*Server, error) {
 
 // Method is a sign-in option for the sign-in page.
 type Method struct {
-	// Type is token, oidc or ldap.
+	// Type is token, oidc, ldap or password (a Hub's local users).
 	Type string `json:"type"`
 	Name string `json:"name,omitempty"`
 }
@@ -84,6 +86,9 @@ func (s *Server) Methods() []Method {
 	}
 	if s.cfg.LDAP != nil {
 		out = append(out, Method{Type: "ldap", Name: "LDAP"})
+	}
+	if s.cfg.Passwords != nil {
+		out = append(out, Method{Type: "password", Name: "Glowpod"})
 	}
 	if s.cfg.Token {
 		out = append(out, Method{Type: "token"})
@@ -109,6 +114,9 @@ func (s *Server) MountAPI(r chi.Router) {
 	}
 	if s.cfg.LDAP != nil {
 		r.Post("/auth/ldap", s.loginLDAP)
+	}
+	if s.cfg.Passwords != nil {
+		r.Post("/auth/password", s.loginPassword)
 	}
 	r.With(s.Require, RequireCSRF).Post("/auth/logout", s.logout)
 }

@@ -8,12 +8,15 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync"
 
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 // Registry is every cluster one Glowpod serves, in the order they're listed.
+// A Hub adds and removes clusters while it runs.
 type Registry struct {
+	mu   sync.RWMutex
 	list []Provider
 	byID map[string]Provider
 }
@@ -40,8 +43,35 @@ func Single(p Provider) *Registry {
 	return &Registry{list: []Provider{p}, byID: map[string]Provider{p.Info().ID: p}}
 }
 
+// Add lists p last, or replaces the cluster with p's id.
+func (r *Registry) Add(p Provider) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	id := p.Info().ID
+	if _, ok := r.byID[id]; ok {
+		for i := range r.list {
+			if r.list[i].Info().ID == id {
+				r.list[i] = p
+			}
+		}
+	} else {
+		r.list = append(r.list, p)
+	}
+	r.byID[id] = p
+}
+
+// Remove drops a cluster.
+func (r *Registry) Remove(id string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.byID, id)
+	r.list = slices.DeleteFunc(r.list, func(p Provider) bool { return p.Info().ID == id })
+}
+
 // List describes every cluster, in order.
 func (r *Registry) List() []Info {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	out := make([]Info, len(r.list))
 	for i, p := range r.list {
 		out[i] = p.Info()
@@ -51,12 +81,16 @@ func (r *Registry) List() []Info {
 
 // Get finds a cluster by id.
 func (r *Registry) Get(id string) (Provider, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	p, ok := r.byID[id]
 	return p, ok
 }
 
 // Current is the cluster to open first: the one marked Current, else the first.
 func (r *Registry) Current() Provider {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	for _, p := range r.list {
 		if p.Info().Current {
 			return p

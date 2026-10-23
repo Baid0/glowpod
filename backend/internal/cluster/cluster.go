@@ -42,6 +42,11 @@ type Info struct {
 	// Current marks the cluster to open first: the kubeconfig's current
 	// context, or the one given with -context.
 	Current bool `json:"current,omitempty"`
+	// State is a Hub's view of an imported cluster's agent: pending (not
+	// connected yet), connected or disconnected. Empty elsewhere.
+	State string `json:"state,omitempty"`
+	// Since is when State last changed.
+	Since *time.Time `json:"since,omitempty"`
 }
 
 // Identity is who a request acts as. Key separates per-user state such as

@@ -5,6 +5,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -33,6 +34,9 @@ type Options struct {
 	Frontend http.Handler
 	// Clusters are the clusters served, under /api/v1/clusters/{cluster}.
 	Clusters *cluster.Registry
+	// Hub, when set, makes this Glowpod a Hub: agents connect to it, and
+	// people see only the clusters they have access to.
+	Hub      Hub
 	Auth     auth.Authenticator
 	Overview *overview.Service
 	// Hosts are the Host header values to accept; nil skips the check.
@@ -60,6 +64,18 @@ type Options struct {
 
 // promDiscoveryTTL is how long a Prometheus lookup (or its absence) is reused.
 const promDiscoveryTTL = 5 * time.Minute
+
+// Hub is what the router needs from a Glowpod Hub (internal/hub).
+type Hub interface {
+	// MountPublic adds the agents' routes, outside the browser session.
+	MountPublic(r chi.Router)
+	// MountAPI adds /api/v1/hub/… for signed-in people.
+	MountAPI(r chi.Router)
+	// Session is the Hub's part of GET /api/v1/session.
+	Session(ctx context.Context, info auth.SessionInfo) any
+	// Visible says whether to list a cluster for someone.
+	Visible(info auth.SessionInfo, clusterID string) bool
+}
 
 type server struct {
 	opts  Options
@@ -95,6 +111,11 @@ func NewRouter(opts Options) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(securityHeaders(opts.HSTS))
 	r.Get("/healthz", healthz)
+	// Agents reach these with the address in their manifest, which may not
+	// be the one people use; they carry their own secret instead of a cookie.
+	if opts.Hub != nil {
+		opts.Hub.MountPublic(r)
+	}
 
 	r.Group(func(r chi.Router) {
 		if opts.Hosts != nil {
@@ -108,6 +129,9 @@ func NewRouter(opts Options) http.Handler {
 					r.Use(opts.Auth.Require, auth.RequireCSRF)
 					r.Get("/session", s.session)
 					r.Get("/clusters", s.clusters)
+					if opts.Hub != nil {
+						r.Route("/hub", opts.Hub.MountAPI)
+					}
 					r.Route("/clusters/{cluster}", func(r chi.Router) {
 						r.Use(s.requireCluster, requireNamespace)
 						r.Get("/overview", s.overview)

@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -23,6 +24,7 @@ import (
 	"github.com/coder/websocket/wsjson"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/httpstream/spdy" //nolint:staticcheck // client-go 0.37's Upgrader still takes this package's Connection
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -78,6 +80,16 @@ func Remote(cfg *rest.Config, kube kubernetes.Interface) Starter {
 				Stdout:    true,
 				TTY:       true,
 			}, scheme.ParameterCodec).URL()
+		opts := remotecommand.StreamOptions{Stdin: s.Stdin, Stdout: s.Stdout, Tty: true, TerminalSizeQueue: s.Sizes}
+		if cfg.Dial != nil {
+			// The config dials its own way (a Hub's tunnel to an agent). The
+			// WebSocket executor can't use a custom dialer; SPDY can.
+			ex, err := spdyOver(cfg, u)
+			if err != nil {
+				return err
+			}
+			return ex.StreamWithContext(ctx, opts)
+		}
 		ws, err := remotecommand.NewWebSocketExecutor(cfg, http.MethodGet, u.String())
 		if err != nil {
 			return err
@@ -92,10 +104,25 @@ func Remote(cfg *rest.Config, kube kubernetes.Interface) Starter {
 		if err != nil {
 			return err
 		}
-		return ex.StreamWithContext(ctx, remotecommand.StreamOptions{
-			Stdin: s.Stdin, Stdout: s.Stdout, Tty: true, TerminalSizeQueue: s.Sizes,
-		})
+		return ex.StreamWithContext(ctx, opts)
 	}
+}
+
+// spdyOver is an exec executor that dials with cfg.Dial and adds cfg's
+// credentials and impersonation, as every other request does.
+func spdyOver(cfg *rest.Config, u *url.URL) (remotecommand.Executor, error) {
+	upgrader, err := spdy.NewRoundTripperWithConfig(spdy.RoundTripperConfig{
+		UpgradeTransport: &http.Transport{DialContext: cfg.Dial},
+		PingPeriod:       5 * time.Second,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("exec transport: %w", err)
+	}
+	wrapped, err := rest.HTTPWrappersForConfig(cfg, upgrader)
+	if err != nil {
+		return nil, fmt.Errorf("exec transport: %w", err)
+	}
+	return remotecommand.NewSPDYExecutorForTransports(wrapped, upgrader, http.MethodPost, u) //nolint:wrapcheck // only fails on a bad URL
 }
 
 // Message is a JSON control message in either direction.

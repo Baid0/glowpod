@@ -28,7 +28,7 @@ type Authenticator interface {
 type SessionInfo struct {
 	// Mode is local or in-cluster.
 	Mode string `json:"mode"`
-	// Method is kubeconfig, token, oidc or ldap.
+	// Method is kubeconfig, token, oidc, ldap or password.
 	Method string   `json:"method"`
 	User   string   `json:"username,omitempty"`
 	Groups []string `json:"groups,omitempty"`

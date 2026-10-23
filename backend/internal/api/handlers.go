@@ -119,6 +119,8 @@ type sessionResponse struct {
 	// CSRFToken goes in the X-CSRF-Token header of every write.
 	CSRFToken string      `json:"csrfToken"`
 	User      sessionUser `json:"user"`
+	// Hub is set on a Glowpod Hub: the person's role, and first start.
+	Hub any `json:"hub,omitempty"`
 }
 
 type sessionUser struct {
@@ -134,6 +136,9 @@ func (s *server) session(w http.ResponseWriter, r *http.Request) {
 		Method:    info.Method,
 		CSRFToken: auth.CSRFTokenFrom(r.Context()),
 		User:      sessionUser{Username: info.User, Groups: info.Groups},
+	}
+	if s.opts.Hub != nil {
+		resp.Hub = s.opts.Hub.Session(r.Context(), info)
 	}
 	// Local mode doesn't know the kubeconfig user's name; ask the current cluster.
 	if current := s.opts.Clusters.Current(); resp.User.Username == "" && current != nil {
@@ -153,8 +158,13 @@ type clustersResponse struct {
 	Clusters []cluster.Info `json:"clusters"`
 }
 
-func (s *server) clusters(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, clustersResponse{Clusters: s.opts.Clusters.List()})
+func (s *server) clusters(w http.ResponseWriter, r *http.Request) {
+	list := s.opts.Clusters.List()
+	if s.opts.Hub != nil {
+		info := auth.SessionInfoFrom(r.Context())
+		list = slices.DeleteFunc(list, func(c cluster.Info) bool { return !s.opts.Hub.Visible(info, c.ID) })
+	}
+	writeJSON(w, http.StatusOK, clustersResponse{Clusters: list})
 }
 
 // overviewDeps are the request's clients for an Overview. Prometheus

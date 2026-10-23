@@ -87,6 +87,26 @@ func TestServerFlags(t *testing.T) {
 			t.Fatalf("got %+v", got.server)
 		}
 	})
+	t.Run("hub", func(t *testing.T) {
+		t.Setenv("POD_NAMESPACE", "glowpod-hub")
+		got, err := parseFlags([]string{"-mode", "server", "-hub", "-public-url", "https://hub.example.com",
+			"-oidc-issuer", "https://sso.example.com", "-oidc-client-id", "x", "-ldap-url", "ldaps://l", "-ldap-user-base", "ou=p"}, io.Discard)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s := got.server
+		// Token sign-in is off: a token belongs to one cluster. SSO and LDAP
+		// get the prefixes agents accept.
+		if s.token || s.oidcUsernamePrefix != "oidc:" || s.oidcGroupsPrefix != "oidc:" ||
+			s.ldapUsernamePrefix != "ldap:" || s.ldapGroupsPrefix != "ldap:" || s.hubNamespace != "glowpod-hub" {
+			t.Fatalf("got %+v", s)
+		}
+	})
+	t.Run("hub alone has a sign-in method", func(t *testing.T) {
+		if _, err := parseFlags([]string{"-mode", "server", "-hub"}, io.Discard); err != nil {
+			t.Fatal(err)
+		}
+	})
 	t.Run("bad environment value", func(t *testing.T) {
 		t.Setenv("GLOWPOD_SESSION_TTL", "forever")
 		if _, err := parseFlags([]string{"-mode", "server"}, io.Discard); err == nil || !strings.Contains(err.Error(), "GLOWPOD_SESSION_TTL") {
@@ -110,6 +130,8 @@ func TestServerFlags(t *testing.T) {
 		{"public url with a path", []string{"-mode", "server", "-public-url", "https://example.com/glowpod"}},
 		{"ldap without user base", []string{"-mode", "server", "-ldap-url", "ldaps://ldap.example.com"}},
 		{"zero session", []string{"-mode", "server", "-session-ttl", "0s"}},
+		{"hub with a prefix agents refuse", []string{"-mode", "server", "-hub", "-public-url", "https://g.example.com", "-oidc-issuer", "https://sso.example.com", "-oidc-client-id", "x", "-oidc-username-prefix", "corp:"}},
+		{"hub passing SSO tokens", []string{"-mode", "server", "-hub", "-public-url", "https://g.example.com", "-oidc-issuer", "https://sso.example.com", "-oidc-client-id", "x", "-oidc-pass-token"}},
 	}
 	for _, tt := range bad {
 		t.Run(tt.name, func(t *testing.T) {

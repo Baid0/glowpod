@@ -10,8 +10,11 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
+
+	"glowpod/internal/agent"
 )
 
 const (
@@ -45,6 +48,12 @@ type serverConfig struct {
 	sessionIdle     time.Duration
 	insecureCookies bool
 
+	hub          bool
+	hubNamespace string
+	hubAdmins    string
+	hubCAFile    string
+	agentImage   string
+
 	oidcIssuer         string
 	oidcClientID       string
 	oidcClientSecret   string
@@ -62,6 +71,7 @@ type serverConfig struct {
 	ldapUserBase           string
 	ldapUserFilter         string
 	ldapUsernameAttribute  string
+	ldapUsernamePrefix     string
 	ldapGroupBase          string
 	ldapGroupFilter        string
 	ldapGroupAttribute     string
@@ -96,6 +106,12 @@ func parseFlags(args []string, stderr io.Writer) (config, error) {
 	fs.DurationVar(&s.sessionIdle, "session-idle", 2*time.Hour, "server: sign people out after this long without use")
 	fs.BoolVar(&s.insecureCookies, "insecure-cookies", false, "server: allow the session cookie over plain HTTP (testing only)")
 
+	fs.BoolVar(&s.hub, "hub", false, "server: run as a Glowpod Hub: local users, and clusters imported with kubectl apply that run glowpod-agent")
+	fs.StringVar(&s.hubNamespace, "hub-namespace", "", "hub: namespace for the Hub's Secrets and settings (default $POD_NAMESPACE, else glowpod)")
+	fs.StringVar(&s.hubAdmins, "hub-admins", "", "hub: comma-separated users or groups, as Kubernetes sees them (oidc:ops), who are Hub administrators besides admin")
+	fs.StringVar(&s.hubCAFile, "hub-ca-file", "", "hub: CA bundle agents should trust for the Hub's address (a private CA)")
+	fs.StringVar(&s.agentImage, "agent-image", "", "hub: image for glowpod-agent in imported clusters (default: this version's image)")
+
 	fs.StringVar(&s.oidcIssuer, "oidc-issuer", "", "server: OpenID Connect issuer URL; turns on SSO")
 	fs.StringVar(&s.oidcClientID, "oidc-client-id", "", "server: OIDC client ID")
 	fs.StringVar(&s.oidcClientSecret, "oidc-client-secret", "", "server: OIDC client secret (prefer $GLOWPOD_OIDC_CLIENT_SECRET)")
@@ -113,6 +129,7 @@ func parseFlags(args []string, stderr io.Writer) (config, error) {
 	fs.StringVar(&s.ldapUserBase, "ldap-user-base", "", "server: where to search for users, e.g. ou=people,dc=example,dc=com")
 	fs.StringVar(&s.ldapUserFilter, "ldap-user-filter", "(uid={username})", "server: filter that finds one user; {username} is escaped")
 	fs.StringVar(&s.ldapUsernameAttribute, "ldap-username-attribute", "uid", "server: user attribute to use as the Kubernetes username")
+	fs.StringVar(&s.ldapUsernamePrefix, "ldap-username-prefix", "", "server: prefix for LDAP usernames, to match your RBAC bindings (the Hub uses ldap:)")
 	fs.StringVar(&s.ldapGroupBase, "ldap-group-base", "", "server: where to search for groups (empty: no groups)")
 	fs.StringVar(&s.ldapGroupFilter, "ldap-group-filter", "(member={dn})", "server: filter for a user's groups; {dn} and {username} are escaped")
 	fs.StringVar(&s.ldapGroupAttribute, "ldap-group-attribute", "cn", "server: group attribute to use as the Kubernetes group name")
@@ -215,11 +232,50 @@ func (s *serverConfig) check() error {
 	if s.ldapURL != "" && s.ldapUserBase == "" {
 		return errors.New("LDAP needs -ldap-user-base")
 	}
-	if !s.token && s.oidcIssuer == "" && s.ldapURL == "" {
+	if s.hub {
+		if err := s.hubDefaults(); err != nil {
+			return err
+		}
+	} else if !s.token && s.oidcIssuer == "" && s.ldapURL == "" {
 		return errors.New("turn on a sign-in method: -auth-token, -oidc-issuer or -ldap-url")
 	}
 	if s.sessionTTL <= 0 || s.sessionIdle <= 0 {
 		return errors.New("-session-ttl and -session-idle must be positive")
+	}
+	return nil
+}
+
+// hubDefaults fits sign-in to a Hub. Agents impersonate only names with a
+// Glowpod prefix, so SSO and LDAP get oidc: and ldap: unless set otherwise;
+// a token belongs to one cluster, so token sign-in is off.
+func (s *serverConfig) hubDefaults() error {
+	s.token = false
+	if s.oidcPassToken {
+		return errors.New("-oidc-pass-token can't be used with -hub: the Hub reaches clusters through their agents")
+	}
+	for _, p := range []*string{&s.oidcUsernamePrefix, &s.oidcGroupsPrefix} {
+		if *p == "" {
+			*p = "oidc:"
+		}
+	}
+	for _, p := range []*string{&s.ldapUsernamePrefix, &s.ldapGroupsPrefix} {
+		if *p == "" {
+			*p = "ldap:"
+		}
+	}
+	for flag, p := range map[string]string{
+		"-oidc-username-prefix": s.oidcUsernamePrefix, "-oidc-groups-prefix": s.oidcGroupsPrefix,
+		"-ldap-username-prefix": s.ldapUsernamePrefix, "-ldap-groups-prefix": s.ldapGroupsPrefix,
+	} {
+		if !slices.Contains(agent.Prefixes, p) {
+			return fmt.Errorf("%s %q: with -hub use one of %s; agents impersonate only those", flag, p, strings.Join(agent.Prefixes, ", "))
+		}
+	}
+	if s.hubNamespace == "" {
+		s.hubNamespace = os.Getenv("POD_NAMESPACE")
+	}
+	if s.hubNamespace == "" {
+		s.hubNamespace = "glowpod"
 	}
 	return nil
 }
