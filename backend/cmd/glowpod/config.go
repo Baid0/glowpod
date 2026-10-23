@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
@@ -35,6 +36,8 @@ type config struct {
 	context       string
 	prometheusURL string
 	server        serverConfig
+	// tls, when set, serves HTTPS (glowpod hub run); it isn't a flag.
+	tls *tls.Config
 }
 
 // serverConfig is for -mode=server: Glowpod installed in the cluster for
@@ -53,6 +56,8 @@ type serverConfig struct {
 	hubAdmins    string
 	hubCAFile    string
 	agentImage   string
+	// bootstrapHint tells how to read the bootstrap password; not a flag.
+	bootstrapHint string
 
 	oidcIssuer         string
 	oidcClientID       string

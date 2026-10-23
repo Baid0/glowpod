@@ -194,3 +194,35 @@ doesn't count.
   manifest applied to the lab with kubectl, and the agent run with its own
   service account's token (so with exactly the manifest's rights). Not yet
   tested: the agent's image in a cluster; that needs a release.
+
+## Docker quick start (Hub phase 3)
+
+- **One image, one process tree:** `glowpod-hub` is the `rancher/k3s` image
+  (pinned, `v1.36.5-k3s1`) plus the `glowpod` binary, built from a `hub`
+  stage of the same Dockerfile. `glowpod hub run` is PID 1: it moves the
+  container's processes to a child cgroup (cgroup v2, as k3d and Rancher
+  do), starts `k3s server` as a child and serves the Hub in-process. If K3s
+  stops, the Hub stops, and Docker's restart policy brings both back.
+- **No Helm inside:** the CRD, the `glowpod` namespace and the
+  `glowpod:admin` binding go in K3s's auto-deploy folder, applied at every
+  start. A test keeps that CRD the same as the chart's. The Hub uses K3s's
+  admin kubeconfig as its own identity: it's alone in the container, and
+  people still act through impersonation.
+- **HTTPS with its own CA,** made at first start and kept in the volume
+  (ECDSA P-256, ten years). Server certificates are minted per name set:
+  localhost, the name the client asked for, and the server URL's host, read
+  from the Hub's settings every 15 seconds, because agents connecting by IP
+  send no name and Docker's port mapping hides the server's address from
+  the container. Certificates start 24 hours back: the lab's clock is an
+  hour behind and refused certificates that started an hour back. The
+  import manifest already carries the CA (`-hub-ca-file`). Your own
+  certificate in `/etc/glowpod/tls` replaces all of this.
+- **The bootstrap password** is read with
+  `docker exec … glowpod hub bootstrap-password`, which prints to the
+  terminal of whoever runs it, not to the log.
+- **Tested** on Docker Desktop (arm64): first start in 4 seconds with the
+  image pulled; the CA survived recreating the container; the lab imported
+  through the `curl --insecure` command; the published 0.4.0 agent
+  connected over HTTPS trusting the Hub's CA; summaries of both `local` and
+  `lab`; `docker restart` kept the sign-in and the agent reconnected by
+  itself.

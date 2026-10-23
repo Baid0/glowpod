@@ -282,7 +282,7 @@ Each phase ships on its own and is tested on the lab before the next starts.
 
    Tested with the lab as the Hub and a throwaway K3s VM as an imported
    cluster.
-3. **Docker quick start:** the `glowpod-hub` image with K3s inside.
+3. ✅ **Docker quick start:** the `glowpod-hub` image with K3s inside.
 4. **Shell and kubeconfig download.**
 5. **Members, projects and Hub settings:** SSO and LDAP set up in the UI,
    backup and restore.

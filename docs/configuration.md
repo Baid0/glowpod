@@ -101,6 +101,23 @@ impersonate.
 | `-agent-image` | this version's image | `hub.agentImage` | Image the agent runs in imported clusters |
 | | | `hub.localAdmin` (`true`) | Make `glowpod:admin` cluster-admin on the Hub's own cluster |
 
+### The `glowpod-hub` image
+
+`glowpod hub run` is the image's entrypoint: it starts K3s, then the Hub on
+it with `-hub`, serving HTTPS. Set the Hub's other options with `GLOWPOD_`
+variables.
+
+| Flag | Default | What it does |
+| --- | --- | --- |
+| `-data-dir` | `/var/lib/glowpod` (`$GLOWPOD_DATA_DIR`) | K3s, the CA and the Hub's state; keep it on a volume |
+| `-tls-dir` | `/etc/glowpod/tls` | Your certificate (`tls.crt`, `tls.key`, and `ca.crt` for a private CA); without it the Hub uses its own CA |
+| `-https-addr` | `:443` | HTTPS address |
+| `-http-addr` | `:80` | Plain-HTTP address, which redirects to HTTPS; empty turns it off |
+| `-k3s` | `k3s` | The K3s binary |
+
+`glowpod hub bootstrap-password` prints the first-start password
+(`docker exec <container> glowpod hub bootstrap-password`).
+
 `glowpod agent` runs in imported clusters; the import manifest sets it up.
 Its flags (`-namespace`, `-secret`, `-kubeconfig`, `-log-format`) are only
 for testing it outside a cluster.

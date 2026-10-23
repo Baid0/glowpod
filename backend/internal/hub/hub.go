@@ -71,7 +71,10 @@ type Config struct {
 	// Admins are usernames or groups (as Kubernetes sees them, with their
 	// prefix) that are Hub administrators, besides the local admin.
 	Admins []string
-	Logger *slog.Logger
+	// BootstrapHint tells how to read the bootstrap password; the default
+	// is the kubectl command.
+	BootstrapHint string
+	Logger        *slog.Logger
 }
 
 // Hub runs the Hub's side: its store, the tunnels and the routes.
@@ -154,9 +157,36 @@ func (h *Hub) bootstrap(ctx context.Context) error {
 			return err
 		}
 	}
-	h.cfg.Logger.Info("first start: sign in as admin with the bootstrap password, then set your own",
-		"read_it_with", fmt.Sprintf("kubectl -n %s get secret %s -o jsonpath='{.data.password}' | base64 -d", h.cfg.Namespace, BootstrapSecret))
+	hint := h.cfg.BootstrapHint
+	if hint == "" {
+		hint = fmt.Sprintf("kubectl -n %s get secret %s -o jsonpath='{.data.password}' | base64 -d", h.cfg.Namespace, BootstrapSecret)
+	}
+	h.cfg.Logger.Info("first start: sign in as admin with the bootstrap password, then set your own", "read_it_with", hint)
 	return nil
+}
+
+// BootstrapPassword reads the first-start password, for glowpod hub
+// bootstrap-password. It returns "" once setup is done.
+func BootstrapPassword(ctx context.Context, kube kubernetes.Interface, namespace string) (string, error) {
+	s := &store{kube: kube, namespace: namespace}
+	set, err := s.settings(ctx)
+	if err != nil || set.SetupDone {
+		return "", err
+	}
+	data, err := s.secret(ctx, BootstrapSecret)
+	if err != nil {
+		return "", err
+	}
+	if len(data[keyPassword]) == 0 {
+		return "", errors.New("the Hub hasn't made it yet; wait until it has started")
+	}
+	return string(data[keyPassword]), nil
+}
+
+// ServerURL reads the server URL set at first start, or "" before that.
+func ServerURL(ctx context.Context, kube kubernetes.Interface, namespace string) (string, error) {
+	set, err := (&store{kube: kube, namespace: namespace}).settings(ctx)
+	return set.ServerURL, err
 }
 
 // Agent clusters.

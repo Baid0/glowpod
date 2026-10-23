@@ -8,11 +8,12 @@ SITE_MODULES := site/node_modules/.modules.yaml
 # The version stamped into the binary and image: the git tag, else the chart's appVersion.
 VERSION  ?= $(shell git describe --tags --always --dirty 2>/dev/null | sed 's/^v//' || echo dev)
 IMAGE    ?= glowpod
+HUB_IMAGE ?= glowpod-hub
 LDFLAGS  := -s -w -X main.version=$(VERSION)
 # Platforms `make dist` builds the glowpod download for.
 PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64
 
-.PHONY: help deps dev web build dist test test-backend test-frontend e2e lint lint-backend lint-frontend fmt clean image image-push chart site site-dev site-preview
+.PHONY: help deps dev web build dist test test-backend test-frontend e2e lint lint-backend lint-frontend fmt clean image image-push image-hub chart site site-dev site-preview
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-15s %s\n", $$1, $$2}'
@@ -83,6 +84,9 @@ image: ## Build the container image for this machine (needs Docker): make image 
 image-push: ## Build for amd64 and arm64 and push: make image-push IMAGE=registry.example.com/you/glowpod
 	docker buildx build --platform linux/amd64,linux/arm64 --build-arg VERSION=$(VERSION) \
 		-t $(IMAGE):$(VERSION) --push .
+
+image-hub: ## Build the Hub image with K3s inside (needs Docker): make image-hub HUB_IMAGE=registry/glowpod-hub
+	docker build --target hub --build-arg VERSION=$(VERSION) -t $(HUB_IMAGE):$(VERSION) .
 
 chart: ## Lint the Helm chart and render it in its main setups
 	helm lint deploy/helm/glowpod

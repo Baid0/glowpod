@@ -6,6 +6,15 @@ All notable changes to Glowpod. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Try Glowpod Hub with one `docker run`: the new `ghcr.io/glowpod-dev/glowpod-hub` image runs K3s
+  inside the container and the Hub on it, like Rancher's Docker install
+  ([guide](docs/hub.md#try-it-with-docker)). It serves HTTPS with its own certificate authority,
+  which imported agents trust automatically, or with your certificate from `/etc/glowpod/tls`.
+  Everything is kept in one volume. `docker exec <container> glowpod hub bootstrap-password`
+  prints the first-start password.
+
 ### Changed
 
 - Restarting or upgrading a Hub no longer signs everyone out: it keeps sign-ins in Secrets in its

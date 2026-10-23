@@ -43,6 +43,49 @@ that:
 So even a Hub that has been broken into can't become cluster admin on your
 clusters. It can act only as people who already have rights there.
 
+## Try it with Docker
+
+To try the Hub on any Linux server (or Docker Desktop) without a
+Kubernetes cluster, run the `glowpod-hub` image. It runs K3s inside the
+container and the Hub on it, like Rancher's Docker install. Needs Glowpod
+0.5.0 or later.
+
+```bash
+docker run -d --name glowpod --restart=unless-stopped --privileged \
+  -p 80:80 -p 443:443 -v glowpod:/var/lib/glowpod \
+  ghcr.io/glowpod-dev/glowpod-hub
+```
+
+- **`--privileged`** is needed to run Kubernetes inside a container, as for
+  Rancher.
+- **Everything is in the volume** `/var/lib/glowpod`: K3s, the Hub's
+  records, sign-ins and its certificate authority. Keep the volume, and a
+  new container (an upgrade, say) carries on where the old one stopped.
+- **HTTPS:** the Hub makes its own certificate authority at first start and
+  serves certificates from it, for the server URL and any name you open it
+  by. Agents trust it automatically (the import manifest carries it);
+  browsers show a warning until you bring your own certificate:
+  `-v /path/to/certs:/etc/glowpod/tls:ro`, with `tls.crt` and `tls.key`,
+  plus `ca.crt` if a private CA signed them. Port 80 redirects to HTTPS.
+- **Settings** go in `GLOWPOD_` variables, as with the binary:
+  `-e GLOWPOD_PUBLIC_URL=https://glowpod.example.com`,
+  `-e GLOWPOD_HUB_ADMINS=oidc:platform`, or SSO with `GLOWPOD_OIDC_ISSUER`
+  and friends (see [Configuration](configuration.md)).
+- **First start** takes a few seconds once the image is pulled. Read the
+  bootstrap password with:
+
+  ```bash
+  docker exec glowpod glowpod hub bootstrap-password
+  ```
+
+  Then continue with [First start](#first-start) from step 2. The server URL
+  is the address imported clusters reach this server by, such as
+  `https://203.0.113.10`.
+
+The cluster inside the container is listed as `local`. It's for trying the
+Hub, or for a small setup: everything depends on one container. For
+production, install the Hub with Helm on a cluster of its own.
+
 ## Install the Hub
 
 Install it on a Kubernetes cluster, preferably a small one of its own (one
@@ -186,12 +229,12 @@ kubectl delete namespace glowpod-system && kubectl delete clusterrole glowpod-ag
 | "Waiting for agent" stays | `kubectl -n glowpod-system logs deploy/glowpod-agent` in that cluster; check it can reach the server URL over HTTPS |
 | Someone signed in but sees no clusters | Bind their `oidc:`/`ldap:` name or group in a cluster; it appears within 30 seconds |
 | `admin` can't sign in with the bootstrap password | Setup is already done; the bootstrap password stopped working then |
+| The Docker Hub stops right after starting | `docker logs glowpod`; K3s's own log is in the volume: `docker exec glowpod tail -50 /var/lib/glowpod/k3s.log`. Check the container is `--privileged` |
 
 ## Not yet
 
 These come next, in this order:
 
-- Running the Hub with `docker run` on a plain server.
 - A `kubectl` shell in the browser for each cluster, and one kubeconfig
   download for all of them. Pod shells already work through the Hub.
 - More local users, cluster members and projects, and setting up SSO and

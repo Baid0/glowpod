@@ -55,15 +55,16 @@ func newHub(ctx context.Context, sc serverConfig, base *rest.Config, clusters *c
 		}
 	}
 	h := hub.New(hub.Config{
-		Namespace:  sc.hubNamespace,
-		Kube:       kube,
-		Dynamic:    dyn,
-		Registry:   clusters,
-		PublicURL:  sc.publicURL,
-		AgentImage: image,
-		HubCA:      ca,
-		Admins:     admins,
-		Logger:     logger.With("component", "hub"),
+		Namespace:     sc.hubNamespace,
+		Kube:          kube,
+		Dynamic:       dyn,
+		Registry:      clusters,
+		PublicURL:     sc.publicURL,
+		AgentImage:    image,
+		HubCA:         ca,
+		Admins:        admins,
+		BootstrapHint: sc.bootstrapHint,
+		Logger:        logger.With("component", "hub"),
 	})
 	if err := h.Start(ctx); err != nil {
 		return nil, fmt.Errorf("start the Hub: %w", err)

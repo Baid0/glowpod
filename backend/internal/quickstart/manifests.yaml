@@ -1,0 +1,61 @@
+# Applied by K3s at every start (its auto-deploy folder): what the Helm
+# chart's hub.enabled adds, for a Hub running in the glowpod-hub image. The
+# CRD's spec must match deploy/helm/glowpod/templates/hub.yaml (a test checks).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: glowpod
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clusters.hub.glowpod.dev
+spec:
+  group: hub.glowpod.dev
+  scope: Cluster
+  names:
+    kind: Cluster
+    listKind: ClusterList
+    plural: clusters
+    singular: cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      additionalPrinterColumns:
+        - {name: Name, type: string, jsonPath: .spec.displayName}
+        - {name: Kubernetes, type: string, jsonPath: .status.kubernetesVersion}
+        - {name: Last seen, type: date, jsonPath: .status.lastSeen}
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                displayName: {type: string}
+                importedBy: {type: string}
+            status:
+              type: object
+              properties:
+                kubernetesVersion: {type: string}
+                lastSeen: {type: string, format: date-time}
+                subjects:
+                  type: object
+                  properties:
+                    users: {type: array, items: {type: string}}
+                    groups: {type: array, items: {type: string}}
+---
+# The Hub's admin owns the cluster inside the container, shown as local.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: glowpod-local-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: User
+    name: "glowpod:admin"

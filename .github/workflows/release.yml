@@ -1,6 +1,8 @@
 # Push a tag like v0.2.0 to publish:
 #   - ghcr.io/<owner>/glowpod:0.2.0 (amd64 + arm64) with an SBOM and build
 #     provenance, signed with cosign;
+#   - ghcr.io/<owner>/glowpod-hub:0.2.0, the Hub with K3s inside (docker run),
+#     the same way;
 #   - oci://ghcr.io/<owner>/charts/glowpod version 0.2.0, signed with cosign;
 #   - a GitHub Release with glowpod downloads for Linux, macOS and Windows,
 #     the chart, checksums, an SBOM and build attestations, and notes from
@@ -26,6 +28,8 @@ jobs:
       owner: ${{ steps.v.outputs.owner }}
       image: ${{ steps.v.outputs.image }}
       tags: ${{ steps.v.outputs.tags }}
+      hub_image: ${{ steps.v.outputs.hub_image }}
+      hub_tags: ${{ steps.v.outputs.hub_tags }}
       prerelease: ${{ steps.v.outputs.prerelease }}
     steps:
       - id: v
@@ -34,14 +38,23 @@ jobs:
           # Image names must be lowercase; GitHub owners needn't be.
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           image="ghcr.io/${owner}/glowpod"
+          hub_image="ghcr.io/${owner}/glowpod-hub"
           tags="${image}:${version}"
+          hub_tags="${hub_image}:${version}"
           prerelease=false
-          if [[ "$version" == *-* ]]; then prerelease=true; else tags="${tags},${image}:latest"; fi
+          if [[ "$version" == *-* ]]; then
+            prerelease=true
+          else
+            tags="${tags},${image}:latest"
+            hub_tags="${hub_tags},${hub_image}:latest"
+          fi
           {
             echo "version=${version}"
             echo "owner=${owner}"
             echo "image=${image}"
             echo "tags=${tags}"
+            echo "hub_image=${hub_image}"
+            echo "hub_tags=${hub_tags}"
             echo "prerelease=${prerelease}"
           } >> "$GITHUB_OUTPUT"
 
@@ -83,6 +96,45 @@ jobs:
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
+  hub-image:
+    # The Dockerfile's hub stage: the same binary on K3s.
+    needs: meta
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: hub
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: VERSION=${{ needs.meta.outputs.version }}
+          tags: ${{ needs.meta.outputs.hub_tags }}
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - uses: sigstore/cosign-installer@v4.1.2
+      - name: Sign the image
+        run: cosign sign --yes "${{ needs.meta.outputs.hub_image }}@${{ steps.build.outputs.digest }}"
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ${{ needs.meta.outputs.hub_image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
   chart:
     # After the image: the chart points at it.
     needs: [meta, image]
@@ -121,8 +173,8 @@ jobs:
           if-no-files-found: error
 
   downloads:
-    # Last, so a Release only appears once its image and chart exist.
-    needs: [meta, chart]
+    # Last, so a Release only appears once its images and chart exist.
+    needs: [meta, chart, hub-image]
     runs-on: ubuntu-latest
     permissions:
       contents: write # create the Release

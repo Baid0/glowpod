@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
@@ -56,6 +57,9 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	if len(args) > 0 && args[0] == "agent" {
 		return runAgent(ctx, args[1:], stderr)
 	}
+	if len(args) > 0 && args[0] == "hub" {
+		return runHub(ctx, args[1:], stdout, stderr)
+	}
 	cfg, err := parseFlags(args, stderr)
 	if errors.Is(err, flag.ErrHelp) {
 		return nil
@@ -70,11 +74,18 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	}
 	logger := newLogger(cfg, stderr)
 	logger.Info("starting glowpod", "version", version, "mode", cfg.mode)
+	return serve(ctx, cfg, logger, stderr)
+}
 
+// serve runs Glowpod with a parsed config until ctx ends.
+func serve(ctx context.Context, cfg config, logger *slog.Logger, stderr io.Writer) error {
 	var lc net.ListenConfig
 	ln, err := lc.Listen(ctx, "tcp", cfg.addr)
 	if err != nil {
 		return fmt.Errorf("listen on %s: %w", cfg.addr, err)
+	}
+	if cfg.tls != nil {
+		ln = tls.NewListener(ln, cfg.tls)
 	}
 
 	opts := api.Options{

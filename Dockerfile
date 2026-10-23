@@ -25,7 +25,24 @@ COPY --from=ui /src/frontend/dist ./internal/web/dist
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -trimpath -ldflags="-s -w -X main.version=${VERSION}" -o /glowpod ./cmd/glowpod
 
-# No shell, no package manager: the binary and CA certificates only.
+# Glowpod Hub in one container, like Rancher's Docker install: K3s inside,
+# and the Hub on it. It needs docker run --privileged. Build it with
+#   docker build --target hub -t glowpod-hub .
+FROM rancher/k3s:v1.36.5-k3s1 AS hub
+ARG VERSION
+LABEL org.opencontainers.image.title="Glowpod Hub" \
+      org.opencontainers.image.description="Glowpod Hub with K3s inside: many Kubernetes clusters, one sign-in" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.source="https://github.com/glowpod-dev/glowpod"
+COPY --from=api /glowpod /bin/glowpod
+# K3s, the Hub's CA and its state; keep it on a volume.
+VOLUME /var/lib/glowpod
+EXPOSE 80 443
+ENTRYPOINT ["/bin/glowpod", "hub", "run"]
+
+# The default image. No shell, no package manager: the binary and CA
+# certificates only.
 FROM gcr.io/distroless/static-debian12:nonroot
 ARG VERSION
 LABEL org.opencontainers.image.title="Glowpod" \

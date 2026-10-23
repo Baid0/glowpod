@@ -64,7 +64,8 @@ jobs:
       - run: make chart
 
   image:
-    # Proves the Dockerfile builds for both architectures; doesn't push.
+    # Proves the Dockerfile builds both images for both architectures;
+    # doesn't push.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -76,3 +77,10 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: hub
+          platforms: linux/amd64,linux/arm64
+          push: false
+          cache-from: type=gha

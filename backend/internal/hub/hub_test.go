@@ -394,3 +394,24 @@ func TestSessionsSurviveARestart(t *testing.T) {
 		t.Fatal("signing out deletes the Secret")
 	}
 }
+
+func TestBootstrapPassword(t *testing.T) {
+	empty := fake.NewClientset()
+	if _, err := BootstrapPassword(t.Context(), empty, ns); err == nil {
+		t.Fatal("before the Hub makes it: an error, not an empty password")
+	}
+	th := newTestHub(t)
+	pw, err := BootstrapPassword(t.Context(), th.kube, ns)
+	if err != nil || len(pw) < 20 {
+		t.Fatalf("got a %d-character password, %v", len(pw), err)
+	}
+	if err := th.store.saveSettings(t.Context(), settings{ServerURL: "https://hub.example.com", SetupDone: true}); err != nil {
+		t.Fatal(err)
+	}
+	if pw, err := BootstrapPassword(t.Context(), th.kube, ns); err != nil || pw != "" {
+		t.Fatalf("after setup: %q, %v; want none", pw, err)
+	}
+	if u, err := ServerURL(t.Context(), th.kube, ns); err != nil || u != "https://hub.example.com" {
+		t.Fatalf("server URL %q, %v", u, err)
+	}
+}
