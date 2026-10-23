@@ -5,6 +5,55 @@ entries:
       artifacthub.io/category: monitoring-logging
       artifacthub.io/changes: |
         - kind: added
+          description: "Backup and restore of a Hub (Hub settings \u2192 Backup and restore): one file with the Glowpod accounts, sign-in settings, server URL and imported clusters, encrypted with a passphrase (AES-256-GCM, Argon2id). Restore it on a Hub in use, or on a new Hub at first start to move there; agents reconnect with the credentials they have (guide)."
+        - kind: added
+          description: "Hub settings for Hub administrators (account menu): add Glowpod accounts as User or Administrator, reset passwords, change roles, delete accounts (each ends that person's sign-ins and kubeconfigs); set up SSO (OIDC) and LDAP / Active Directory in the UI, with a Check button, taking effect without a restart; change the server URL (guide). Helm values and flags still win. Glowpod accounts change their own password from the account menu."
+        - kind: added
+          description: "Members and projects: Cluster \u2192 Members gives a person or group a role in the whole cluster (Owner, Read-only, or any ClusterRole), and Cluster \u2192 Projects groups namespaces (such as payments-api + payments-db) and gives a team a role in all of them (Owner, Member, Read-only) (guide). It's all the cluster's own RBAC, made as you, so you can only give what you have; access made with kubectl or GitOps is listed too. Works in every mode."
+        - kind: fixed
+          description: "On a Hub, every cluster was listed for everyone: Kubernetes binds its own discovery roles to all signed-in users, and those counted as access. Now only real grants count: bindings to system: roles don't, and \"everyone\" counts only through a cluster-wide binding (a tool's narrow role for everyone in one namespace doesn't). Imported clusters need their agent upgraded: choose Connect on each and run its command again."
+      artifacthub.io/images: |
+        - name: glowpod
+          image: ghcr.io/glowpod-dev/glowpod:0.7.0
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Website
+          url: https://glowpod.dev
+        - name: Documentation
+          url: https://glowpod.dev/docs/
+        - name: Install guide
+          url: https://glowpod.dev/docs/install/
+        - name: Sign-in and access
+          url: https://glowpod.dev/docs/authentication/
+        - name: Security policy
+          url: https://github.com/glowpod-dev/glowpod/security/policy
+        - name: Source
+          url: https://github.com/glowpod-dev/glowpod
+    apiVersion: v2
+    appVersion: 0.7.0
+    created: "2026-10-23T15:22:24.786630825Z"
+    description: A Kubernetes dashboard for app developers and platform teams. People
+      sign in and act as themselves.
+    digest: bb5c28d0bacdd5675653b9a5349b35d7df2169fa6a865f48303d0aa35753e9b3
+    home: https://glowpod.dev
+    icon: https://glowpod.dev/brand/glowpod-icon.png
+    keywords:
+    - kubernetes
+    - dashboard
+    - rbac
+    - sso
+    kubeVersion: '>=1.28.0-0'
+    name: glowpod
+    sources:
+    - https://github.com/glowpod-dev/glowpod
+    type: application
+    urls:
+    - https://github.com/glowpod-dev/glowpod/releases/download/v0.7.0/glowpod-0.7.0.tgz
+    version: 0.7.0
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
           description: "A shell in the browser on Glowpod Hub: Shell in the top bar opens a terminal with kubectl, helm, jq, yq and glowpod term set up for the cluster on screen, as you (guide). Each shell is a short-lived, locked-down pod in the Hub's namespace (non-root, read-only, no service-account token, a NetworkPolicy that lets it reach only the Hub) from the new ghcr.io/glowpod-dev/glowpod-shell image; closing it, or 30 minutes without typing, deletes it. hub.shell.enabled and hub.shell.image in the chart."
         - kind: added
           description: "kubectl through Glowpod Hub: the account menu's Kubeconfig downloads a kubeconfig with a context for every cluster you can see (guide). kubectl reaches each cluster through the Hub (and its agent), as you, with your RBAC; exec, logs -f, watches and port-forward work too. It works for 8 hours (hub.kubeconfigTTL), and you can revoke it from the same menu. The Hub ignores --as and other impersonation from the client."
@@ -403,4 +452,4 @@ entries:
     urls:
     - https://github.com/glowpod-dev/glowpod/releases/download/v0.1.1/glowpod-0.1.1.tgz
     version: 0.1.1
-generated: "2026-10-23T13:37:23.423003273Z"
+generated: "2026-10-23T15:22:24.785100118Z"
