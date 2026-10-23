@@ -14,6 +14,7 @@ import type { CheckResult, HubUser, LDAPSettings, OIDCSettings } from "../../lib
 import access from "../access/Access.module.css";
 import { ConfirmDialog } from "../access/SubjectDialog";
 import { Command } from "../clusters/HubDialogs";
+import { BackupCard } from "./Backup";
 import styles from "./HubSettings.module.css";
 
 const message = (err: unknown) => (err instanceof ApiError ? err.message : "Something went wrong.");
@@ -28,6 +29,7 @@ export function HubSettingsPage() {
       <ServerCard version={session.version ?? ""} />
       <AccountsCard me={session.user.username} />
       <SignInCards />
+      <BackupCard />
     </div>
   );
 }

@@ -86,7 +86,9 @@ type Config struct {
 	ShellCA     string
 	// EndSessions signs a user out everywhere (the session store's).
 	EndSessions func(ctx context.Context, user string)
-	Logger      *slog.Logger
+	// EndAllSessions signs everyone out, after a restore.
+	EndAllSessions func(ctx context.Context)
+	Logger         *slog.Logger
 }
 
 // Hub runs the Hub's side: its store, the tunnels and the routes.

@@ -342,3 +342,30 @@ doesn't count.
   made a member of lab, then seeing it; a Glowpod account made, promoted
   (its session ended) and deleted (signed out, can't sign in); settings
   surviving a container restart; the lab's agent upgraded with Connect.
+
+## Backup and restore (Hub phase 5, last step)
+
+- **What's in it:** accounts (Argon2id hashes), Hub roles, sign-in
+  settings with their secrets, the server URL, and each cluster's record
+  and credential hash. Not sign-ins, kubeconfig tokens, shells, pending
+  import tokens or TLS: those are made again, or belong to the new Hub.
+- **Encrypted with a passphrase:** AES-256-GCM with a key from Argon2id
+  (3 passes, 64 MiB, 4 lanes: heavier than sign-in, since a file can be
+  attacked offline). The header (format, version, time, salt and
+  parameters) is the GCM additional data, so nothing in the file can be
+  changed unnoticed, and a wrong passphrase and a broken file give the same
+  answer. Parameters read from a file are bounded before use.
+- **Restore makes the state equal to the backup's:** accounts and clusters
+  not in it are removed; restored clusters keep their credential hash, so
+  their agents come back without a new import; tunnels are closed so
+  agents reconnect against the restored credential; everyone is signed out
+  and every kubeconfig token deleted. A backup without admin, with a bad
+  server URL or a cluster called local is refused before anything changes.
+- **Restore at first start** replaces setup: the bootstrap admin restores,
+  and the backup's admin password is the one to sign in with.
+- **Tested** on the Docker Hub: a backup (no secret readable in the file),
+  a second fresh Hub restored at first start (Dex and LDAP sign-in live at
+  once, admin's old password working, bootstrap password gone), the lab's
+  agent pointed at it and connecting with its existing credential, then a
+  restore onto the Hub in use, after which the agent reconnected by
+  itself.

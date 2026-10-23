@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../components/Button";
 import { Dialog } from "../../components/Dialog";
 import { api, ApiError } from "../../lib/api";
+import { saveFile } from "../../lib/download";
 import { queryKeys } from "../../lib/queryKeys";
 import { formatAge, useNow } from "../../lib/time";
 import type { KubeToken } from "../../lib/types";
@@ -35,7 +36,7 @@ export function KubeconfigDialog({
   const download = useMutation({
     mutationFn: () => api.kubeconfig(cluster),
     onSuccess: ({ yaml }) => {
-      save(yaml);
+      saveFile(yaml, FILE, "application/yaml");
       void client.invalidateQueries({ queryKey: queryKeys.kubeconfigTokens });
     },
   });
@@ -148,15 +149,4 @@ function TokenList({
       </ul>
     </section>
   );
-}
-
-function save(yaml: string) {
-  const blob = new Blob([yaml], { type: "application/yaml" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = FILE;
-  a.click();
-  setTimeout(() => {
-    URL.revokeObjectURL(a.href);
-  }, 1000);
 }

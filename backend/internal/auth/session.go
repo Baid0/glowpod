@@ -209,6 +209,23 @@ func (s *Store) forget(ctx context.Context, key string) {
 	_ = s.Saver.DeleteSession(ctx, key) // Prune removes it if this fails
 }
 
+// EndAll ends every session, saved or in memory.
+func (s *Store) EndAll(ctx context.Context) {
+	s.mu.Lock()
+	clear(s.m)
+	s.mu.Unlock()
+	if s.Saver == nil {
+		return
+	}
+	all, err := s.Saver.ListSessions(ctx)
+	if err != nil {
+		return
+	}
+	for key := range all {
+		_ = s.Saver.DeleteSession(ctx, key) // Prune removes it if this fails
+	}
+}
+
 // EndUser ends every session of user, saved or in memory.
 func (s *Store) EndUser(ctx context.Context, user string) {
 	s.mu.Lock()

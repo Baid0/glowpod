@@ -190,6 +190,38 @@ or later).
 - SSO or LDAP set with Helm values (`auth.oidc`, `auth.ldap`) or flags
   wins and is shown as read-only here.
 
+## Backup and restore
+
+**Hub settings → Backup and restore** (Glowpod 0.7.0 or later).
+
+- **Download backup** saves one file with the Glowpod accounts (password
+  hashes only), Hub roles, SSO and LDAP settings, the server URL and the
+  imported clusters, each with a hash of its agent's credential. It's
+  encrypted (AES-256-GCM, with a key made from your passphrase by
+  Argon2id), because the SSO client secret and the LDAP bind password are
+  in it. Keep the file and the passphrase apart; Glowpod doesn't keep the
+  passphrase, and without it the file can't be read.
+- It doesn't hold sign-ins, kubeconfigs, shells, import commands that
+  weren't used, or the Hub's HTTPS certificate.
+- **Restore a backup** makes the Hub what the backup holds: its accounts,
+  sign-in settings, server URL and clusters, and no others. Everyone is
+  signed out and kubeconfigs stop working. Type `restore` to confirm.
+
+**Move to a new Hub** (such as from Docker to Helm, or to a new server):
+
+1. Download a backup from the old Hub.
+2. Install the new one. At its first start, sign in with its bootstrap
+   password and choose **Restore a backup instead**.
+3. Make the server URL lead to the new Hub (move the DNS name). Agents
+   reconnect with the credentials they have, with no new import. If the
+   address changes, or the new Hub's certificate comes from a different
+   private CA, choose **Connect** on each cluster and run its command
+   again.
+
+The Hub's state is also ordinary Kubernetes objects (Secrets and a
+ConfigMap in its namespace, and the `clusters.hub.glowpod.dev` records), so
+cluster backups with Velero or etcd snapshots cover it too.
+
 ## Import a cluster
 
 1. Go to **Clusters → Import** and give the cluster a name. Leave **Make me
@@ -328,5 +360,4 @@ kubectl delete namespace glowpod-system && kubectl delete clusterrole glowpod-ag
 
 These come next, in this order:
 
-- Backup and restore of the Hub's state, from Hub settings.
 - Search and "Needs attention" across all clusters.

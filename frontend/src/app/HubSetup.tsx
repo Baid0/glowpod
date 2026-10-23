@@ -3,6 +3,7 @@ import { useEffect, useId, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
 
 import { Button } from "../components/Button";
+import { RestoreForm } from "../features/hub/Backup";
 import { api, ApiError } from "../lib/api";
 import { useSession } from "../lib/queries";
 import { queryKeys } from "../lib/queryKeys";
@@ -26,6 +27,38 @@ export function HubSetupPage() {
 }
 
 function SetupForm({ suggestedURL }: { suggestedURL: string }) {
+  const [restoring, setRestoring] = useState(false);
+  if (restoring) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.card}>
+          <Logo size={40} />
+          <h1 className={styles.title}>Restore a backup</h1>
+          <p className={styles.text}>
+            Make this Hub a copy of the one the backup came from: its accounts, sign-in settings,
+            server URL and clusters. Clusters whose agents can reach this Hub reconnect by
+            themselves.
+          </p>
+          <RestoreForm
+            onCancel={() => {
+              setRestoring(false);
+            }}
+          />
+        </div>
+      </main>
+    );
+  }
+  return (
+    <NewHubForm
+      suggestedURL={suggestedURL}
+      onRestore={() => {
+        setRestoring(true);
+      }}
+    />
+  );
+}
+
+function NewHubForm({ suggestedURL, onRestore }: { suggestedURL: string; onRestore: () => void }) {
   const client = useQueryClient();
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
@@ -132,6 +165,12 @@ function SetupForm({ suggestedURL }: { suggestedURL: string }) {
             {busy ? "Saving…" : "Save and continue"}
           </Button>
         </form>
+        <p className={styles.text}>
+          Moving from another Hub?{" "}
+          <button type="button" className={styles.linkButton} onClick={onRestore}>
+            Restore a backup instead
+          </button>
+        </p>
       </div>
     </main>
   );

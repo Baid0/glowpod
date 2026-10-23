@@ -56,6 +56,8 @@ func (h *Hub) MountAPI(r chi.Router) {
 		r.Put("/settings/ldap", h.setLDAP)
 		r.Post("/settings/oidc/check", h.checkOIDC)
 		r.Post("/settings/ldap/check", h.checkLDAP)
+		r.Post("/backup", h.downloadBackup)
+		r.Post("/restore", h.restoreBackup)
 	})
 }
 
@@ -213,6 +215,22 @@ func (h *Hub) respondImport(w http.ResponseWriter, r *http.Request, id string, o
 	writeJSON(w, http.StatusOK, resp)
 }
 
+// forgetCluster deletes a cluster's record and credential and drops it,
+// closing its agent's tunnel. The credential goes first, so the agent
+// can't come back.
+func (h *Hub) forgetCluster(ctx context.Context, id string) error {
+	if err := h.store.deleteCluster(ctx, id); err != nil {
+		return err
+	}
+	h.cfg.Registry.Remove(id)
+	h.mu.Lock()
+	delete(h.records, id)
+	h.mu.Unlock()
+	h.sessions.Close(id)
+	h.forgetUpstream(id)
+	return nil
+}
+
 // newID is a URL-safe id for a new cluster that no other cluster has.
 func (h *Hub) newID(name string) string {
 	base := cluster.ContextIDs([]string{name})[name]
@@ -236,18 +254,11 @@ func (h *Hub) removeCluster(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "unknown_cluster", "The Hub has no such cluster.")
 		return
 	}
-	// The credential goes first, so the agent can't come back.
-	if err := h.store.deleteCluster(r.Context(), id); err != nil {
+	if err := h.forgetCluster(r.Context(), id); err != nil {
 		h.cfg.Logger.Error("remove failed", "cluster", id, "err", err)
 		writeError(w, http.StatusInternalServerError, "remove_failed", "Couldn't remove the cluster. Check the Hub's logs.")
 		return
 	}
-	h.cfg.Registry.Remove(id)
-	h.mu.Lock()
-	delete(h.records, id)
-	h.mu.Unlock()
-	h.sessions.Close(id)
-	h.forgetUpstream(id)
 	h.cfg.Logger.Info("removed a cluster", "cluster", id, "by", auth.SessionInfoFrom(r.Context()).User)
 	writeJSON(w, http.StatusOK, RemoveResponse{Cleanup: cleanupCommand()})
 }

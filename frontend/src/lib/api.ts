@@ -11,6 +11,7 @@ import type {
   CheckResult,
   HubSettings,
   HubUser,
+  RestoreResult,
   LDAPSettings,
   OIDCSettings,
   ClusterRoleChoice,
@@ -239,6 +240,14 @@ export const api = {
     apiSend<CheckResult>("POST", "/api/v1/hub/settings/oidc/check", s),
   checkLDAP: (s: LDAPSettings) =>
     apiSend<CheckResult>("POST", "/api/v1/hub/settings/ldap/check", s),
+  /** An encrypted backup of the Hub's state, and its file name. */
+  hubBackup: async (passphrase: string) => {
+    const res = await apiSendRaw("POST", "/api/v1/hub/backup", { passphrase });
+    const name = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1];
+    return { text: await res.text(), name: name ?? "glowpod-hub-backup.json" };
+  },
+  hubRestore: (passphrase: string, backup: string) =>
+    apiSend<RestoreResult>("POST", "/api/v1/hub/restore", { passphrase, backup }),
   removeCluster: (cluster: string) =>
     apiSend<{ cleanup: string }>("DELETE", `/api/v1/hub/clusters/${encodeURIComponent(cluster)}`),
   namespaces: (cluster: string, signal?: AbortSignal) =>

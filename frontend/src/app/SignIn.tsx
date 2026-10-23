@@ -31,6 +31,8 @@ export function SignInPage() {
   const [params] = useSearchParams();
   const returnTo = safeReturn(params.get("return"));
   const error = params.get("error");
+  // After a restore: how many accounts and clusters came back, as "2-1".
+  const restored = /^(\d+)-(\d+)$/.exec(params.get("restored") ?? "");
   const {
     data: methods,
     error: methodsError,
@@ -52,6 +54,12 @@ export function SignInPage() {
         {error && ERRORS[error] && (
           <p className={styles.error} role="alert">
             {ERRORS[error]}
+          </p>
+        )}
+        {restored && (
+          <p className={styles.text} role="status">
+            The backup is restored: {restored[1]} Glowpod accounts and {restored[2]} clusters. Sign
+            in with an account from it.
           </p>
         )}
         {isPending ? (

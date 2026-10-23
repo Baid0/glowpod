@@ -574,3 +574,10 @@ export interface CheckResult {
   ok: boolean;
   message: string;
 }
+
+/** POST /api/v1/hub/restore: what came back. */
+export interface RestoreResult {
+  created: string;
+  users: number;
+  clusters: number;
+}

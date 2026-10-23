@@ -8,6 +8,11 @@ All notable changes to Glowpod. The format follows
 
 ### Added
 
+- Backup and restore of a Hub (**Hub settings → Backup and restore**): one file with the Glowpod
+  accounts, sign-in settings, server URL and imported clusters, encrypted with a passphrase
+  (AES-256-GCM, Argon2id). Restore it on a Hub in use, or on a new Hub at first start to move
+  there; agents reconnect with the credentials they have ([guide](docs/hub.md#backup-and-restore)).
+
 - **Hub settings** for Hub administrators (account menu): add Glowpod accounts as User or
   Administrator, reset passwords, change roles, delete accounts (each ends that person's sign-ins
   and kubeconfigs); set up **SSO (OIDC)** and **LDAP / Active Directory** in the UI, with a
