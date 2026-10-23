@@ -123,6 +123,8 @@ docker run -d --name glowpod --restart=unless-stopped --privileged \
 docker exec glowpod glowpod hub bootstrap-password
 ```
 
+The same image is on Docker Hub as `glowpod/glowpod-hub` (0.8.0+).
+
 For production, install it with Helm on a cluster of its own:
 
 ```bash

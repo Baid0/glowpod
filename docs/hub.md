@@ -56,6 +56,8 @@ docker run -d --name glowpod --restart=unless-stopped --privileged \
   ghcr.io/glowpod-dev/glowpod-hub:0.8.0
 ```
 
+- **On Docker Hub too** (0.8.0+): `glowpod/glowpod-hub:0.8.0` is the same
+  image, with the same digest and signatures. Use either name.
 - **`--privileged`** is needed to run Kubernetes inside a container, as for
   Rancher.
 - **Everything is in the volume** `/var/lib/glowpod`: K3s, the Hub's

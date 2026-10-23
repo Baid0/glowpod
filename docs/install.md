@@ -33,7 +33,11 @@ Dex next to Glowpod in a throwaway namespace.
 Each release publishes a multi-arch image (`linux/amd64`, `linux/arm64`;
 distroless, runs as non-root user 65532) and the Helm chart, both signed:
 
-- Image: `ghcr.io/glowpod-dev/glowpod:<version>`
+- Image: `ghcr.io/glowpod-dev/glowpod:<version>`. From 0.8.0 it's also on
+  Docker Hub as `glowpod/glowpod:<version>`: the same image, with the same
+  digest, signatures and provenance. To pull it from there, set
+  `image.repository=docker.io/glowpod/glowpod` in your values; a Hub's shell
+  image follows it (`docker.io/glowpod/glowpod-shell`).
 - Chart: `oci://ghcr.io/glowpod-dev/charts/glowpod`, which already points at the
   image of the same version. The same chart is also in a classic chart
   repository, if your tools expect `helm repo add`:
@@ -217,6 +221,16 @@ line in `checksums.txt`; the release also has an SPDX SBOM:
 ```bash
 gh attestation verify glowpod_0.8.0_linux_amd64.tar.gz -R glowpod-dev/glowpod
 sha256sum -c checksums.txt --ignore-missing
+```
+
+The Docker Hub copies (0.8.0+) verify the same way: use
+`docker.io/glowpod/glowpod`, `docker.io/glowpod/glowpod-hub` and
+`docker.io/glowpod/glowpod-shell` in the commands above.
+
+```bash
+cosign verify docker.io/glowpod/glowpod-hub:0.8.0 \
+  --certificate-identity-regexp '^https://github.com/glowpod-dev/glowpod/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
 To enforce signatures at admission, point a policy controller (Sigstore
