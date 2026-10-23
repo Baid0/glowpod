@@ -23,6 +23,27 @@ publicURL: ""
 # The cluster's name in the UI.
 clusterName: ""
 
+# Glowpod Hub: one Glowpod for many clusters, the way Rancher works. People
+# sign in here (local accounts, SSO, LDAP); clusters are imported with one
+# kubectl apply and run glowpod-agent, which connects out to the Hub and can
+# only act as the people signed in here. Set publicURL: agents connect to it.
+# At first start, sign in as admin with the bootstrap password:
+#   kubectl -n <namespace> get secret glowpod-bootstrap -o jsonpath='{.data.password}' | base64 -d
+hub:
+  enabled: false
+  # Users or groups, as Kubernetes sees them (oidc:platform, ldap:ops), who are
+  # Hub administrators besides admin. Administrators import and remove
+  # clusters; it gives them no rights inside any cluster.
+  admins: []
+  # The image agents run in imported clusters; empty = this chart's image.
+  agentImage: ""
+  # A Secret with ca.crt that agents should trust for publicURL, when the
+  # Hub's certificate comes from a private CA.
+  caSecret: ""
+  # Make the Hub's admin cluster-admin on the cluster the Hub runs in (shown
+  # as "local"), as in Rancher. Turn off to grant it some other way.
+  localAdmin: true
+
 auth:
   # Sign in with a service-account (or any bearer) token. The token is used
   # as-is: the person gets exactly its rights.
@@ -62,6 +83,8 @@ auth:
     userBase: "" # ou=people,dc=example,dc=com
     userFilter: "(uid={username})" # Active Directory: (sAMAccountName={username})
     usernameAttribute: uid
+    # A prefix for usernames, e.g. "ldap:"; the Hub uses ldap: when empty.
+    usernamePrefix: ""
     groupBase: "" # ou=groups,dc=example,dc=com; empty = no groups
     groupFilter: "(member={dn})"
     groupAttribute: cn

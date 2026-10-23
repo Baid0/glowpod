@@ -32,7 +32,16 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 
 {{/* Impersonation is needed for SSO without token pass-through, and for LDAP. */}}
 {{- define "glowpod.impersonates" -}}
-{{- if or (and .Values.auth.oidc.enabled (not .Values.auth.oidc.passToken)) .Values.auth.ldap.enabled -}}true{{- end -}}
+{{- if or (and .Values.auth.oidc.enabled (not .Values.auth.oidc.passToken)) .Values.auth.ldap.enabled .Values.hub.enabled -}}true{{- end -}}
+{{- end -}}
+
+{{/* The image this chart runs, as a reference. */}}
+{{- define "glowpod.image" -}}
+{{- if .Values.image.digest -}}
+{{ .Values.image.repository }}@{{ .Values.image.digest }}
+{{- else -}}
+{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+{{- end -}}
 {{- end -}}
 
 {{- define "glowpod.secretName" -}}
@@ -57,7 +66,13 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- if and .Values.auth.ldap.enabled (or (not .Values.auth.ldap.url) (not .Values.auth.ldap.userBase)) -}}
 {{- fail "auth.ldap needs url and userBase" -}}
 {{- end -}}
-{{- if not (or .Values.auth.token.enabled .Values.auth.oidc.enabled .Values.auth.ldap.enabled) -}}
+{{- if and .Values.hub.enabled (gt (int .Values.replicaCount) 1) -}}
+{{- fail "hub: agents keep one tunnel to one Hub pod; keep replicaCount at 1" -}}
+{{- end -}}
+{{- if and .Values.hub.enabled .Values.auth.oidc.passToken -}}
+{{- fail "hub: auth.oidc.passToken can't be used; the Hub reaches clusters through their agents" -}}
+{{- end -}}
+{{- if not (or .Values.auth.token.enabled .Values.auth.oidc.enabled .Values.auth.ldap.enabled .Values.hub.enabled) -}}
 {{- fail "turn on at least one of auth.token, auth.oidc, auth.ldap" -}}
 {{- end -}}
 {{- if and (gt (int .Values.replicaCount) 1) (not .Values.allowManyReplicas) -}}

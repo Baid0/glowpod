@@ -20,6 +20,20 @@
     "allowManyReplicas": { "type": "boolean" },
     "publicURL": { "type": "string", "pattern": "^(|https?://[^/]+/?)$" },
     "clusterName": { "type": "string" },
+    "hub": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "admins": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "agentImage": { "type": "string" },
+        "caSecret": { "type": "string" },
+        "localAdmin": { "type": "boolean" }
+      }
+    },
     "auth": {
       "type": "object",
       "additionalProperties": false,
@@ -61,6 +75,7 @@
             "userBase": { "type": "string" },
             "userFilter": { "type": "string" },
             "usernameAttribute": { "type": "string" },
+            "usernamePrefix": { "type": "string" },
             "groupBase": { "type": "string" },
             "groupFilter": { "type": "string" },
             "groupAttribute": { "type": "string" },

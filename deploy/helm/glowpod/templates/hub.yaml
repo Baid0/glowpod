@@ -1,0 +1,126 @@
+{{- if .Values.hub.enabled }}
+# Glowpod Hub. Its state is Kubernetes objects: Cluster records (cluster-
+# scoped), and Secrets and a ConfigMap in this namespace. Uninstalling keeps
+# the records (resource-policy: keep), so a reinstall finds its clusters.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clusters.hub.glowpod.dev
+  labels:
+    {{- include "glowpod.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  group: hub.glowpod.dev
+  scope: Cluster
+  names:
+    kind: Cluster
+    listKind: ClusterList
+    plural: clusters
+    singular: cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      additionalPrinterColumns:
+        - {name: Name, type: string, jsonPath: .spec.displayName}
+        - {name: Kubernetes, type: string, jsonPath: .status.kubernetesVersion}
+        - {name: Last seen, type: date, jsonPath: .status.lastSeen}
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                displayName: {type: string}
+                importedBy: {type: string}
+            status:
+              type: object
+              properties:
+                kubernetesVersion: {type: string}
+                lastSeen: {type: string, format: date-time}
+                subjects:
+                  type: object
+                  properties:
+                    users: {type: array, items: {type: string}}
+                    groups: {type: array, items: {type: string}}
+---
+# What the Hub itself may do, besides impersonating: keep its Cluster
+# records, and read role bindings to know who sees the local cluster.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "glowpod.fullname" . }}-hub
+  labels:
+    {{- include "glowpod.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [hub.glowpod.dev]
+    resources: [clusters]
+    verbs: [get, list, watch, create, update, delete]
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [rolebindings, clusterrolebindings]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "glowpod.fullname" . }}-hub
+  labels:
+    {{- include "glowpod.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "glowpod.fullname" . }}-hub
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "glowpod.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+---
+# Its own Secrets (password hashes, hashed agent credentials, the bootstrap
+# password) and settings, in this namespace only.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "glowpod.fullname" . }}-hub
+  labels:
+    {{- include "glowpod.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [secrets, configmaps]
+    verbs: [get, list, create, update, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "glowpod.fullname" . }}-hub
+  labels:
+    {{- include "glowpod.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "glowpod.fullname" . }}-hub
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "glowpod.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- if .Values.hub.localAdmin }}
+---
+# The Hub's admin owns the cluster the Hub runs in, as in Rancher. The Hub
+# reaches it as glowpod:admin; this binding is what lets that do anything.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "glowpod.fullname" . }}-local-admin
+  labels:
+    {{- include "glowpod.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: User
+    name: "glowpod:admin"
+{{- end }}
+{{- end }}

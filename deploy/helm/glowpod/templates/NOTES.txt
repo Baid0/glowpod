@@ -1,4 +1,12 @@
+{{- if .Values.hub.enabled }}
+Glowpod Hub is installed. Everyone signs in here and acts as themselves in every cluster.
+
+First start: sign in as admin with the bootstrap password, then set your own:
+  kubectl -n {{ .Release.Namespace }} get secret glowpod-bootstrap -o jsonpath='{.data.password}' | base64 -d
+Then import clusters under Clusters, Import: each one runs a kubectl apply there.
+{{- else }}
 Glowpod is installed. Everyone signs in and acts as themselves.
+{{- end }}
 
 {{- if .Values.publicURL }}
 
@@ -20,7 +28,9 @@ Sign-in methods:
 {{- if .Values.auth.ldap.enabled }}
   - LDAP ({{ .Values.auth.ldap.url }}). Groups appear as "{{ .Values.auth.ldap.groupsPrefix }}<cn>".
 {{- end }}
-{{- if .Values.auth.token.enabled }}
+{{- if .Values.hub.enabled }}
+  - Glowpod accounts: admin, and SSO and LDAP users as oidc:<name> and ldap:<name>.
+{{- else if .Values.auth.token.enabled }}
   - Token. Make one for a service account with the rights you want:
       kubectl create token NAME -n NAMESPACE --duration=8h
 {{- end }}

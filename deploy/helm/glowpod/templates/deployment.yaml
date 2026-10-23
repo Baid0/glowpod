@@ -40,11 +40,7 @@ spec:
       {{- end }}
       containers:
         - name: glowpod
-          {{- if .Values.image.digest }}
-          image: "{{ .Values.image.repository }}@{{ .Values.image.digest }}"
-          {{- else }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          {{- end }}
+          image: {{ include "glowpod.image" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- with .Values.command }}
           command:
@@ -64,6 +60,22 @@ spec:
               value: {{ .Values.clusterName | quote }}
             - name: GLOWPOD_AUTH_TOKEN
               value: {{ .Values.auth.token.enabled | quote }}
+            {{- if .Values.hub.enabled }}
+            - name: GLOWPOD_HUB
+              value: "true"
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: GLOWPOD_HUB_ADMINS
+              value: {{ join "," .Values.hub.admins | quote }}
+            - name: GLOWPOD_AGENT_IMAGE
+              value: {{ .Values.hub.agentImage | default (include "glowpod.image" .) | quote }}
+            {{- if .Values.hub.caSecret }}
+            - name: GLOWPOD_HUB_CA_FILE
+              value: /etc/glowpod/hub-ca/ca.crt
+            {{- end }}
+            {{- end }}
             - name: GLOWPOD_SESSION_TTL
               value: {{ .Values.session.ttl | quote }}
             - name: GLOWPOD_SESSION_IDLE
@@ -128,6 +140,8 @@ spec:
               value: {{ .userFilter | quote }}
             - name: GLOWPOD_LDAP_USERNAME_ATTRIBUTE
               value: {{ .usernameAttribute | quote }}
+            - name: GLOWPOD_LDAP_USERNAME_PREFIX
+              value: {{ .usernamePrefix | quote }}
             - name: GLOWPOD_LDAP_GROUP_BASE
               value: {{ .groupBase | quote }}
             - name: GLOWPOD_LDAP_GROUP_FILTER
@@ -169,23 +183,37 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           {{- $ldapCA := and .Values.auth.ldap.enabled .Values.auth.ldap.caSecret }}
-          {{- if or $ldapCA .Values.extraVolumeMounts }}
+          {{- $hubCA := and .Values.hub.enabled .Values.hub.caSecret }}
+          {{- if or $ldapCA $hubCA .Values.extraVolumeMounts }}
           volumeMounts:
             {{- if $ldapCA }}
             - name: ldap-ca
               mountPath: /etc/glowpod/ldap
               readOnly: true
             {{- end }}
+            {{- if $hubCA }}
+            - name: hub-ca
+              mountPath: /etc/glowpod/hub-ca
+              readOnly: true
+            {{- end }}
             {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}
-      {{- if or $ldapCA .Values.extraVolumes }}
+      {{- if or $ldapCA $hubCA .Values.extraVolumes }}
       volumes:
         {{- if $ldapCA }}
         - name: ldap-ca
           secret:
             secretName: {{ .Values.auth.ldap.caSecret }}
+            items:
+              - key: ca.crt
+                path: ca.crt
+        {{- end }}
+        {{- if $hubCA }}
+        - name: hub-ca
+          secret:
+            secretName: {{ .Values.hub.caSecret }}
             items:
               - key: ca.crt
                 path: ca.crt
