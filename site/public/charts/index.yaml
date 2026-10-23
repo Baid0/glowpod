@@ -5,6 +5,61 @@ entries:
       artifacthub.io/category: monitoring-logging
       artifacthub.io/changes: |
         - kind: added
+          description: "A shell in the browser on Glowpod Hub: Shell in the top bar opens a terminal with kubectl, helm, jq, yq and glowpod term set up for the cluster on screen, as you (guide). Each shell is a short-lived, locked-down pod in the Hub's namespace (non-root, read-only, no service-account token, a NetworkPolicy that lets it reach only the Hub) from the new ghcr.io/glowpod-dev/glowpod-shell image; closing it, or 30 minutes without typing, deletes it. hub.shell.enabled and hub.shell.image in the chart."
+        - kind: added
+          description: "kubectl through Glowpod Hub: the account menu's Kubeconfig downloads a kubeconfig with a context for every cluster you can see (guide). kubectl reaches each cluster through the Hub (and its agent), as you, with your RBAC; exec, logs -f, watches and port-forward work too. It works for 8 hours (hub.kubeconfigTTL), and you can revoke it from the same menu. The Hub ignores --as and other impersonation from the client."
+        - kind: changed
+          description: "The sign-in limit counts only failed attempts per person (10 in 5 minutes), so signing in often no longer locks you out."
+        - kind: changed
+          description: "A Hub served over plain HTTP no longer offers the curl --insecure import command, which is only for HTTPS."
+        - kind: changed
+          description: "net/http's own messages, such as TLS handshakes a client gave up on, go to the log in its format at debug level, instead of as raw lines."
+        - kind: changed
+          description: "An agent whose import command is run again (for a new CA, say) keeps its credential and removes the import token it no longer needs from its Secret."
+        - kind: fixed
+          description: "Pod shells failed (\"The terminal connection broke off\") in local mode with a kubeconfig that signs in with a client certificate, such as kubeadm's admin.conf, and on the Docker Hub's local cluster, since 0.4.0. The connection now carries the kubeconfig's certificate."
+      artifacthub.io/images: |
+        - name: glowpod
+          image: ghcr.io/glowpod-dev/glowpod:0.6.0
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Website
+          url: https://glowpod.dev
+        - name: Documentation
+          url: https://glowpod.dev/docs/
+        - name: Install guide
+          url: https://glowpod.dev/docs/install/
+        - name: Sign-in and access
+          url: https://glowpod.dev/docs/authentication/
+        - name: Security policy
+          url: https://github.com/glowpod-dev/glowpod/security/policy
+        - name: Source
+          url: https://github.com/glowpod-dev/glowpod
+    apiVersion: v2
+    appVersion: 0.6.0
+    created: "2026-10-23T13:37:23.423826163Z"
+    description: A Kubernetes dashboard for app developers and platform teams. People
+      sign in and act as themselves.
+    digest: 8e211c8d37e4f6b666e7b87c1a4df46d2c93eb5f2b2ce6aa5a697f28b6f97af1
+    home: https://glowpod.dev
+    icon: https://glowpod.dev/brand/glowpod-icon.png
+    keywords:
+    - kubernetes
+    - dashboard
+    - rbac
+    - sso
+    kubeVersion: '>=1.28.0-0'
+    name: glowpod
+    sources:
+    - https://github.com/glowpod-dev/glowpod
+    type: application
+    urls:
+    - https://github.com/glowpod-dev/glowpod/releases/download/v0.6.0/glowpod-0.6.0.tgz
+    version: 0.6.0
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
           description: "Try Glowpod Hub with one docker run: the new ghcr.io/glowpod-dev/glowpod-hub image runs K3s inside the container and the Hub on it, like Rancher's Docker install (guide). It serves HTTPS with its own certificate authority, which imported agents trust automatically, or with your certificate from /etc/glowpod/tls. Everything is kept in one volume. docker exec <container> glowpod hub bootstrap-password prints the first-start password."
         - kind: changed
           description: "Restarting or upgrading a Hub no longer signs everyone out: it keeps sign-ins in Secrets in its namespace (names and groups only, under a hash of the cookie), and deletes them when they expire or you sign out."
@@ -348,4 +403,4 @@ entries:
     urls:
     - https://github.com/glowpod-dev/glowpod/releases/download/v0.1.1/glowpod-0.1.1.tgz
     version: 0.1.1
-generated: "2026-10-23T10:04:22.834052365Z"
+generated: "2026-10-23T13:37:23.423003273Z"
